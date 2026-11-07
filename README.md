@@ -63,6 +63,7 @@ The same inputs, mapping and version always produce the same bytes.
 ```bash
 uv run migrator publish --from /tmp/pg-out --dry-run           # print the plan; send nothing
 uv run migrator publish --from /tmp/pg-out --allow-partial     # import, including partial dashboards
+uv run migrator publish --from /tmp/pg-out --dry-run --name-prefix demo-   # demo names: demo-Postgres - Metrics, …
 ```
 
 > **Not yet run live.** The dry run has been run; the live import (second line) waits on a Dash0 token (blocker B1) and has only been tested against a fake HTTP transport.
@@ -70,6 +71,8 @@ uv run migrator publish --from /tmp/pg-out --allow-partial     # import, includi
 `publish` reads JSON output only: a run converted with `--format yaml` fails with "not valid JSON".
 
 **What it sends:** translated dashboards and check rules from `manifest.json`. Partial dashboards go only with `--allow-partial`. Prometheus rule files and sources are never sent.
+
+**`--name-prefix PREFIX`** (1–32 characters of `a-z`, `0-9`, `-`, e.g. `demo-`) prepends PREFIX to each dashboard's `metadata.name` and display name and to each check rule's name, at send time; the files, their sha256 and the manifest are unchanged, and the renamed body is validated again. Receipts record the prefix, and a rerun with a different prefix is refused. Use it for demo resources.
 
 **How it sends them:**
 - Before the first request, it checks every path, sha256 and schema.

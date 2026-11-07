@@ -47,7 +47,7 @@ Update this table as the live steps happen. Never present generated JSON as a mi
    | 75 | (8 + 75) / 100 ≈ 0.83 | degraded |
    | 85 | (8 + 85) / 100 ≈ 0.93 | failed |
 
-   The `--dry-run` line prints the measured `max_connections` and current count. Record the live values here after the run.
+   The `--dry-run` line prints the measured `max_connections` and current count. That count includes background workers (autovacuum, walwriter, …), so it reads a little higher than the client connections Dash0 shows. Record the live values here after the run.
 
 4. **Have the fallback ready** (see "Fallback" below).
 
@@ -101,28 +101,30 @@ Nothing is silently dropped. A widget is all or nothing.
 
 ### 4. Publish
 
+Demo resources carry a `demo-` prefix (AGENTS.md, plan 09), so every publish in this runbook passes `--name-prefix demo-`. The prefix is added to each dashboard's `metadata.name` and display name and to the check rule's name at send time; the files in `/tmp/pg-demo`, their sha256 and the manifest stay as `convert` wrote them.
+
 ```bash
-uv run migrator publish --from /tmp/pg-demo --dry-run --allow-partial
+uv run migrator publish --from /tmp/pg-demo --dry-run --allow-partial --name-prefix demo-
 ```
 
 Real output (with a placeholder URL):
 
 ```text
 SKIP monitor postgres/monitors/replication_delay.json  (blocked in convert)
-DRY-RUN POST https://api.eu-west-1.aws.dash0.com/api/import/check-rule?dataset=default  [Postgres] Number of connections is approaching connection limit on {{host.name}}  (publish)
-DRY-RUN POST https://api.eu-west-1.aws.dash0.com/api/import/dashboard?dataset=default  Postgres - Metrics  (publish)
-DRY-RUN POST https://api.eu-west-1.aws.dash0.com/api/import/dashboard?dataset=default  Postgres - Overview  (publish)
+DRY-RUN POST https://api.eu-west-1.aws.dash0.com/api/import/check-rule?dataset=default  demo-[Postgres] Number of connections is approaching connection limit on {{host.name}}  (publish)
+DRY-RUN POST https://api.eu-west-1.aws.dash0.com/api/import/dashboard?dataset=default  demo-Postgres - Metrics  (publish)
+DRY-RUN POST https://api.eu-west-1.aws.dash0.com/api/import/dashboard?dataset=default  demo-Postgres - Overview  (publish)
 ```
 
-Without `--allow-partial`, the two partial dashboards are skipped too. `publish` reads JSON, so convert without `--format yaml` for a run you'll publish. Then, with the user's explicit go-ahead, run it without `--dry-run`. Show the `IMPORTED … id=…` lines and `/tmp/pg-demo/import-results.json`. A second run reports `UNCHANGED`; publishing is create-only and never overwrites.
+Without `--allow-partial`, the two partial dashboards are skipped too. `publish` reads JSON, so convert without `--format yaml` for a run you'll publish. Then, with the user's explicit go-ahead, run it without `--dry-run` (keep `--name-prefix demo-`). Show the `IMPORTED … id=…` lines and `/tmp/pg-demo/import-results.json`, whose receipts record `"namePrefix": "demo-"`. A second run with the same prefix reports `UNCHANGED`; a run with another prefix, or none, is refused. Publishing is create-only and never overwrites.
 
 ### 5. The dashboard in Dash0
 
-Open "Postgres - Metrics" in Dash0. The Connections chart shows two series, `astronomy_db` and `postgres`. A read-only check on 2026-11-07 returned 5 and 3. Point out the blocked widgets are absent, as the report said.
+Open "demo-Postgres - Metrics" in Dash0. The Connections chart shows two series, `astronomy_db` and `postgres`. A read-only check on 2026-11-07 returned 5 and 3. Point out the blocked widgets are absent, as the report said.
 
 ### 6. The check rule
 
-Open the imported check rule. It shows the expression, the 15-minute window inside the expression, and thresholds 0.8 / 0.9, and it's disabled. Enable **only this demo check**, as part of the requested demo. Show it go degraded and then failed while the holder script runs, live or from the screenshots captured in "Prepare". Afterwards, stop the script (Ctrl-C releases every session) and disable the check again.
+Open the imported check rule, "demo-[Postgres] Number of connections …". It shows the expression, the 15-minute window inside the expression, and thresholds 0.8 / 0.9, and it's disabled. Enable **only this demo check**, as part of the requested demo. Show it go degraded and then failed while the holder script runs, live or from the screenshots captured in "Prepare". Afterwards, stop the script (Ctrl-C releases every session) and disable the check again.
 
 ### 7. The limits
 
