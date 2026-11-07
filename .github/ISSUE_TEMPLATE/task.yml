@@ -20,7 +20,7 @@ body:
     id: plan
     attributes:
       label: Plan reference
-      description: Link to the plan task (`docs/handoff/NN-….md#task-n-…`), or "none".
+      description: Link to the plan task (`docs/handoff/NN-….md#task-n-…`) or open-work item (`docs/handoff/README.md`), or "none".
   - type: dropdown
     id: track
     attributes:
@@ -68,7 +68,7 @@ body:
     id: files
     attributes:
       label: Files
-      description: Files this issue creates or changes. Check `docs/handoff/WORK_SPLIT.md#file-ownership` before touching the other track's files.
+      description: Files this issue creates or changes. Check open PRs before touching files another branch changes.
   - type: textarea
     id: dod
     attributes:
@@ -80,7 +80,7 @@ body:
         - [ ] Conversion stays deterministic and LLM-free; no timestamps, absolute paths or environment data in artifacts
         - [ ] Changed expected trees are regenerated in the same commit and reviewed by the other track
         - [ ] No secrets, raw live responses or run artifacts committed
-        - [ ] Docs touched by the change are updated (README, plan status in `docs/handoff/README.md`, `docs/STATUS.md` when a plan finishes)
+        - [ ] Docs touched by the change are updated (README, the open work list in `docs/handoff/README.md`, `docs/STATUS.md` when the overall state changes)
         - [ ] Work is on its own branch; the PR says `Closes #<this issue>`; follow-ups are filed as new issues
         - [ ] Reviewed by XNotAGuestX (a PR approval, or Felix's explicit go-ahead when the PR comes from his own account)
         - [ ] Merged into `main` by Felix or an agent acting for him

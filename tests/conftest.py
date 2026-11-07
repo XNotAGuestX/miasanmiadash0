@@ -17,7 +17,7 @@ MARKERS = (
     "p0: must pass for the MVP converter (plans 01-04)",
     "p1: dashboard coverage ladder (plan 05)",
     "p2: later coverage (plan 08 services)",
-    "unreviewed: expectation neither human-reviewed nor triage-green; "
+    "unreviewed: expectation not human-reviewed; "
     "skipped unless --include-unreviewed",
 )
 
@@ -41,7 +41,7 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
         return
     skip = pytest.mark.skip(
         reason=(
-            "expectation not verified yet: not human-reviewed or triage-green "
+            "expectation not human-reviewed yet "
             "(use --include-unreviewed)"
         )
     )

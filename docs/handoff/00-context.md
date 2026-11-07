@@ -1,6 +1,6 @@
 # 00 — Shared context and spec
 
-Every implementation plan in this directory argues from this file. If a plan conflicts with it, this file wins. If this file conflicts with an older doc (`PROJECT_HANDOFF.md`, `EXECUTION_PLAN.md`, `DEMO.md`), this file wins. The overview is in [README.md](README.md).
+Every implementation plan in this directory argues from this file. If a plan conflicts with it, this file wins. If this file conflicts with an older doc (`DEMO.md`), this file wins; the code wins over both. The overview is in [README.md](README.md).
 
 ## 1. Goal
 

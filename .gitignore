@@ -35,5 +35,5 @@ artifacts/
 private-input/
 *.log
 
-# Local review artifacts (scripts/render_review_dashboard.py)
+# Local run artifacts (test report, convert output)
 out/

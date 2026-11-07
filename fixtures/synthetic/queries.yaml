@@ -1,5 +1,5 @@
 # Hand-written Datadog metric-query parser cases.
-# Source: docs/handoff/02-query-parser.md (grammar + Task 1 tests), ported 1:1 to Python.
+# Source: plan 02 (docs/handoff/02-query-parser.md, removed after completion; see git history), grammar + Task 1 tests, ported 1:1 to Python.
 # These are spec cases, not oracle output.
 provenance: docs/handoff/02-query-parser.md
 cases:

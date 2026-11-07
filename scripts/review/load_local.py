@@ -1,8 +1,7 @@
 """Load Perses dashboards from run directories into a LOCAL Perses (development/review only).
 
 Reads run directories in the `migrator publish` format (manifest.json + dashboards/): those written
-by `migrator convert --out <dir>` (project `datadog-migration`) or by
-scripts/render_review_dashboard.py (project `oracle-review`, issue #87). Checks each dashboard's
+by `migrator convert --out <dir>` (project `datadog-migration`). Checks each dashboard's
 sha256 against the manifest, then talks to the Perses REST API:
 
   * creates each dashboard's project (and its `dash0` Secret + default Prometheus Datasource) when
@@ -20,8 +19,7 @@ secret.md, dashboard.md). URL time params: `start`/`end` as epoch milliseconds
 (perses/shared plugin-system/src/runtime/TimeRangeProvider/query-params.ts).
 
 Usage: uv run scripts/review/load_local.py [<run dir> ...] [--perses-url http://localhost:8080]
-       (default: every run dir under out/oracle-review; pass a `migrator convert --out` dir to view
-       converter output)
+       (pass one or more `migrator convert --out` dirs)
 """
 
 from __future__ import annotations
@@ -253,7 +251,7 @@ def main(argv: list[str] | None = None, opener: Opener | None = None, env: Mappi
     args = ap.parse_args(argv)
     runs = run_dirs(args.runs)
     if not runs:
-        ap.error(f"no run dirs under {DEFAULT_RUNS}; run scripts/render_review_dashboard.py first")
+        ap.error(f"no run dirs given (none under {DEFAULT_RUNS}); pass a `migrator convert --out` dir")
     client = Client(args.perses_url, opener)
     failed = False
     try:

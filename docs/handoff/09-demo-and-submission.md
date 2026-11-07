@@ -88,6 +88,6 @@ With `--dry-run`, print the commands instead of running them.
 
 ### Task 5: Fork, branch and PR (only on the user's explicit request)
 
-- [ ] **Step 1:** Fork `vimouzin/dash0-dashboard-migrator`. Add it as a remote, and push a feature branch containing this repository's history; don't force anything onto unrelated history without a team decision (`docs/EXECUTION_PLAN.md` §0).
+- [ ] **Step 1:** Fork `vimouzin/dash0-dashboard-migrator`. Add it as a remote, and push a feature branch containing this repository's history; don't force anything onto unrelated history without a team decision.
 - [ ] **Step 2: Secret gate.** `git grep -nE "auth_[A-Za-z0-9]{8,}|DD_API_KEY=.+|DASH0_AUTH_TOKEN=.+"` must print nothing, and `artifacts/` and `private-input/` must be untracked.
 - [ ] **Step 3:** Open the PR against upstream `main`, with an implementation summary, features, setup and usage, validation evidence (offline, mocked and live, kept separate) and the known limits.
