@@ -26,3 +26,11 @@ htmlcov/
 
 # Local Claude worktrees
 .claude/worktrees/
+
+# Restored from original .gitignore
+node_modules/
+coverage/
+!.env.example
+artifacts/
+private-input/
+*.log
