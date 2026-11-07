@@ -1,0 +1,102 @@
+{
+  "compilerVersion": "0.1.0",
+  "diagnostics": [
+    {
+      "code": "OPTION_IGNORED",
+      "message": "Monitor option 'include_tags' is ignored.",
+      "severity": "info",
+      "sourceId": "monitors/percent_usage_connections.json",
+      "sourcePath": "options.include_tags",
+      "suggestedAction": "No action needed; notification titles are not migrated."
+    },
+    {
+      "code": "MONITOR_OPTION_APPROXIMATED",
+      "message": "No new-host grace period in Dash0.",
+      "severity": "warning",
+      "sourceId": "monitors/percent_usage_connections.json",
+      "sourcePath": "options.new_host_delay",
+      "suggestedAction": "Expect alerts from new hosts right after they start reporting."
+    },
+    {
+      "code": "MONITOR_OPTION_APPROXIMATED",
+      "message": "Dash0 evaluates partial windows.",
+      "severity": "warning",
+      "sourceId": "monitors/percent_usage_connections.json",
+      "sourcePath": "options.require_full_window",
+      "suggestedAction": "Check that early evaluations of a new series are acceptable."
+    },
+    {
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'postgresql.percent_usage_connections' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "monitors/percent_usage_connections.json",
+      "sourcePath": "query",
+      "sourceText": "avg(last_15m):avg:postgresql.percent_usage_connections{*} > 0.9",
+      "suggestedAction": "Review the 'postgresql.percent_usage_connections' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "OPTION_IGNORED",
+      "message": "Monitor field 'tags' is ignored.",
+      "severity": "info",
+      "sourceId": "monitors/percent_usage_connections.json",
+      "sourcePath": "tags",
+      "suggestedAction": "No action needed unless routing depends on it."
+    },
+    {
+      "code": "UNSUPPORTED_QUERY_FUNCTION",
+      "message": "Function 'anomalies' is not supported.",
+      "severity": "error",
+      "sourceId": "monitors/replication_delay.json",
+      "sourcePath": "query",
+      "sourceText": "avg(last_1h):anomalies(avg:postgresql.replication_delay{*}, 'basic', 2, direction='above', alert_window='last_15m', interval=20, count_default_zero='true') >= 1",
+      "suggestedAction": "Rewrite the query within the supported subset or migrate it manually."
+    }
+  ],
+  "format": "json",
+  "items": [
+    {
+      "kind": "monitor",
+      "outcome": "translated",
+      "sourceId": "monitors/percent_usage_connections.json",
+      "sourcePath": "",
+      "title": "[Postgres] Number of connections is approaching connection limit on {{host.name}}"
+    },
+    {
+      "kind": "monitor",
+      "outcome": "blocked",
+      "sourceId": "monitors/replication_delay.json",
+      "sourcePath": "",
+      "title": "[Postgres] Replication delay is abnormally high on {{host.name}}"
+    }
+  ],
+  "mapping": {
+    "sha256": "df05db108b199f982914cfdb7b419c7253451182fddb35bfdce4799ff8bce75d",
+    "sourceId": "postgres.json"
+  },
+  "provider": "datadog",
+  "reportVersion": 1,
+  "summary": {
+    "dashboards": {
+      "blocked": 0,
+      "partial": 0,
+      "translated": 0
+    },
+    "monitors": {
+      "blocked": 1,
+      "partial": 0,
+      "translated": 1
+    },
+    "skippedFiles": 0,
+    "widgets": {
+      "blocked": 0,
+      "partial": 0,
+      "translated": 0
+    }
+  },
+  "validation": {
+    "api": "not_run",
+    "schema": "passed",
+    "semantics": "not_run",
+    "syntax": "passed"
+  }
+}
