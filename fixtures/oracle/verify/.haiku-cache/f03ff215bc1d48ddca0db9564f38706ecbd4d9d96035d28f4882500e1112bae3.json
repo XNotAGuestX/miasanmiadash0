@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "query1 drops the grouping: Datadog is avg by {db}, but the candidate emits avg(rate(...)) with no by (postgresql_database_name), so it aggregates across databases.",
+      "The $db and $host template variables (prefixes db and host, default *) should become postgresql_database_name=~\"$db\" and host_name=~\"$host\" matchers in all three queries. The candidate omits both, so the series set is wider than the Datadog request.",
+      "The metric mapping postgresql.rows_* to postgresql.tup_* is plausible (both count rows inserted/updated/deleted), and rate() on monotonic sums follows the convention. The outcome translated is appropriate.",
+      "$scope (no prefix, default *) is correctly dropped."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

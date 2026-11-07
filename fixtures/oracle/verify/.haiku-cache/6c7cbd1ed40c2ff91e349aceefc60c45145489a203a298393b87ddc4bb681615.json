@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The selector sets otel_metric_type=\"gauge\", but the dataset has container.network.io.usage.rx_bytes only as type sum (dataset_types: sum), so the selector matches no series.",
+      "The candidate applies rate() with the gauge type label, which contradicts the rule that rate() is only for monotonic sums; the selector should use otel_metric_type=\"sum\" with rate().",
+      "The metric has an interface attribute that the candidate does not aggregate away, so avg by image averages across containers and interfaces. Datadog averages per container, so the aggregation and series set differ. A sum over interface before the avg (e.g. sum by (container_image_name, container_name)) would match the grain.",
+      "Grouping by container_image_name is correct: the dataset observes that label, and docker_image maps to it.",
+      "Quantity (received bytes) and the $scope handling (unprefixed, default *, dropped) are consistent with the request. Unit (By, rate gives bytes/s) should be confirmed against the Datadog docker.net.bytes_rcvd semantics, which I could not verify from the provided material."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

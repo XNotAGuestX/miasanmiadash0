@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Quantity differs: postgresql.rows_deleted counts deleted rows, but the candidate uses postgresql.tup_fetched, which measures fetched tuples (reads).",
+      "Outcome is wrong: no fetched-tuples metric matches the deleted-rows quantity, so the correct result is blocked with MISSING_METRIC_MAPPING unless a different OTel metric (for example a database row-operation counter filtered to delete operations) is verified to measure the same quantity.",
+      "Grouping maps correctly in principle (db to postgresql_database_name), but it cannot rescue a wrong underlying metric.",
+      "Unit differs: rows versus the '{tup_fetched}' unit of a different quantity."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

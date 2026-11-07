@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The candidate multiplies the result by a constant 100 that is not in the Datadog source; this changes the quantity and violates the no-invented-constants rule.",
+      "The template variable $host with tag prefix host should become a matcher host=~\"$host\" (default * kept as a filter), but the candidate drops it, so the series set differs from the request.",
+      "The metric mapping nginx.requests.total -> nginx.requests (monotonic sum) and the translated outcome are appropriate; the sum aggregation matches the Datadog sum."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "ok",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "Candidate is blocked with MISSING_METRIC_MAPPING, and no OTel metric definitions were supplied (otel_metric_definitions is empty), so no exact mapping for nginx.net.waiting can be verified.",
+      "Blocking is the correct outcome given the evidence provided; a translation without a defined OTel metric would violate the deterministic rules.",
+      "Caveat for a future run with definitions: the OTel nginx receiver's nginx.connections_current gauge with state=waiting may be the exact equivalent (a connection-count gauge, not a rate), so the block should be revisited if that definition is supplied."
+    ],
+    "verdict": "pass"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

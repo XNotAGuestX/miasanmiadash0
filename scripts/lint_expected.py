@@ -16,6 +16,7 @@ Checks on a translated request (grades justified next to each check below):
   literal      no numeric constant that is not in the Datadog source (AGENTS.md)
   range        the only range is [$__rate_interval]; no subquery, offset, @, $__interval, $__range
   selector     every selector uses otel_metric_name= (bare metric names do not work in Dash0)
+  grain        metrics with a pinned dedup grain (plan 05 Task 4) aggregate by it first; missing -> nit
 A blocked request passes unless its error list is empty (the codes come from the deterministic overlay).
 
 Usage:
@@ -49,6 +50,9 @@ RATE_INTERVAL = "[$__rate_interval]"
 SENTINEL = "4321ms"
 SENTINEL_RANGE = dt.timedelta(milliseconds=4321)
 RATE_FNS = frozenset({"rate", "irate", "increase"})
+# Plan 05 Task 4: series that collector restarts duplicate (resource-hash churn) need an inner
+# dedup aggregation by these labels before Datadog's space aggregation.
+GRAIN_LABELS = {"postgresql.backends": ("service_instance_id",)}
 DEFAULT_AGGREGATOR = "avg"  # Datadog's space aggregation when the query has no `agg:` prefix
 BY_TAGS = re.compile(r"\}\s*by\s*\{([^}]*)\}")
 # A number in Datadog text that is not part of a name (`system.load.15`, `query1`) or a variable.
@@ -368,6 +372,7 @@ def check_query(query: dict[str, Any], sub: Any, labels_map: dict[str, Any] | No
             for n, _ in walk(a.expr)
             if isinstance(n, pp.AggregateExpr)
         ]
+    out += check_grain(name, aggs)
     # Functions other than rate() (label_replace, abs, ...) transform the series beyond the 1:1
     # mapping; translated requests have no Datadog function (the overlay blocks those) -> nit.
     out += [
@@ -375,6 +380,25 @@ def check_query(query: dict[str, Any], sub: Any, labels_map: dict[str, Any] | No
         for n, _ in walk(sub)
         if isinstance(n, pp.Call) and n.func.name not in RATE_FNS
     ]
+    return out
+
+
+def check_grain(name: str, aggs: list[Any]) -> list[Finding]:
+    """A grain-pinned metric must sit under an aggregation that groups by its grain labels; without it
+    a collector restart double-counts. Plan wants it, the expectation may still be accepted -> nit."""
+    out = []
+    for a in aggs:
+        for node, parents in walk(a.expr):
+            if not isinstance(node, (pp.VectorSelector, pp.MatrixSelector)):
+                continue
+            vs = node.vector_selector if isinstance(node, pp.MatrixSelector) else node
+            metric = matcher_value(vs, "otel_metric_name")
+            grain = GRAIN_LABELS.get(metric or "")
+            if grain is None:
+                continue
+            inner = [p for p in parents if isinstance(p, pp.AggregateExpr)]
+            if not any(set(grain) <= set(group_labels(p)) for p in inner):
+                out.append(Finding("nit", "grain", f"{name}: {metric} has no dedup grain by ({', '.join(grain)}) (plan 05 Task 4)"))
     return out
 
 

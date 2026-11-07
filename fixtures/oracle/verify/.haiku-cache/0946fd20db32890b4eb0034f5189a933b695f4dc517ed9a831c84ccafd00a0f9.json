@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "differs",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "The candidate blocks with MISSING_METRIC_MAPPING, but otel_metric_definitions is empty, so the claim that no OTel metric measures this quantity is unsupported by the supplied evidence.",
+      "The Datadog metric docker.io.write_bytes (cumulative bytes written per container, grouped by image) plausibly maps to the OTel Docker stats metric container.blockio.io_service_bytes_recursive (sum, bytes) filtered to the write operation, with grouping by container.image.name (label container_image_name). Verify this against the dataset before accepting a block.",
+      "If that metric exists in the dataset, an exact translation is possible and the correct outcome is translated, not blocked."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

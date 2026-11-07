@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Wrong metric type selector: postgresql.index.scans is defined as a monotonic sum and the dataset only has sum, but the candidate selects otel_metric_type=\"gauge\". It should be \"sum\".",
+      "Quantity differs: the Datadog query averages the raw index_scans value, which is a cumulative count, while the candidate wraps it in rate(...[$__rate_interval]), producing a per-second rate. The unit changes from scans to scans/s.",
+      "Template variables are dropped: $db (prefix db) and $host (prefix host) should become matchers on the db and host labels (e.g. postgresql_database_name=~\"$db\" and host_name=~\"$host\" per the observed dataset labels). The candidate omits both, so the series set differs. $scope has no prefix and $table is unused, so dropping them is correct.",
+      "Grouping label is unverified: postgresql_index_name is not among the observed dataset labels for this metric, so the by-clause may not match any dataset label. Dataset label names are authoritative, so it needs checking before it can be accepted."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

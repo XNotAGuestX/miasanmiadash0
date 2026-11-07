@@ -16,8 +16,8 @@ errors, not that its findings are wrong), but its pass is not evidence for green
 
 | Dashboard | Requests | red | yellow | unverified | green | Verifiers present |
 |---|---|---|---|---|---|---|
-| [`postgres/postgresql_dashboard`](#postgrespostgresql_dashboard) | 15 | 4 | 1 | 0 | 10 | lint (untrusted), haiku |
-| [`postgres/postgresql_screenboard_dashboard`](#postgrespostgresql_screenboard_dashboard) | 29 | 0 | 1 | 28 | 0 | lint (untrusted) |
+| [`postgres/postgresql_dashboard`](#postgrespostgresql_dashboard) | 15 | 4 | 2 | 0 | 9 | lint (untrusted), haiku |
+| [`postgres/postgresql_screenboard_dashboard`](#postgrespostgresql_screenboard_dashboard) | 29 | 0 | 2 | 27 | 0 | lint (untrusted) |
 | [`nginx/NGINX-Metrics_dashboard`](#nginxnginx-metrics_dashboard) | 7 | 0 | 1 | 6 | 0 | lint (untrusted) |
 | [`nginx/NGINX-Overview_dashboard`](#nginxnginx-overview_dashboard) | 9 | 0 | 1 | 8 | 0 | lint (untrusted) |
 | [`nginx/plus_overview`](#nginxplus_overview) | 22 | 0 | 4 | 18 | 0 | lint (untrusted) |
@@ -25,14 +25,14 @@ errors, not that its findings are wrong), but its pass is not evidence for green
 | [`docker_daemon/docker_dashboard`](#docker_daemondocker_dashboard) | 20 | 1 | 0 | 19 | 0 | lint (untrusted) |
 | [`kafka/kafka_dashboard`](#kafkakafka_dashboard) | 35 | 0 | 0 | 35 | 0 | lint (untrusted) |
 | [`kafka/kafka_kraft_dashboard`](#kafkakafka_kraft_dashboard) | 41 | 1 | 0 | 40 | 0 | lint (untrusted) |
-| **Total** | **207** | **6** | **9** | **182** | **10** | |
+| **Total** | **207** | **6** | **11** | **181** | **9** | |
 
 ## Verifier catch rates (known-bad mutations)
 
 | Verifier | Caught / total | Rate | Structural | Trusted |
 |---|---|---|---|---|
-| lint | 232 / 341 | 68% | 223 / 223 (100%) | no |
-| haiku | 70 / 71 | 99% | 46 / 46 (100%) | yes |
+| lint | 233 / 341 | 68% | 223 / 223 (100%) | no |
+| haiku | 304 / 341 | 89% | 223 / 223 (100%) | yes |
 
 | Verifier | Mutation | Caught / total | Rate |
 |---|---|---|---|
@@ -42,14 +42,14 @@ errors, not that its findings are wrong), but its pass is not evidence for green
 | lint | `outcome_flip` | 0 / 69 | 0% |
 | lint | `range_change` | 35 / 35 | 100% |
 | lint | `rate_on_gauge` | 35 / 35 | 100% |
-| lint | `sibling_metric` | 9 / 49 | 18% |
-| haiku | `add_scale` | 13 / 13 | 100% |
-| haiku | `agg_swap` | 13 / 13 | 100% |
-| haiku | `drop_by_label` | 2 / 2 | 100% |
-| haiku | `outcome_flip` | 12 / 13 | 92% |
-| haiku | `range_change` | 9 / 9 | 100% |
-| haiku | `rate_on_gauge` | 9 / 9 | 100% |
-| haiku | `sibling_metric` | 12 / 12 | 100% |
+| lint | `sibling_metric` | 10 / 49 | 20% |
+| haiku | `add_scale` | 65 / 65 | 100% |
+| haiku | `agg_swap` | 69 / 69 | 100% |
+| haiku | `drop_by_label` | 19 / 19 | 100% |
+| haiku | `outcome_flip` | 32 / 69 | 46% |
+| haiku | `range_change` | 35 / 35 | 100% |
+| haiku | `rate_on_gauge` | 35 / 35 | 100% |
+| haiku | `sibling_metric` | 49 / 49 | 100% |
 
 ## postgres/postgresql_dashboard
 
@@ -80,16 +80,17 @@ errors, not that its findings are wrong), but its pass is not evidence for green
   - haiku: Same quantity: postgresql.tup_returned is the monotonic counter behind Datadog postgresql.rows_returned, and rate() yields per-second rows, matching the '(per sec)' widget.; Unit is compatible: the rate is rows per second in both.; Aggregation and grouping match: avg with no by-clause mirrors the Datadog avg over all series in scope.; Template variable $scope has no tag prefix and default *, so dropping it is correct.; Series grain caveat: OTel series are split per database, table, operation and source (observed labels postgresql_database_name and postgresql_table_name), so avg over them may differ from Datadog's per-database series. Averaging across tab…; Outcome translated is correct since an exact-enough mapping exists.
   - Datadog: query1: `avg:postgresql.rows_returned{$scope}`; formulas: `query1`
   - candidate: `avg(rate({otel_metric_name="postgresql.tup_returned", otel_metric_type="sum"}[$__rate_interval]))`
+- **yellow** `widgets[1].definition.requests[0]` (timeseries: Connections)
+  - signals: lint nit (untrusted), haiku pass
+  - lint: grain: query1: postgresql.backends has no dedup grain by (service_instance_id) (plan 05 Task 4)
+  - haiku: Datadog postgresql.connections (the number of open connections per database) maps to OTel postgresql.backends, which measures the same quantity: the number of backends per database. Both are point-in-time counts, so no rate is needed and t…; Grouping by db maps to the observed dataset label postgresql_database_name, not the absent db_namespace, which is the required label name in this dataset.; avg by (...) matches the Datadog avg aggregation with by {db}. The $scope variable has no prefix and defaults to *, so it is correctly dropped.; The request is translated, and an exact translation exists, so the outcome is correct.
+  - Datadog: query1: `avg:postgresql.connections{$scope} by {db}`; formulas: `query1`
+  - candidate: `avg by (postgresql_database_name) ({otel_metric_name="postgresql.backends", otel_metric_type="sum"})`
 - **green** `widgets[0].definition.requests[3]` (timeseries: Rows fetched / returned / inserted / updated (per sec))
   - signals: lint pass (untrusted), haiku pass
   - haiku: postgresql.tup_updated is a monotonic sum counting updated rows, matching the Datadog rows-updated quantity shown per second.; rate() over the monotonic sum yields the per-second rate, matching the '(per sec)' unit of the widget.; avg() with no by-clause matches Datadog avg: one series across all matching series.; $scope has no tag prefix and default '*', so it is correctly dropped.; Only dataset-observed label names are relevant and none are used in the selector, so no label-name issue arises.
   - Datadog: query1: `avg:postgresql.rows_updated{$scope}`; formulas: `query1`
   - candidate: `avg(rate({otel_metric_name="postgresql.tup_updated", otel_metric_type="sum"}[$__rate_interval]))`
-- **green** `widgets[1].definition.requests[0]` (timeseries: Connections)
-  - signals: lint pass (untrusted), haiku pass
-  - haiku: Datadog postgresql.connections (the number of open connections per database) maps to OTel postgresql.backends, which measures the same quantity: the number of backends per database. Both are point-in-time counts, so no rate is needed and t…; Grouping by db maps to the observed dataset label postgresql_database_name, not the absent db_namespace, which is the required label name in this dataset.; avg by (...) matches the Datadog avg aggregation with by {db}. The $scope variable has no prefix and defaults to *, so it is correctly dropped.; The request is translated, and an exact translation exists, so the outcome is correct.
-  - Datadog: query1: `avg:postgresql.connections{$scope} by {db}`; formulas: `query1`
-  - candidate: `avg by (postgresql_database_name) ({otel_metric_name="postgresql.backends", otel_metric_type="sum"})`
 - **green** `widgets[2].definition.requests[0]` (timeseries: Inserts / updates / deletes (per sec))
   - signals: lint pass (untrusted), haiku pass
   - haiku: postgresql.rows_inserted, rows_deleted and rows_updated map to postgresql.tup_inserted, tup_deleted and tup_updated, which are monotonic sums counting the same rows.; The per-second display is matched by rate() over the monotonic sums, with avg() aggregation and no grouping, consistent with the Datadog request.; The unprefixed $scope template variable with default * is correctly dropped, so no matcher is needed.; All three formulas are translated; no function appears in the Datadog request, so translating is the correct outcome.
@@ -138,6 +139,11 @@ errors, not that its findings are wrong), but its pass is not evidence for green
   - lint: formula: query1: function label_replace() not in the Datadog source
   - Datadog: query1: `avg:postgresql.live_rows{$scope,$table,$host} by {table}`; formulas: `query1`
   - candidate: `avg by (postgresql_table_name) (label_replace({otel_metric_name="postgresql.rows", otel_metric_type="sum", state="live"}, "postgresql_table_name", "$1", "postgresql_table_name", "[^.]*[.](.*)"))`
+- **yellow** `widgets[5].definition.widgets[1].definition.requests[0]` (toplist: Most connected databases)
+  - signals: lint nit (untrusted)
+  - lint: grain: query1: postgresql.backends has no dedup grain by (service_instance_id) (plan 05 Task 4)
+  - Datadog: query1: `max:postgresql.connections{$scope,$db,$host} by {db}`; formulas: `query1`
+  - candidate: `max by (postgresql_database_name) ({otel_metric_name="postgresql.backends", otel_metric_type="sum"})`
 - **unverified** `widgets[1].definition.widgets[0].definition.requests[0]` (query_value: Max connections in use)
   - signals: lint pass (untrusted)
   - Datadog: query1: `max:postgresql.percent_usage_connections{$scope,$host}`; formulas: `query1 * 100`
@@ -210,10 +216,6 @@ errors, not that its findings are wrong), but its pass is not evidence for green
   - signals: lint pass (untrusted)
   - Datadog: query1: `min:postgresql.max_connections{$scope,$db,$host} by {db}`; formulas: `query1`
   - candidate: blocked MISSING_METRIC_MAPPING
-- **unverified** `widgets[5].definition.widgets[1].definition.requests[0]` (toplist: Most connected databases)
-  - signals: lint pass (untrusted)
-  - Datadog: query1: `max:postgresql.connections{$scope,$db,$host} by {db}`; formulas: `query1`
-  - candidate: `max by (postgresql_database_name) ({otel_metric_name="postgresql.backends", otel_metric_type="sum"})`
 - **unverified** `widgets[6].definition.widgets[0].definition.requests[0]` (timeseries: Sequential scans vs index scans)
   - signals: lint pass (untrusted)
   - Datadog: query1: `avg:postgresql.index_scans{$scope,$db,$host} by {db}`; query2: `avg:postgresql.seq_scans{$scope,$db,$host} by {db}`; formulas: `query1`, `query2`

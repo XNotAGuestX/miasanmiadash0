@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "differs",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Candidate uses postgresql.backends (number of backends, a non-monotonic sum with attribute db.namespace) for Datadog postgresql.dead_rows, which counts dead tuples; different quantity, so this is a wrong metric mapping.",
+      "Candidate filters on state=\"dead\", a label that does not exist for postgresql.backends and does not reflect dead rows; the result is a different set of series.",
+      "Datadog request has no function, so it should translate, but the correct OTel metric for dead rows is not the one used; a proper translation needs a dead-rows metric (e.g. postgresql.table.dead_rows-style gauge) with labels mapped to observed names postgresql_database_name and postgresql_table_name, and the template variables $db and $table and $host should map to those observed labels rather than db_namespace or db_collection_name.",
+      "Outcome should be translated only if a correct metric exists; if no OTel metric measures dead rows, the correct outcome is blocked with MISSING_METRIC_MAPPING."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Quantity differs: Datadog sum:redis.keys counts keys, but redis.db.avg_ttl is the average TTL of keys in a db (gauge, ms), a different measure.",
+      "Unit differs: keys count versus milliseconds; no scale can bridge them.",
+      "Template variable $host (prefix host, default *) should become host=~\"$host\" but is dropped; $key (prefix key, default *) should become key=~\"$key\" but is missing entirely, so the series set is wrong.",
+      "Candidate should not be translated with redis.db.avg_ttl; the converter should look for an OTel key-count metric (e.g. a redis.db.keys-style sum) and translate against it, or block with MISSING_METRIC_MAPPING if none exists."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

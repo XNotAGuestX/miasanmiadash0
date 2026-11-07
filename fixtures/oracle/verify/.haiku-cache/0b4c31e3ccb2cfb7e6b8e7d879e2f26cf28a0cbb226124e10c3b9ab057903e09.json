@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The PromQL multiplies the result by a constant 100 that does not appear in the Datadog source; numeric constants not in the source are forbidden, and the scale is not justified by a unit difference (the metric is a plain connection count in {connections}).",
+      "The Datadog template variable $host (prefix host, default *) should become a matcher on the host label (e.g. host_name=~\"$host\"), but the candidate drops it, so the candidate covers all series instead of the same filtered set.",
+      "The metric mapping nginx.connections.accepted to nginx.connections_accepted (monotonic sum, in dataset) is plausible, and translating rather than blocking is the correct outcome."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

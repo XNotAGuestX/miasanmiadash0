@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Grouping is dropped: the Datadog query is 'by {index}' but the candidate has no grouping, so it returns one aggregate instead of a series per index. The index label (postgresql.index.name) is not among the observed dataset labels, so the grouping needs verifying against the dataset before it can be expressed.",
+      "Template filters are dropped: $db (prefix db) and $host (prefix host) should become matchers such as postgresql_database_name=~\"$db\" and host_name=~\"$host\" using the observed labels. The candidate omits both, so it selects a different set of series. $scope has no prefix and default '*', so dropping it is correct.",
+      "Unit differs: the candidate applies rate() and yields scans per second, while the Datadog query shows the raw scan count per interval. The units should match, or the difference should be noted as a scale caveat.",
+      "Aggregation differs: the Datadog avg is taken per index group, while the candidate averages across all series in a single group."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

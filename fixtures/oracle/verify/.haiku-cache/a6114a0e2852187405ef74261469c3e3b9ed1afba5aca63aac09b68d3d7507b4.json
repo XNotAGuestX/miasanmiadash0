@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The PromQL multiplies the result by 100, a numeric constant that does not appear in the Datadog source (sum:nginx.net.waiting{$Host}); the hard rules forbid this and it must be removed.",
+      "The template variable $Host (prefix host, default *) must become a host matcher such as host-label=~\"$Host\"; the candidate drops it, so the series set differs from the Datadog request.",
+      "The underlying quantity is compatible: nginx.connections_current with state=\"waiting\" is a non-monotonic sum of waiting connections, matching nginx.net.waiting's count, and the sum aggregation with no grouping matches.",
+      "The host label name is not listed in dataset_labels, so the exact host matcher label cannot be confirmed from the provided definitions."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

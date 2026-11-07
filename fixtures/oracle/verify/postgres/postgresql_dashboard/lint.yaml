@@ -16,8 +16,9 @@ results:
   verdict: pass
   reasons: []
 - source_path: widgets[1].definition.requests[0]
-  verdict: pass
-  reasons: []
+  verdict: nit
+  reasons:
+  - 'grain: query1: postgresql.backends has no dedup grain by (service_instance_id) (plan 05 Task 4)'
 - source_path: widgets[2].definition.requests[0]
   verdict: pass
   reasons: []

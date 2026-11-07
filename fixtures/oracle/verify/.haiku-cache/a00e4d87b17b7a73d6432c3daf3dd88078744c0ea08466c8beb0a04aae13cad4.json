@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The sys query selects otel_metric_type=\"gauge\" and wraps it in rate(), but redis.cpu.time is a monotonic sum, and the dataset only holds sum types. The sys selector matches nothing, and rate() is applied to a gauge selector, which the rules forbid.",
+      "The user query correctly uses the monotonic sum with rate(); the sys query should use otel_metric_type=\"sum\" with state=\"sys\".",
+      "The $host template variable (prefix host, default *) is used in both Datadog queries but no host matcher appears in either PromQL, so the series set differs. It should become a matcher like host=~\"$host\" on the observed label (the dataset label name for host is not listed, so it needs checking).",
+      "avg without by-grouping matches the Datadog avg with no group-by, and the unit (s) and quantity (CPU time) are consistent with the definition; the Datadog redis.cpu.sys/user unit was not provided, so unit is only partially verifiable.",
+      "Outcome translated is appropriate since no functions or unsupported constructs are present."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

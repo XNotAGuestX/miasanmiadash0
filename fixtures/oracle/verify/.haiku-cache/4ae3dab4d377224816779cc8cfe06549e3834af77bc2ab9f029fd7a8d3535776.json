@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The Datadog metric nginx.net.conn_dropped_per_s has no direct OTel equivalent in the catalog; the candidate computes it as accepted minus handled, which the rules require to be blocked (MISSING_METRIC_MAPPING) with the expression placed in notes, not emitted as promql.",
+      "The candidate outcome is translated, but the converter must return blocked for a derived quantity.",
+      "The candidate mixes avg() over connections_accepted with sum() over connections_handled, so the aggregation is inconsistent across the two terms and does not match a plain sum of the Datadog series.",
+      "The subtraction of two counter rates is a constructed series that is not what the Datadog dropped-connections metric measures directly, so the quantity is not equivalent.",
+      "Unit and per-second semantics roughly align, since both sides are rates of connection counts, but this does not rescue the request given the derivation and aggregation mismatch."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

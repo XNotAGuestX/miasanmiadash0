@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "query1 multiplies tup_inserted by a constant 100, which is not in the Datadog source; the hard rules forbid applying numeric constants, so any unit scale must be proposed in notes only.",
+      "Template variables with prefixes are dropped. $db (prefix db), $host (prefix host) and $table (prefix table) should become matchers on the dataset labels (postgresql_database_name, host_name, postgresql_table_name), so the candidate selects a different set of series than the Datadog request.",
+      "The $scope variable has no prefix and default *, so dropping it is correct.",
+      "Grouping by db maps to postgresql_database_name, which is observed in the dataset, so the grouping is ok.",
+      "Metric mapping (rows_inserted/updated/deleted to tup_inserted/updated/deleted, rate on monotonic sums) is plausible, and the outcome is translated as expected."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

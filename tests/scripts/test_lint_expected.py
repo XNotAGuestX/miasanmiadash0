@@ -14,7 +14,8 @@ KEY = "postgres/postgresql_dashboard"
 CASE: dict[str, Any] = {"template_variables": []}
 COUNTER = 'rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum"}[$__rate_interval])'
 COUNTER2 = 'rate({otel_metric_name="postgresql.tup_returned", otel_metric_type="sum"}[$__rate_interval])'
-UPDOWN = '{otel_metric_name="postgresql.backends", otel_metric_type="sum"}'
+UPDOWN = '{otel_metric_name="postgresql.db_size", otel_metric_type="sum"}'
+BACKENDS = '{otel_metric_name="postgresql.backends", otel_metric_type="sum"}'  # grain-pinned (plan 05 Task 4)
 GAUGE = '{otel_metric_name="system.cpu.load_average.1m", otel_metric_type="gauge"}'
 
 
@@ -104,6 +105,17 @@ def test_bare_selector_is_not_aggregated() -> None:
 def test_nested_aggregation_is_a_nit() -> None:
     exp = translated(f"max(avg by (host_name) ({COUNTER}))")
     assert lint(request("max:a{*}"), exp)[0] == "nit"
+
+
+def test_missing_dedup_grain_is_a_nit() -> None:
+    """Plan 05 Task 4: postgresql.backends needs a dedup grain on service_instance_id."""
+    verdict, reasons = lint(request("avg:postgresql.connections{*} by {db}"), translated(f"avg by (postgresql_database_name) ({BACKENDS})"))
+    assert verdict == "nit" and any("grain" in r for r in reasons)
+
+
+def test_dedup_grain_present_passes_grain_check() -> None:
+    exp = translated(f"avg by (postgresql_database_name) (max by (postgresql_database_name, service_instance_id) ({BACKENDS}))")
+    assert ("grain", "nit") not in checks(request("avg:postgresql.connections{*} by {db}"), exp)
 
 
 def test_derived_metric_is_a_nit() -> None:
@@ -226,6 +238,9 @@ def test_review_md_known_deviations_are_flagged() -> None:
     assert w6["verdict"] == "block" and any("nested aggregation" in r for r in w6["reasons"])
     docker = {r["source_path"]: r for r in le.lint_dashboard("docker_daemon/docker_dashboard")}
     assert docker["widgets[6].definition.requests[0]"]["verdict"] == "block"
+    # A1: no dedup grain on the connections metric (plan 05 Task 4).
+    w1 = pg["widgets[1].definition.requests[0]"]
+    assert w1["verdict"] == "nit" and any("grain" in r for r in w1["reasons"])
 
 
 def test_results_follow_case_order() -> None:

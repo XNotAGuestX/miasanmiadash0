@@ -1,0 +1,91 @@
+# Claude Haiku cross-check of each candidate against the Datadog request (scripts/crosscheck.py input).
+# haiku verdicts for kafka/kafka_dashboard. Triage only, never approval: humans set reviewed: true.
+verifier: haiku
+meta:
+  tool: scripts/crosscheck.py
+  model: claude-haiku-5-5
+  effort: medium
+  max_tokens: 16000
+  structured_output: output_config.format json_schema
+  system_prompt_sha256: e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971
+  schema_sha256: db0053dd6f2478874e3174dd255c1254e11ec857cb649947efa0e76e6856f9c1
+  cache: fixtures/oracle/verify/.haiku-cache
+results:
+- source_path: widgets[3].definition.widgets[2].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - The first term uses min(rate(...)) while Datadog's query1 uses max, so the aggregation differs.
+  - The $env template variable (prefix env, default *) should become env=~"$env", but the candidate drops it, changing the set of series.
+  - 'The label operation is not in the observed dataset labels for kafka.isr.operation.count (observed: group, topic, type, service_name, service_instance_id). The expand/shrink split likely needs the observed label name (probably type), so the matchers as written may select nothing.'
+  - 'The mapping itself is reasonable: kafka.isr.operation.count is a monotonic sum measuring ISR operations, so rate() is valid and the outcome translated is correct.'
+  checks:
+    quantity: ok
+    unit: ok
+    aggregation: differs
+    grouping: differs
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: 083bdb14c7a07520
+- source_path: widgets[3].definition.widgets[2].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - The expand selector uses otel_metric_type="gauge", but kafka.isr.operation.count is defined as a monotonic sum and the dataset only has type sum, so that selector matches no series and the difference cannot be computed.
+  - The Datadog query carries the {$env} template variable (prefix env, default *), which should become env=~"$env" on both selectors. The candidate drops it, so the series set differs from the Datadog request.
+  - 'The metric mapping itself is reasonable: isr_expands and isr_shrinks map to operation=expand and operation=shrink on kafka.isr.operation.count, rate() is applied to a monotonic sum, and the unit (operations per second) matches. The translation outcome is therefore correct, but the PromQL is not.'
+  checks:
+    quantity: ok
+    unit: ok
+    aggregation: ok
+    grouping: ok
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: d7ac46557ab507e7
+- source_path: widgets[3].definition.widgets[2].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - The candidate multiplies the result by 100, a numeric constant that does not appear in the Datadog source (query1 - query2). The converter must not apply scaling; any percent-vs-ratio note belongs in notes only.
+  - The selector matches label operation="expand"/"shrink", but the dataset's observed labels for kafka.isr.operation.count are group, topic, type, service_name and service_instance_id. The operation label is not observed, so the PromQL would select nothing. The correct dataset label (possibly type) is not verified here.
+  - The Datadog {$env} filter is a template variable with tag prefix env and default *, so it should become an env label matcher (env=~"$env"). The candidate drops it, so it selects a different set of series.
+  - The Datadog metrics kafka.replication.isr_expands.rate and isr_shrinks.rate map to the expand and shrink counts of the same OTel metric, so the quantity and max aggregation are plausibly equivalent. Because the label and scaling problems remain, the candidate is not an exact translation.
+  checks:
+    quantity: ok
+    unit: differs
+    aggregation: ok
+    grouping: ok
+    series_count: differs
+    outcome: differs
+  method: haiku
+  cache: 73693e74b10ced17
+- source_path: widgets[3].definition.widgets[2].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - The first query uses a fixed [5m] range; the converter may only use $__rate_interval as a range.
+  - The Datadog $env template variable has tag prefix env and default *, so it should become env=~"$env" on both selectors; the candidate drops it, so the series set is wider than the Datadog request.
+  - 'The quantity matches: isr_expands and isr_shrinks map to kafka.isr.operation.count with operation=expand and operation=shrink, a monotonic sum, so rate() is valid and the translated outcome is appropriate.'
+  - Aggregation (max over all series, no grouping) matches the Datadog request.
+  checks:
+    quantity: ok
+    unit: ok
+    aggregation: ok
+    grouping: ok
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: 4d856726984572a6
+- source_path: widgets[3].definition.widgets[2].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons:
+  - The candidate is blocked with MISSING_METRIC_MAPPING, and no OTel metric definitions were supplied (otel_metric_definitions is empty), so no exact translation of kafka.replication.isr_expands.rate or isr_shrinks.rate can be verified.
+  - 'Blocking is consistent with the rules: without a defined OTel counter measuring ISR expansions and shrinkages, the formula query1 - query2 cannot be mapped deterministically.'
+  - If an OTel monotonic sum for ISR expands and shrinks is later defined, the expected translation would be rate() over each counter with the env matcher, but that cannot be assessed from the input.
+  checks:
+    quantity: n/a
+    unit: n/a
+    aggregation: n/a
+    grouping: n/a
+    series_count: n/a
+    outcome: ok
+  method: haiku
+  cache: c0a6908931229ea7

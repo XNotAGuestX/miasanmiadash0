@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The candidate multiplies by 100, a numeric constant that is not in the Datadog source. The OTel metric unit is '1' (ratio), and nothing in the request indicates a percent conversion, so the scale must not be applied in promql; it can only be proposed in notes with a documentation link.",
+      "Because of the injected 100 scale, the candidate's unit does not match the Datadog request's unit.",
+      "The Datadog query filters on {$scope,$host}. $scope has no prefix and default *, so it is correctly dropped. $host has prefix 'host' and default *, so it should become a matcher host=~\"$host\" (the observed dataset labels do not include a host label, so the exact label name needs confirmation). The candidate omits this matcher.",
+      "The Datadog query also filters on {$key} (prefix 'key', default *), which should become a matcher such as key=~\"$key\". The candidate omits it too, so its series set is wider than the Datadog request's.",
+      "Quantity (redis.mem.fragmentation_ratio vs redis.memory.fragmentation_ratio, both ratio gauges), aggregation (avg) and the translated outcome are correct. No grouping is specified, so none is needed."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

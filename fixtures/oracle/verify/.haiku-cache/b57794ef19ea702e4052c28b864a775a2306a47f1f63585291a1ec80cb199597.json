@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Query1 is redis.stats.keyspace_hits, but the candidate uses redis.keyspace.misses for all three terms, so the numerator and denominator measure misses instead of hits and the hit rate is wrong (it evaluates to 0 or a constant 50 by construction).",
+      "The candidate never selects a hits metric; the OTel definition of redis.keyspace.hits is not provided, so the correct translation needs that metric (or MISSING_METRIC_MAPPING if none exists).",
+      "The host template variable (prefix host, default *) should become host=~\"$host\" on the selector; the candidate drops it, changing the series set.",
+      "The key template variable (prefix key, default *) should become a matcher on the key label; the candidate drops it without checking whether a key label exists in the dataset.",
+      "The *100 scale comes from the Datadog formula and is kept correctly, and the translated outcome is appropriate for a formula over two sums."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

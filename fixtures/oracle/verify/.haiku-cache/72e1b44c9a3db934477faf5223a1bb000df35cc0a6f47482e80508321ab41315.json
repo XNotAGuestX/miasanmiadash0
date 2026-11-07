@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "differs",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "Candidate blocks with MISSING_METRIC_MAPPING, but the OpenTelemetry redis receiver defines redis.clients.connected (gauge, count of connected clients), which measures the same quantity as Datadog redis.net.clients.",
+      "otel_metric_definitions is empty, so the mapping is not verifiable from the supplied catalog; confirm redis.clients.connected is in the catalog before accepting the block.",
+      "If the mapping exists, the exact translation would be a gauge selector {otel_metric_name=\"redis.clients.connected\", otel_metric_type=\"gauge\"} with no rate(), the host filter as host_name=~\"$host\" (label name to be confirmed against observed dataset labels), and the scope variable dropped, since it has no prefix and defaults to *.",
+      "The key variable has prefix key and default *, so it would become a matcher on the key label only if that label is observed in the dataset; otherwise it should be treated per the dataset's observed labels."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

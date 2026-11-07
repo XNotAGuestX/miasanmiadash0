@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The candidate multiplies the result by 100, a numeric constant that is not in the Datadog source (sum:nginx.net.waiting{$scope} has no scaling). The rules forbid this, so the PromQL must not include it.",
+      "Apart from the constant, the mapping is right: nginx.connections_current with state=\"waiting\" measures the same quantity (waiting connections, unit {connections}) and state is an observed dataset label.",
+      "The $scope template variable has no prefix and default *, so dropping it is correct. Aggregation is sum with no grouping, which matches the Datadog query.",
+      "Outcome translated is correct because an exact translation exists; the fix is to remove the 100 * factor."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

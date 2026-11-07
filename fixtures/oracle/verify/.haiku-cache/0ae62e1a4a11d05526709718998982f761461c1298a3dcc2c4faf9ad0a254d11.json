@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The candidate multiplies the result by the constant 100, which is not in the Datadog source. Nothing in the request says percent, so this is an unjustified numeric constant and violates the hard rules. Any unit scale should go in notes with a documentation link, not in the promql.",
+      "The OTel metric container.network.io.usage.rx_bytes carries an interface attribute. The candidate's avg by (container_image_name) averages across interface series instead of first summing bytes per container, so the aggregation does not match a per-container Datadog series.",
+      "Grouping by docker_image maps correctly to container_image_name, and the rate over a monotonic sum with $__rate_interval is an acceptable quantity match for bytes received. The scope template variable has no prefix and default '*', so dropping it is correct.",
+      "The request is translatable and should not be blocked, but the candidate is not the exact translation. The correct form would sum the rate by container_image_name, then average, with no constant."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

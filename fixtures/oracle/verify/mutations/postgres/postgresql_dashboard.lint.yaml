@@ -99,15 +99,18 @@ results:
   verdict: block
   reasons:
   - 'aggregation: query1: Datadog aggregator avg, PromQL sum'
+  - 'grain: query1: postgresql.backends has no dedup grain by (service_instance_id) (plan 05 Task 4)'
 - source_path: widgets[1].definition.requests[0]#drop_by_label
   verdict: block
   reasons:
   - 'grouping: query1: Datadog by {db}, PromQL by (); answer labels: db->postgresql_database_name'
   - 'grouping: query1: answer maps tag db -> postgresql_database_name, PromQL groups by ()'
+  - 'grain: query1: postgresql.backends has no dedup grain by (service_instance_id) (plan 05 Task 4)'
 - source_path: widgets[1].definition.requests[0]#add_scale
   verdict: block
   reasons:
   - 'literal: constant 100 is not in the Datadog source'
+  - 'grain: query1: postgresql.backends has no dedup grain by (service_instance_id) (plan 05 Task 4)'
 - source_path: widgets[1].definition.requests[0]#sibling_metric
   verdict: pass
   reasons: []

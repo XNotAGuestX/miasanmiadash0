@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "query1 sums kafka.consumer_lag across series, but the candidate uses avg by (host_name, group) for kafka.consumer_group.lag; the aggregation differs and the result is an average instead of a total.",
+      "Grouping does not match: the Datadog request groups by host, consumer_group and env, but the candidate groups by host_name and group. host_name and env are not in the observed dataset labels, so the label names need to be corrected (host is not confirmed either) and env is missing from the candidate.",
+      "The consumer_group and env template variables (prefix-tagged, default *) should become matchers such as group=~\"$consumer_group\" and an env matcher, but the candidate drops them, so the series set differs from the request. The topic variable has no matcher in the Datadog request either, so it is correctly omitted.",
+      "query2 (sum by offset) matches the Datadog sum aggregation, and the outcome (translated, no functions) is correct."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}
