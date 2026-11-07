@@ -40,7 +40,7 @@
 
 **Files:**
 - Create: `scripts/hold-pg-connections.sh`
-- Test: `tests/scripts/hold-pg-connections.test.ts` (runs the script with `--dry-run`)
+- Test: `tests/scripts/test_hold_pg_connections.py` (runs the script with `--dry-run`)
 
 **Interface:** `scripts/hold-pg-connections.sh <count> <seconds> [--dry-run]`.
 
@@ -55,7 +55,7 @@ With `--dry-run`, print the commands instead of running them.
   - `dry run prints count sessions`: with a stub `docker` on `PATH` returning `100` and `8`, `70 900 --dry-run` prints 70 `pg_sleep(900)` lines.
   - `refuses to exceed max_connections`: `95 60` exits 1.
   - `cleanup releases connections`: under the stub, sending SIGINT leaves no stub child processes.
-- [ ] **Step 2: Implement the script.** Run `npx vitest run tests/scripts`; it must PASS. Run `shellcheck scripts/hold-pg-connections.sh` if it's available. Commit.
+- [ ] **Step 2: Implement the script.** Run `uv run migrator test tests/scripts`; it must PASS. Run `shellcheck scripts/hold-pg-connections.sh` if it's available. Commit.
 - [ ] **Step 3: Work out the crossing numbers.** Usage is (current + N) / max. At current ≈ 8 and max = 100:
   - `N = 75` gives about 0.83, past the 0.8 warning (degraded);
   - `N = 85` gives about 0.93, past the 0.9 critical (failed).

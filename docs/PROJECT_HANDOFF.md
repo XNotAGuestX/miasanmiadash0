@@ -26,7 +26,7 @@ At initialization on 2026-11-07:
 - The required [starter repository](https://github.com/vimouzin/dash0-dashboard-migrator) showed only a README. No starter runtime or stack was available to preserve.
 - These documents initialize the project; they do not implement the migrator or establish fork ancestry.
 
-Default to TypeScript with Node.js 22+, npm, Commander, Zod, Vitest, tsx, and tsc. Use built-in `fetch`, one package, JSON configuration, and ordinary local files. Pin actual dependency versions and commit a lockfile during bootstrap. Select an available maintained Node release satisfying this baseline and record the tested version.
+Use Python 3.13 managed by uv: argparse for the CLI, pydantic for boundary validation, pyyaml, pytest, mypy --strict and ruff. Use the standard library for HTTP, one package, JSON configuration, and ordinary local files. Pin dependency versions in the committed `uv.lock` (`uv add` / `uv sync`; no `pip install`), and record the interpreter in `.python-version`.
 
 Do not spend hackathon time comparing equivalent frameworks. Change the defaults only for a concrete team constraint or existing implementation, and record the decision in `STATUS.md`.
 
@@ -104,7 +104,7 @@ The monitor uses a rolling lookback and one critical threshold. Import the first
 **Decision (2026-11-07, user):** translation does **not** need to be source-agnostic. There is no vendor-neutral intermediate model. Each source provider owns its source-specific parsing, model, mapping and translation from start to finish, so a common abstraction never limits source-specific semantics. The shared requirement is one interface for choosing a provider, plus the shared output contract it produces.
 
 ```ts
-// src/source/provider.ts — illustrative; finalize the types during bootstrap
+// src/migrator/source/provider.py — illustrative; finalize the types during bootstrap
 interface SourceProvider {
   readonly id: string; // value of --source, e.g. "datadog"
   // Online read of explicitly selected assets; original JSON retained unchanged.
@@ -117,13 +117,13 @@ interface SourceProvider {
 }
 
 // CompileResult = Perses dashboards + PromQL check conditions
-//               + per-item outcomes + diagnostics (shared types in src/target.ts)
+//               + per-item outcomes + diagnostics (shared types in src/migrator/target.py)
 const providers: Record<string, SourceProvider> = { datadog: datadogProvider };
 ```
 
 - `fetch` and `compile` require `--source <id>`. An unknown ID fails with exit `1` and lists the known IDs. The provider ID and compiler version are recorded in `report.json` and `manifest.json`. `import` reads the provider ID from the manifest only for reporting; it has no source logic.
 - `fetch` and `load` return the same asset shape, so API and file inputs go through the same `compile`.
-- Shared code (CLI, report, manifest, validation, destination) depends only on `SourceProvider` and the shared output types. Only `source/provider.ts` imports a provider's directory, and providers don't import each other.
+- Shared code (CLI, report, manifest, validation, destination) depends only on `SourceProvider` and the shared output types. Only `source/provider.py` imports a provider's directory, and providers don't import each other.
 - Diagnostic codes and fields are shared; a provider may add codes, and `sourcePath` uses the provider's own JSON paths.
 - Adding a vendor means one new provider directory and one table entry. This is a static interface, not a plugin framework: no dynamic loading, discovery, or config-driven registration. Other vendors remain P2.
 
@@ -133,23 +133,23 @@ Suggested implementation tree, **not files currently implemented**:
 
 ```text
 src/
-  cli.ts                  # arguments, --source selection, command wiring, exit status
-  source/provider.ts      # SourceProvider interface + static providers table
+  cli.py                  # arguments, --source selection, command wiring, exit status
+  source/provider.py      # SourceProvider interface + static providers table
   source/datadog/         # the only P0 provider; all Datadog-specific translation
-    index.ts              # datadogProvider: implements SourceProvider
-    api.ts                # read dashboard/monitor by ID; retain original JSON
-    files.ts              # load one exported asset per file
-    parse-query.ts        # tokenizer + bounded grammar; full input consumption
-    model.ts              # parsed Datadog Query, Widget, Monitor
-    mapping.ts            # validate/load the Datadog telemetry mapping JSON
-    compile-query.ts      # typed query -> PromQL
-    dashboard.ts          # flat supported widgets -> Perses
-    monitor.ts            # narrow monitor subset -> PromQL check condition
-  target.ts               # shared output types: Perses dashboard, check condition, Diagnostic, outcomes
-  promql.ts               # shared PromQL label-value escaping and selector rendering
-  destination/dash0.ts    # check-rule body rendering, import and read-back; no translation logic
-  validation.ts           # output and manifest boundaries
-  report.ts               # item accounting, summary, artifact manifest
+    __init__.py           # datadogProvider: implements SourceProvider
+    api.py                # read dashboard/monitor by ID; retain original JSON
+    files.py              # load one exported asset per file
+    parse_query.py        # tokenizer + bounded grammar; full input consumption
+    model.py              # parsed Datadog Query, Widget, Monitor
+    mapping.py            # validate/load the Datadog telemetry mapping JSON
+    compile_query.py      # typed query -> PromQL
+    dashboard.py          # flat supported widgets -> Perses
+    monitor.py            # narrow monitor subset -> PromQL check condition
+  target.py               # shared output types: Perses dashboard, check condition, Diagnostic, outcomes
+  promql.py               # shared PromQL label-value escaping and selector rendering
+  destination/dash0.py    # check-rule body rendering, import and read-back; no translation logic
+  validation.py           # output and manifest boundaries
+  report.py               # item accounting, summary, artifact manifest
 fixtures/
   datadog/                # synthetic dashboard and monitor; incompatibility cases
   mappings/               # explicit demo mapping
@@ -189,7 +189,7 @@ Implement the `max` happy path first. Allow metric/tag identifier characters fou
 
 ### Metric and label mapping
 
-The Datadog provider owns its mapping format: a small versioned JSON contract, validated by Zod. The `source` field must match the selected `--source`; a mismatch blocks compilation. Another provider may define its own format.
+The Datadog provider owns its mapping format: a small versioned JSON contract, validated by a strict pydantic model. The `source` field must match the selected `--source`; a mismatch blocks compilation. Another provider may define its own format.
 
 ```json
 {
@@ -242,20 +242,20 @@ The official [check-rule import](https://www.dash0.com/docs/api-reference/operat
 
 ## CLI and artifact contract
 
-**Proposed commands, to be implemented.** The `dev` script will invoke `tsx src/cli.ts`.
+**Proposed commands, to be implemented.** Every command goes through the `migrator` console script: `uv run migrator <command>` (see [00-context §5](handoff/00-context.md#5-stack)).
 
 ```sh
 # Online source read; credentials come from environment variables.
-npm run dev -- fetch --source datadog --dashboard-id DEMO_ID --monitor-id 123 --out private-input/demo
+uv run migrator fetch --source datadog --dashboard-id DEMO_ID --monitor-id 123 --out private-input/demo
 
 # Offline deterministic compilation; no network calls or destination writes.
-npm run dev -- compile --source datadog --dashboard private-input/demo/dashboard.json --monitor private-input/demo/monitor.json --mapping fixtures/mappings/demo.json --out artifacts/demo
+uv run migrator compile --source datadog --dashboard private-input/demo/dashboard.json --monitor private-input/demo/monitor.json --mapping fixtures/mappings/demo.json --out artifacts/demo
 
 # Inspect outputs, then check the import plan without creating anything.
-npm run dev -- import --input artifacts/demo --dry-run
+uv run migrator import --input artifacts/demo --dry-run
 
 # Explicit destination write, using env-configured API host, dataset, and token.
-npm run dev -- import --input artifacts/demo
+uv run migrator import --input artifacts/demo
 ```
 
 Also permit offline compilation directly from committed synthetic fixtures. Require at least one source asset; dashboard-only/monitor-only runs are valid for development. Produce:

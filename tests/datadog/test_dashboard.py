@@ -236,6 +236,32 @@ def test_reads_template_variable_defaults() -> None:
     ) == [TemplateVariable("s", None, '["a","b"]')]
 
 
+def test_empty_defaults_list_means_no_default() -> None:
+    assert read_template_variables(
+        {"template_variables": [{"name": "db", "prefix": "db", "defaults": []}]}
+    ) == [TemplateVariable("db", "db", None)]
+    # A dashboard fetched from the API may carry `defaults: []`; widgets using the
+    # variable must not be blocked with UNSUPPORTED_TEMPLATE_VARIABLE.
+    c = compile_body(
+        body(
+            ts({"q": "avg:postgresql.connections{$db}"}),
+            ts({"q": "avg:postgresql.connections{$host}"}),
+            variables=[
+                {"name": "db", "prefix": "db", "defaults": []},
+                {"name": "host", "prefix": "nomapping", "defaults": []},
+            ],
+        )
+    )
+    assert [i.outcome for i in c.items] == ["translated", "translated", "translated"]
+    assert "UNSUPPORTED_TEMPLATE_VARIABLE" not in [d.code for d in c.diagnostics]
+    assert c.dashboard is not None
+    [var] = c.dashboard["spec"]["variables"]
+    assert var["spec"]["name"] == "db"
+    dropped = [d for d in c.diagnostics if d.code == "TEMPLATE_VARIABLE_DROPPED"]
+    assert [d.source_path for d in dropped] == ["widgets[1].definition.requests[0].q"]
+    assert "(no default)" in dropped[0].message
+
+
 def test_maps_prefixed_variables_to_list_variable() -> None:
     c = compile_body(
         body(
@@ -247,10 +273,11 @@ def test_maps_prefixed_variables_to_list_variable() -> None:
     [var] = c.dashboard["spec"]["variables"]
     assert var["kind"] == "ListVariable"
     assert var["spec"]["plugin"]["spec"]["labelName"] == "postgresql_database_name"
-    assert 'postgresql_database_name=~"$db"' in queries_of(c, "widget-0")[0]["query"]
+    assert 'postgresql_database_name=~"^($db)$"' in queries_of(c, "widget-0")[0]["query"]
     infos = [d for d in c.diagnostics if d.source_path == "template_variables[0]"]
     assert [d.code for d in infos] == ["OPTION_IGNORED"]
     assert "unverified in Dash0" in infos[0].message
+    assert "anchored" in infos[0].message and "not escaped" in infos[0].message
     assert validate_dashboard(c.dashboard) == []
 
 
@@ -408,3 +435,28 @@ def test_diagnostics_are_ordered_by_item_then_source_path() -> None:
         return (0, path)
 
     assert c.diagnostics == sorted(c.diagnostics, key=key)
+
+
+def test_group_option_diagnostics_sort_at_the_group_position() -> None:
+    group = {
+        "definition": {
+            "type": "group",
+            "title": "G",
+            "background_color": "blue",
+            "widgets": [ts({"q": "avg:postgresql.connections{*}"}, yaxis={})],
+        }
+    }
+    c = compile_body(body(ts({"q": "avg:postgresql.connections{*}"}, yaxis={}), group))
+    assert [d.source_path for d in c.diagnostics if d.code == "OPTION_IGNORED"] == [
+        "widgets[0].definition.yaxis",
+        "widgets[1].definition.background_color",
+        "widgets[1].definition.widgets[0].definition.yaxis",
+    ]
+
+
+def test_source_paths_sort_by_numeric_index() -> None:
+    requests = [{"q": "avg:postgresql.connections{*}", "style": {}} for _ in range(11)]
+    c = compile_body(body(ts(*requests)))
+    assert [d.source_path for d in c.diagnostics if d.code == "OPTION_IGNORED"] == [
+        f"widgets[0].definition.requests[{k}].style" for k in range(11)
+    ]
