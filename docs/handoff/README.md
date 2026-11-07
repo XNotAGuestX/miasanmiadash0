@@ -24,13 +24,14 @@ Every issue is self-contained: summary, context, files, acceptance criteria, ver
 | 1 | [#107](https://github.com/XNotAGuestX/thinchackdash/issues/107) | **Default aggregator**: `avg` + `DEFAULT_AGGREGATOR_APPLIED` | `compile_query.py`, goldens | hotspot, 1st |
 | 1 | [#108](https://github.com/XNotAGuestX/thinchackdash/issues/108) | **Template-variable promotion** per mapped query (#96 R1) | `dashboard.py` `_promote_variables`, goldens | hotspot, 2nd |
 | 1 | [#109](https://github.com/XNotAGuestX/thinchackdash/issues/109) | **Panel heights**: documented layout scale | `dashboard.py` `_GridBuilder`, goldens | hotspot, 3rd |
+| 1 | [#123](https://github.com/XNotAGuestX/thinchackdash/issues/123) | **Mapping table**: `--mapping` takes a folder or repeats; all files merge into one table; `system.*` moves to `host.json`; file-level `labels` | `cli.py`, `convert.py`, `mapping.py`, `mappings/datadog/*.json`, `build_expected.py`, goldens | hotspot, 4th |
 | 1 | [#110](https://github.com/XNotAGuestX/thinchackdash/issues/110) | **Smoke check**: read-only Dash0 query per panel → `smoke.json` | new script, test | any time |
 | 2 | [#111](https://github.com/XNotAGuestX/thinchackdash/issues/111)–[#115](https://github.com/XNotAGuestX/thinchackdash/issues/115) | **Mapping evidence per service** (postgres, kafka, redis, nginx, docker): vendor row or deviation, type match, both sources in `ref`, gaps, golden | `mappings/datadog/<svc>.json`, own golden | any time; postgres is a hotspot |
 | 2 | [#116](https://github.com/XNotAGuestX/thinchackdash/issues/116)–[#120](https://github.com/XNotAGuestX/thinchackdash/issues/120) | **Datadog functions**: `.weighted()`, `top()`, `.as_count()`/`.as_rate()`, `abs()`, `.rollup()`/`.fill()`; exact translation or documented block | `compile_query.py`/`formula.py`, goldens | hotspot, one at a time |
 | 3 | [#121](https://github.com/XNotAGuestX/thinchackdash/issues/121) | **Agent0 review** (advisory): per-panel `same / different / unsure` → `agent0-check.json`, flagged separately; `status: error` if the call fails | new script, test | last |
 
 Dependencies:
-- #111–#115 need #105 and #106.
+- #111–#115 need #105, #106 and #123.
 - #116–#120 need #107; #118 also needs #106.
 - #121 needs #110.
 
@@ -41,8 +42,9 @@ Issues labelled `hotspot:converter` change the converter and regenerate `fixture
 1. #107
 2. #108
 3. #109
-4. #111 (Postgres golden refresh)
-5. the function issues, in any order
+4. #123
+5. #111 (Postgres golden refresh)
+6. the function issues, in any order
 
 Before each merge, the agent:
 1. rebases on `main`;

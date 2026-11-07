@@ -63,9 +63,8 @@ def test_only_unprefixed_variables_are_dropped() -> None:
     assert be.rule_warnings(request("avg:x{$host}"), VARS) == []
 
 
-def test_mapping_file_names_match_the_converter() -> None:
-    names = {svc: be.MAPPING_FILE.get(svc, svc) for svc in ("docker_daemon", "redisdb", "postgres")}
-    assert names == {"docker_daemon": "docker", "redisdb": "redis", "postgres": "postgres"}
+def test_expectations_use_the_whole_mapping_directory() -> None:
+    assert be.build("redisdb/overview")["mapping"] == "mappings/datadog"
 
 
 def test_request_less_widgets_can_be_reviewed_by_override(monkeypatch: pytest.MonkeyPatch) -> None:

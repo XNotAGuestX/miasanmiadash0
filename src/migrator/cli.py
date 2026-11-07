@@ -110,7 +110,12 @@ def build_parser() -> argparse.ArgumentParser:
     conv = sub.add_parser("convert", help="convert source dashboards to Perses (offline)")
     conv.add_argument("--source", required=True, help="source provider id, e.g. datadog")
     conv.add_argument("--input", required=True, nargs="+", help="input files or folders")
-    conv.add_argument("--mapping", required=True, help="reviewed mapping file (JSON)")
+    conv.add_argument(
+        "--mapping",
+        required=True,
+        action="append",
+        help="reviewed mapping file (JSON) or a directory of them; repeatable",
+    )
     conv.add_argument("--out", required=True, help="output directory (must be empty)")
     conv.add_argument("--format", choices=["json", "yaml"], default="json")
     conv.add_argument("--project", default="datadog-migration", help="Perses project name")

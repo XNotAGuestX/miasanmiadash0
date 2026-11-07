@@ -10,7 +10,7 @@ export DASH0_DATASET=default     # optional, this is the default
 docker compose -f scripts/review/docker-compose.yaml up -d   # PERSES_PORT=18080 if 8080 is taken
 
 uv run migrator convert --source datadog --input fixtures/datadog/integrations-core/postgres \
-  --mapping mappings/datadog/postgres.json --out out/convert/postgres
+  --mapping mappings/datadog --out out/convert/postgres
 uv run scripts/review/load_local.py out/convert/postgres --perses-url http://localhost:8080
 ```
 

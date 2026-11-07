@@ -68,7 +68,7 @@ Point at one query, its 15-minute lookback and both thresholds.
 ```bash
 uv run migrator convert --source datadog \
   --input fixtures/datadog/integrations-core/postgres \
-  --mapping mappings/datadog/postgres.json --out /tmp/pg-demo
+  --mapping mappings/datadog --out /tmp/pg-demo
 ```
 
 Real output:
@@ -83,7 +83,7 @@ total: dashboards 0 translated/2 partial/0 blocked, widgets 12 translated/0 part
 
 Exit code `2`, because something is partial or blocked. Show:
 
-- `mappings/datadog/postgres.json`: the explicit Datadog → OTel pairs, each with its evidence `ref` and `reviewed`;
+- `mappings/datadog/postgres.json` and `host.json`: the explicit Datadog → OTel pairs, each with its evidence `ref` and `reviewed`;
 - `dashboards/postgres-metrics.json`: the Connections panel, `avg by (postgresql_database_name) (max by (postgresql_database_name, service_instance_id) ({otel_metric_name="postgresql.backends", otel_metric_type="sum"}))` (the inner `max` deduplicates series after a collector restart);
 - `check-rules/<slug>.json`: `avg_over_time((<connection ratio>)[15m:1m]) > $__threshold`, thresholds `{degraded: 0.8, failed: 0.9}`, `enabled: false`, no `id`;
 - `rules/<slug>.prometheus.json`: the same condition as warning and critical Prometheus rules.

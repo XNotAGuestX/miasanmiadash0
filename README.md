@@ -28,7 +28,7 @@ uv run migrator lint         # ruff
 ```bash
 uv run migrator convert --source datadog \
   --input fixtures/datadog/integrations-core/postgres \
-  --mapping mappings/datadog/postgres.json --out /tmp/pg-out
+  --mapping mappings/datadog --out /tmp/pg-out
 ```
 
 Output of that command:
@@ -41,13 +41,13 @@ BLOCKED    postgres/monitors/replication_delay.json monitor
 total: dashboards 0 translated/2 partial/0 blocked, widgets 12 translated/0 partial/27 blocked, monitors 1 translated/0 partial/1 blocked, skipped files 0
 ```
 
-`--input` takes files or folders, which are read recursively. `--out` must be empty. It receives:
+`--input` takes files or folders, which are read recursively. `--mapping` takes a mapping file or a folder; a folder means its `*.json` files, sorted, not recursive. Repeat `--mapping` to add more. All files merge into one table; a metric defined in two files is an input error naming both. `--out` must be empty. It receives:
 
 - `dashboards/<slug>.json`: Perses dashboards, the Dash0 import body;
 - `check-rules/<slug>.json`: Dash0 check-rule bodies, disabled and without an `id`;
 - `rules/<slug>.prometheus.json`: Prometheus rule groups, warning then critical;
 - `source/`: byte copies of the inputs;
-- `report.json`: an outcome per dashboard, widget and monitor, plus every diagnostic;
+- `report.json`: an outcome per dashboard, widget and monitor, every diagnostic, and each mapping file's name and sha256;
 - `manifest.json`: every file with its sha256 and whether it is eligible to publish.
 
 Options: `--format yaml` writes the dashboards and Prometheus rules as YAML. `--project <name>` sets the Perses project; the default is `datadog-migration`.
@@ -100,7 +100,7 @@ Exit codes:
 
 ```bash
 uv run migrator fetch --source datadog --dashboard-id abc-def-123 --monitor-id 4242 --out /tmp/dd-in
-uv run migrator convert --source datadog --input /tmp/dd-in --mapping mappings/datadog/postgres.json --out /tmp/dd-out
+uv run migrator convert --source datadog --input /tmp/dd-in --mapping mappings/datadog --out /tmp/dd-out
 ```
 
 > **Not yet run live.** Waits on a Datadog account (blocker B3). The argument and site validation paths have been run; the requests have only been tested against a fake API, including a fetch → convert round trip that matches the Postgres golden byte for byte.
@@ -150,7 +150,7 @@ A missing variable gives `error: missing env: <NAMES>` and exit 1, without print
 - `rate`: `rate(...[$__rate_interval])` for per-second counters;
 - `expression`: a reviewed PromQL template, such as the deduplicated connection ratio.
 
-Entries can also carry fixed label matchers, unit scale, label renames and a deduplication grain. An unmapped metric or label blocks the query. Entries with `reviewed: null` still convert but carry an `UNREVIEWED_MAPPING` warning; only a human sets `reviewed`. Files exist for `postgres`, `kafka`, `docker`, `redis` and `nginx`.
+Entries can also carry fixed label matchers, unit scale, label renames and a deduplication grain. A file may set top-level `labels`: entries without their own `labels` inherit them, and an entry's own `labels` replace them whole. An unmapped metric or label blocks the query. Entries with `reviewed: null` still convert but carry an `UNREVIEWED_MAPPING` warning; only a human sets `reviewed`. Files exist for `postgres`, `kafka`, `docker`, `redis`, `nginx` and `host` (`system.*` metrics).
 
 **Monitors:**
 - Supported: `query alert` / `metric alert` with `<avg|max|min|sum>(last_<n><m|h|d>):<query> <op> <number>`, a window ≤ 7 days, and options within the reviewed allowlist.
