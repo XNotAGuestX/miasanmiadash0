@@ -66,8 +66,7 @@ def _cmd_fetch(args: argparse.Namespace) -> int:
     import os
 
     from migrator.fetch import run_fetch
-    from migrator.source.asset import FetchSelection
-    from migrator.source.datadog.api import SourceFetchError
+    from migrator.source.asset import FetchSelection, SourceFetchError
 
     sel = FetchSelection(tuple(args.dashboard_id or ()), tuple(args.monitor_id or ()))
     try:

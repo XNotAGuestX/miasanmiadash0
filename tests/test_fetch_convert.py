@@ -1,6 +1,8 @@
 """Round trip (plan 10 Task 2): fetch by ID, then convert the fetched folder.
 
-Compared against the P1 golden (#82), which stands in for the plan's P0 golden.
+Compared against the P1 golden (#82), which stands in for the plan's P0 golden. The
+fake API responses carry the server-side fields real GET responses add, so convert
+is shown to tolerate them.
 """
 
 from __future__ import annotations
@@ -23,13 +25,41 @@ MONITOR_ID = "4242"
 ENV = {"DD_API_KEY": "ddapi_SECRET", "DD_APP_KEY": "ddapp_SECRET"}
 
 
+# Server-side fields the real GET endpoints add around the definition (Datadog API
+# reference: Dashboards "Get a dashboard", Monitors "Get a monitor's details").
+DASHBOARD_API_FIELDS = {
+    "id": DASHBOARD_ID,
+    "author_handle": "someone@example.com",
+    "author_name": "Someone",
+    "created_at": "2026-01-02T03:04:05.000000+00:00",
+    "modified_at": "2026-01-03T03:04:05.000000+00:00",
+    "url": f"/dashboard/{DASHBOARD_ID}/postgres-metrics",
+    "is_read_only": False,
+    "notify_list": [],
+    "restricted_roles": [],
+}
+MONITOR_API_FIELDS = {
+    "id": int(MONITOR_ID),
+    "created": "2026-01-02T03:04:05.000000+00:00",
+    "modified": "2026-01-03T03:04:05.000000+00:00",
+    "creator": {"email": "someone@example.com", "handle": "someone@example.com", "name": "S"},
+    "overall_state": "OK",
+    "org_id": 1,
+    "deleted": None,
+    "multi": False,
+    "restricted_roles": None,
+}
+
+
 def fake_datadog(req: HttpRequest) -> HttpResponse:
     if req.url.endswith(f"/api/v1/dashboard/{DASHBOARD_ID}"):
-        return HttpResponse(200, (PG / "dashboards/postgresql_dashboard.json").read_bytes())
+        body = json.loads((PG / "dashboards/postgresql_dashboard.json").read_text())
+        return HttpResponse(200, json.dumps({**DASHBOARD_API_FIELDS, **body}).encode())
     if req.url.endswith(f"/api/v1/monitor/{MONITOR_ID}"):
         wrapped = json.loads((PG / "monitors/percent_usage_connections.json").read_text())
         # The API returns the inner definition, not integrations-core's wrapper.
-        return HttpResponse(200, json.dumps(wrapped["definition"]).encode())
+        body = {**MONITOR_API_FIELDS, **wrapped["definition"]}
+        return HttpResponse(200, json.dumps(body).encode())
     return HttpResponse(404, b'{"errors": ["Not found"]}')
 
 
@@ -45,7 +75,7 @@ def test_fetched_folder_converts(tmp_path: Path) -> None:
         ConvertOptions(
             source="datadog",
             inputs=[str(fetched)],
-            mapping="mappings/datadog/postgres.json",
+            mapping="fixtures/mappings/postgres.json",  # the frozen copy, as the issue asks
             out=str(out),
         )
     )
@@ -85,3 +115,8 @@ def test_cli_fetch_rejects_empty_selection(
 def test_unknown_source_is_input_error(tmp_path: Path) -> None:
     with pytest.raises(InputError, match="unknown --source"):
         run_fetch("nope", FetchSelection(("a",)), str(tmp_path / "o"), ENV, fake_datadog)
+
+
+def test_shared_cli_imports_no_source_specific_code() -> None:
+    # AGENTS: the shared CLI stays free of source-specific logic.
+    assert "migrator.source.datadog" not in Path("src/migrator/cli.py").read_text()

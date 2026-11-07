@@ -14,7 +14,7 @@ from typing import Literal
 
 from migrator.http import HttpRequest, HttpSend, HttpTransportError, urllib_send
 from migrator.input import InputError
-from migrator.source.asset import FetchSelection
+from migrator.source.asset import FetchSelection, SourceFetchError
 
 SAFE_ID = re.compile(r"^[A-Za-z0-9-]+$")
 SAFE_SITE = re.compile(r"^[a-z0-9]+(?:[.-][a-z0-9]+)*$")
@@ -23,10 +23,6 @@ BODY_MAX = 500
 DEFAULT_SITE = "datadoghq.eu"
 
 FetchKind = Literal["dashboard", "monitor"]
-
-
-class SourceFetchError(Exception):
-    """A Datadog API request failed. The CLI maps it to exit code 1."""
 
 
 @dataclass(frozen=True)

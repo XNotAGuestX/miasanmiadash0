@@ -11,6 +11,11 @@ from migrator.input import InputFile
 from migrator.target import CompileResult, Diagnostic
 
 
+class SourceFetchError(Exception):
+    """A provider's API request failed. Providers raise it from fetch(); the shared
+    CLI maps it to exit code 1 without knowing which source raised it."""
+
+
 @dataclass(frozen=True)
 class SourceAsset:
     source_id: str
