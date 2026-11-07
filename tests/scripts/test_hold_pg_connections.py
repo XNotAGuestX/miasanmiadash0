@@ -35,7 +35,9 @@ def make_stub(
         f'  *"show max_connections"*) echo {max_conn} ;;\n'
         '  *"show superuser_reserved_connections"*) echo 3 ;;\n'
         f'  *"count(*) from pg_stat_activity where application_name"*) {open_count} ;;\n'
-        f'  *"count(*) from pg_stat_activity"*) echo {current} ;;\n'
+        f"  *\"backend_type = 'client backend'\"*) echo {current} ;;\n"
+        # An unfiltered count also sees 6 background workers.
+        f'  *"count(*) from pg_stat_activity"*) echo {current + 6} ;;\n'
         "  *pg_terminate_backend*) echo t ;;\n"
         f"  *pg_sleep*) {session} ;;\n"
         "esac\n"
@@ -107,6 +109,15 @@ def test_dry_run_prints_count_sessions(tmp_path: Path) -> None:
     assert sum("pg_sleep(900)" in line for line in r.stdout.splitlines()) == 70
     # Dry run only ran the three read-only queries.
     assert len(calls(stub).strip().splitlines()) == 3
+
+
+def test_counts_only_client_backends(tmp_path: Path) -> None:
+    # The planned "failed" crossing: 8 client backends + 85 = 93 < 100 - 3.
+    stub = make_stub(tmp_path, current=8)
+    r = run(stub, "85", "1800", "--dry-run")
+    assert r.returncode == 0, r.stderr
+    assert "current=8 " in r.stdout
+    assert "pid <> pg_backend_pid()" in calls(stub)
 
 
 def test_never_prints_the_password(tmp_path: Path) -> None:
