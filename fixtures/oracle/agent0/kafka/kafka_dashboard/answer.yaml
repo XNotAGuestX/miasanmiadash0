@@ -1,0 +1,284 @@
+# Agent0 answer, verbatim. Asked 2026-11-07 ~17:43 local (dash0 MCP runTask, default model Advanced/High), thread: https://app.dash0.com/goto/agent0?thread_id=bbe01e64-a0b8-40ec-88a7-95fbb50095ba&dataset=default&org=701d5eb3-98fe-4205-b6cc-f3a7f9104e43, prompt: prompt.md.
+# Provenance only, never test input.
+- source_path: 'widgets[2].definition.widgets[1].definition.requests[0]'
+  outcome: blocked
+  reason: "Not a metrics request: a topology_map built from Data Streams Monitoring, with no metric queries"
+  otel_metrics: []
+  labels: {}
+  live_check: "not run (blocked)"
+  notes: "No data_streams.* metrics or service-topology equivalent exist in this dataset"
+
+- source_path: 'widgets[2].definition.widgets[2].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset: data_streams.latency and data_streams.kafka.lag_seconds (Datadog Data Streams Monitoring) have no OTel counterpart"
+  otel_metrics: []
+  labels: {topic: topic, env: null}
+  live_check: "not run (blocked)"
+  notes: "kafka.lag.max and kafka.consumer_group.lag count messages, not seconds, so substituting them would be a unit mismatch. No env label exists on any Kafka metric"
+
+- source_path: 'widgets[3].definition.widgets[0].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="kafka.partition.offline", otel_metric_type="sum"})'
+  otel_metrics: [kafka.partition.offline]
+  labels: {}
+  live_check: "yes, 1 series (window 14:05-15:21 UTC), value 0"
+  notes: "Both metrics read the same broker JMX MBean (KafkaController OfflinePartitionsCount); the OTel side comes from scope io.opentelemetry.jmx. It is a non-monotonic sum (a gauge-like value), so no rate() is applied. Only the active controller reports a non-zero value, so summing across brokers matches Datadog. .weighted() has no PromQL counterpart and does not change the instant sum"
+
+- source_path: 'widgets[3].definition.widgets[1].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="kafka.partition.underReplicated", otel_metric_type="sum"})'
+  otel_metrics: [kafka.partition.underReplicated]
+  labels: {}
+  live_check: "yes, 1 series (window 14:05-15:21 UTC), value 0"
+  notes: "Both read ReplicaManager UnderReplicatedPartitions. $env (default *) is dropped. It is a non-monotonic sum, so no rate() is applied"
+
+- source_path: 'widgets[3].definition.widgets[2].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'max(rate({otel_metric_name="kafka.isr.operation.count", otel_metric_type="sum", operation="expand"}[$__rate_interval])) - max(rate({otel_metric_name="kafka.isr.operation.count", otel_metric_type="sum", operation="shrink"}[$__rate_interval]))'
+  otel_metrics: [kafka.isr.operation.count]
+  labels: {}
+  live_check: "yes, 1 series (window 14:05-15:21 UTC), value 0"
+  notes: "The two Datadog metrics map to one OTel counter split by the operation label (expand, shrink). Datadog's .rate is the JMX OneMinuteRate, a smoothed per-second rate, while PromQL rate() over the counter is also per second but averaged over the rate interval, so the smoothing differs. $env is dropped"
+
+- source_path: 'widgets[3].definition.widgets[3].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset: there is no mean request time (kafka.request.time.avg is absent), only kafka.request.time.50p and kafka.request.time.99p"
+  otel_metrics: []
+  labels: {}
+  live_check: "not run (blocked)"
+  notes: "kafka.request.time.* has type=FetchFollower, but a median is not a mean. kafka.request.count only has type fetch and produce, so rate(total)/rate(count) cannot isolate FetchFollower"
+
+- source_path: 'widgets[3].definition.widgets[4].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset: there is no mean FetchConsumer request time (kafka.request.time.avg is absent)"
+  otel_metrics: []
+  labels: {}
+  live_check: "not run (blocked)"
+  notes: "Only p50 and p99 gauges exist for type=FetchConsumer"
+
+- source_path: 'widgets[3].definition.widgets[5].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset: there is no mean Produce request time (kafka.request.time.avg is absent)"
+  otel_metrics: []
+  labels: {}
+  live_check: "not run (blocked)"
+  notes: "Only p50 and p99 gauges exist for type=Produce"
+
+- source_path: 'widgets[4].definition.widgets[1].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset for query2 (kafka.replication.leader_elections.rate): there is no clean leader election metric"
+  otel_metrics: []
+  labels: {}
+  live_check: "not run (blocked)"
+  notes: "query1 alone could map to rate(kafka.leaderElection.unclean.count), but the request is all-or-nothing"
+
+- source_path: 'widgets[4].definition.widgets[2].definition.requests[0]'
+  outcome: blocked
+  reason: "Group-by tag env has no equivalent label in this dataset"
+  otel_metrics: []
+  labels: {env: null}
+  live_check: "not run (blocked)"
+  notes: "The metric exists as kafka.network.io (direction=in/out, monotonic sum), but no deployment-environment attribute is present on any Kafka metric. Dropping the group-by would merge env series"
+
+- source_path: 'widgets[4].definition.widgets[3].definition.requests[0]'
+  outcome: blocked
+  reason: "Group-by tag env has no equivalent label in this dataset"
+  otel_metrics: []
+  labels: {env: null}
+  live_check: "not run (blocked)"
+  notes: "The metric exists as kafka.purgatory.size (type=Produce/Fetch), but there is no env label"
+
+- source_path: 'widgets[4].definition.widgets[4].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset (no mean Produce or FetchConsumer request time), and group-by tag env has no equivalent label"
+  otel_metrics: []
+  labels: {env: null}
+  live_check: "not run (blocked)"
+  notes: "Only kafka.request.time.50p and kafka.request.time.99p exist"
+
+- source_path: 'widgets[5].definition.widgets[1].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset: there are no Kafka producer client metrics (kafka.producer.*)"
+  otel_metrics: []
+  labels: {topic: null, env: null}
+  live_check: "not run (blocked)"
+  notes: "Only consumer client metrics (kafka.consumer.*) are ingested"
+
+- source_path: 'widgets[5].definition.widgets[2].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset: there are no Kafka producer client metrics (kafka.producer.request_rate, kafka.producer.response_rate)"
+  otel_metrics: []
+  labels: {host: host_name}
+  live_check: "not run (blocked)"
+  notes: "kafka.consumer.request_rate and kafka.consumer.response_rate are consumer-side and not equivalent"
+
+- source_path: 'widgets[5].definition.widgets[3].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset: kafka.producer.request_latency_avg is absent, and group-by tag env has no equivalent label"
+  otel_metrics: []
+  labels: {env: null}
+  live_check: "not run (blocked)"
+  notes: "kafka.consumer.request_latency_avg is consumer-side and not equivalent"
+
+- source_path: 'widgets[5].definition.widgets[4].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset: kafka.producer.io_wait is absent, and group-by tag env has no equivalent label"
+  otel_metrics: []
+  labels: {env: null}
+  live_check: "not run (blocked)"
+  notes: "kafka.consumer.io_wait_* are consumer-side and not equivalent"
+
+- source_path: 'widgets[6].definition.widgets[1].definition.requests[0]'
+  outcome: blocked
+  reason: "Group-by tag env has no equivalent label in this dataset"
+  otel_metrics: []
+  labels: {host: host_name, consumer_group: group, env: null}
+  live_check: "not run (blocked)"
+  notes: "kafka.consumer_group.lag and kafka.consumer_group.offset exist as gauges with labels group, topic and partition (groups accounting and fraud-detection, topic orders). Only env is missing"
+
+- source_path: 'widgets[6].definition.widgets[2].definition.requests[0]'
+  outcome: blocked
+  reason: "Group-by tags consumer_group and env have no equivalent label on the consumer client metrics"
+  otel_metrics: []
+  labels: {consumer_group: null, env: null}
+  live_check: "not run (blocked)"
+  notes: "kafka.consumer.bytes_consumed_rate exists, but it only carries client-id and topic; there is no consumer group label"
+
+- source_path: 'widgets[6].definition.widgets[3].definition.requests[0]'
+  outcome: blocked
+  reason: "Group-by tag env has no equivalent label in this dataset"
+  otel_metrics: []
+  labels: {client-id: client_id, env: null}
+  live_check: "not run (blocked)"
+  notes: "kafka.consumer.records_consumed_rate exists with client_id. The $consumer_group filter (default *) is dropped"
+
+- source_path: 'widgets[6].definition.widgets[4].definition.requests[0]'
+  outcome: blocked
+  reason: "Group-by tags env and consumer_group have no equivalent label on the consumer client metrics"
+  otel_metrics: []
+  labels: {env: null, consumer_group: null}
+  live_check: "not run (blocked)"
+  notes: "kafka.consumer.fetch_rate exists, with client_id and resource labels only"
+
+- source_path: 'widgets[7].definition.widgets[1].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset: data_streams.kafka.lag_seconds (Data Streams Monitoring) has no OTel counterpart"
+  otel_metrics: []
+  labels: {env: null, topic: topic}
+  live_check: "not run (blocked)"
+  notes: "kafka.lag.max counts messages, not seconds, so it would be a unit mismatch"
+
+- source_path: 'widgets[7].definition.widgets[2].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset: data_streams.latency (Data Streams Monitoring pathways) has no OTel counterpart"
+  otel_metrics: []
+  labels: {service: service_name, env: null}
+  live_check: "not run (blocked)"
+  notes: "The count(v: v>=0) and rollup(10) semantics are also Datadog-specific"
+
+- source_path: 'widgets[7].definition.widgets[3].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset: data_streams.latency (Data Streams Monitoring pathways) has no OTel counterpart"
+  otel_metrics: []
+  labels: {service: service_name, env: null}
+  live_check: "not run (blocked)"
+  notes: "The count(v: v>=0) and rollup(10) semantics are also Datadog-specific"
+
+- source_path: 'widgets[7].definition.widgets[4].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset: data_streams.payload_size (a DSM distribution) has no OTel counterpart"
+  otel_metrics: []
+  labels: {topic: null, env: null}
+  live_check: "not run (blocked)"
+  notes: "No message-size histogram exists for Kafka"
+
+- source_path: 'widgets[7].definition.widgets[5].definition.requests[0]'
+  outcome: blocked
+  reason: "No metric queries in the request, and the underlying data_streams.payload_size distribution has no equivalent in this dataset"
+  otel_metrics: []
+  labels: {}
+  live_check: "not run (blocked)"
+  notes: "The distribution widget's source is DSM payload size"
+
+- source_path: 'widgets[8].definition.widgets[1].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset: no ZooKeeper metrics are ingested"
+  otel_metrics: []
+  labels: {host: host_name}
+  live_check: "not run (blocked)"
+  notes: "process.open_file_descriptor.count is a generic process metric and is not ZooKeeper-specific; there is no max-file-descriptor metric"
+
+- source_path: 'widgets[8].definition.widgets[2].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset: no ZooKeeper metrics are ingested"
+  otel_metrics: []
+  labels: {service: service_name, host: host_name}
+  live_check: "not run (blocked)"
+  notes: "The catalog contains no zookeeper.* metric"
+
+- source_path: 'widgets[8].definition.widgets[3].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset: no ZooKeeper metrics are ingested"
+  otel_metrics: []
+  labels: {}
+  live_check: "not run (blocked)"
+  notes: "The catalog contains no zookeeper.* metric"
+
+- source_path: 'widgets[8].definition.widgets[4].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset: no ZooKeeper metrics are ingested"
+  otel_metrics: []
+  labels: {}
+  live_check: "not run (blocked)"
+  notes: "The catalog contains no zookeeper.* metric"
+
+- source_path: 'widgets[8].definition.widgets[5].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset: no ZooKeeper metrics are ingested"
+  otel_metrics: []
+  labels: {host: host_name}
+  live_check: "not run (blocked)"
+  notes: "The catalog contains no zookeeper.* metric"
+
+- source_path: 'widgets[8].definition.widgets[6].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset: no ZooKeeper metrics are ingested"
+  otel_metrics: []
+  labels: {}
+  live_check: "not run (blocked)"
+  notes: "postgresql.commits is unrelated. $env and $consumer_group (default *) would be dropped"
+
+- source_path: 'widgets[9].definition.widgets[1].definition.requests[0]'
+  outcome: blocked
+  reason: "Group-by tags type and env have no equivalent label in this dataset"
+  otel_metrics: []
+  labels: {type: null, env: null}
+  live_check: "not run (blocked)"
+  notes: "jvm.gc.duration (histogram, s) exists with jvm_gc_name (Copy, MarkSweepCompact) and jvm_gc_action (end of major GC, end of minor GC). Its histogram count could stand in for collection counts, but neither label is the Datadog type tag, and there is no env"
+
+- source_path: 'widgets[9].definition.widgets[2].definition.requests[0]'
+  outcome: blocked
+  reason: "Group-by tags type and env have no equivalent label in this dataset; unit also differs (Datadog ms vs jvm.gc.duration s)"
+  otel_metrics: []
+  labels: {type: null, env: null}
+  live_check: "not run (blocked)"
+  notes: "jvm.gc.duration sum split by jvm_gc_action is the closest data, but it does not match the type/env grouping"
+
+- source_path: 'widgets[10].definition.widgets[1].definition.requests[0]'
+  outcome: blocked
+  reason: "Not a metrics request: a log query (count per log status)"
+  otel_metrics: []
+  labels: {}
+  live_check: "not run (blocked)"
+  notes: "Belongs to a logs migration (for example dash0.logs grouped by otel_log_severity_range), outside this metrics translation"
+
+- source_path: 'widgets[10].definition.widgets[2].definition.requests[0]'
+  outcome: blocked
+  reason: "Not a metrics request: list_stream of error logs"
+  otel_metrics: []
+  labels: {}
+  live_check: "not run (blocked)"
+  notes: "Needs a log list panel, not PromQL"
