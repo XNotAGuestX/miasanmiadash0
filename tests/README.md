@@ -158,7 +158,7 @@ space aggregator (`MISSING_AGGREGATOR`: #85 has no default aggregator), or an un
 template variable. Error codes come from these rules, not Agent0's prose; a block that no rule
 explains gets `MISSING_METRIC_MAPPING` plus a note that the code is a proposal (the real code depends
 on the mapping). `TEMPLATE_VARIABLE_DROPPED` is expected for unprefixed `*` variables only; prefixed
-ones are promoted to a Perses ListVariable (`<label>=~"$name"`). Every OTel metric in
+ones are promoted to a Perses ListVariable (matcher `<label>=~"^($name)$"`). Every OTel metric in
 a translated request is checked against the dataset snapshot and the catalog: present in the dataset →
 nothing to note; only in the catalog → stays `translated` with a `dataset` block and a note (no live check
 possible); in neither → `blocked` with `MISSING_METRIC_MAPPING`. Other Agent0 choices

@@ -57,6 +57,7 @@ TRAILING_FN = re.compile(r"\.([a-z_]+)\(")
 FORMULA_FN = re.compile(r"\b([a-z_]+)\(")
 VARIABLE = re.compile(r"\$([A-Za-z_][A-Za-z0-9_]*)")
 IDENTIFIER = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)\b")
+UNANCHORED_VARIABLE = re.compile(r'=~"\$([A-Za-z_][A-Za-z0-9_]*)"')
 # Mapping file per integrations-core directory, as named in the converter (PR #85: docker.json)
 # and the mapping PR (#76: redis.json). Same name when not listed.
 MAPPING_FILE = {"docker_daemon": "docker", "redisdb": "redis"}
@@ -173,10 +174,20 @@ def metric_availability(promql: list[str]) -> tuple[list[str], list[str], list[s
     return undefined, absent, mismatched
 
 
+def anchor_variable_matchers(promql: list[str], variables: dict[str, dict]) -> list[str]:
+    """Render promoted-variable matchers like the converter (PR #85): `=~"^($name)$"`, because
+    Dash0 does not anchor `=~`. PROMPT.md asks Agent0 for the unanchored `=~"$name"`."""
+
+    def anchor(m: re.Match[str]) -> str:
+        return f'=~"^(${m.group(1)})$"' if m.group(1) in variables else m.group(0)
+
+    return [UNANCHORED_VARIABLE.sub(anchor, q) for q in promql]
+
+
 def rule_warnings(request: dict, variables: dict[str, dict]) -> list[str]:
     """Warning codes (as a set) for a translated request. PR #85 drops an unprefixed `*` variable
     with TEMPLATE_VARIABLE_DROPPED and promotes a prefixed one to a Perses ListVariable (matcher
-    `<label>=~"$name"`, no warning), assuming the reviewed mapping maps the prefix tag."""
+    `<label>=~"^($name)$"`, no warning), assuming the reviewed mapping maps the prefix tag."""
     warnings = set()
     for q in displayed_queries(request):
         for name in VARIABLE.findall((q["query"] or "").split("}")[0]):
@@ -254,7 +265,7 @@ def build(key: str) -> dict:
                 notes.extend(f"type mismatch: {m}" for m in mismatched)
         expected = {"outcome": outcome}
         if outcome == "translated":
-            expected["promql"] = promql
+            expected["promql"] = anchor_variable_matchers(promql, variables)
             expected["errors"] = []
             expected["warnings"] = rule_warnings(req, variables)
         else:

@@ -125,8 +125,8 @@ per-dashboard tables further down predate this and still show the old warnings.
 
 `uv run pytest --include-unreviewed` against #85 covers Postgres, Docker and Kafka (nginx and Redis wait
 for the PR #76 mappings). Apart from the `UNREVIEWED_MAPPING` warning (every #85 mapping entry has
-`reviewed: null`; expectations assume the reviewed end state), these 15 requests disagree. Decide each in
-`overrides.yaml` or in the mapping:
+`reviewed: null`; expectations assume the reviewed end state), these 23 requests disagree (PR #85 at
+`a6010fb`). Decide each in `overrides.yaml` or in the mapping:
 
 | Request | Expected (Agent0 + rules) | Converter (PR #85) |
 |---|---|---|
@@ -137,6 +137,7 @@ for the PR #76 mappings). Apart from the `UNREVIEWED_MAPPING` warning (every #85
 | `kafka/kafka_dashboard/widgets[6].definition.widgets[1].definition.requests[0]` | blocked `MISSING_METRIC_MAPPING` | blocked `MISSING_LABEL_MAPPING`, `MISSING_METRIC_MAPPING` |
 | `kafka/kafka_kraft_dashboard/widgets[6].definition.widgets[1].definition.requests[0]` | translated | blocked `MISSING_LABEL_MAPPING`, `MISSING_METRIC_MAPPING` |
 | `postgres/postgresql_dashboard/widgets[1].definition.requests[0]` (p0) | `avg by (postgresql_database_name) (backends)` | same with `max by (postgresql_database_name, service_instance_id)` grain (plan 05 dedup, see A) |
+| `postgres/postgresql_dashboard/widgets[0].definition.requests[0..3]`; `postgresql_screenboard_dashboard/widgets[1].definition.widgets[1]`, `widgets[4].definition.widgets[0]`, `[1]`, `[3]` `.definition.requests[0]` | `postgresql.tup_*` rates without a grain | same with `max by (service_instance_id, postgresql_database_name)` grain on `postgresql.rows_*` (#85 `a6010fb`, see A) |
 | `postgres/postgresql_dashboard/widgets[3].definition.requests[0]` | translated | blocked `MISSING_METRIC_MAPPING` |
 | `postgres/postgresql_dashboard/widgets[6].definition.requests[0]` | `100 * max(avg by (host_name) (rate(system.cpu.time{cpu_mode="wait"})))` | `(max(avg by (host_name) (system.cpu.utilization{cpu_mode="wait"}))) * 100` (see A) |
 | `postgres/postgresql_screenboard_dashboard/widgets[1].definition.widgets[0].definition.requests[0]` | blocked `MISSING_METRIC_MAPPING` | translated |

@@ -96,3 +96,10 @@ def test_widget_time_option_blocks_the_widget() -> None:
     timed = [w for w in built["widgets"] if w["type"] == "timeseries"]
     assert timed and all(w["expected"]["outcome"] == "blocked" for w in timed)
     assert all("UNSUPPORTED_WIDGET" in w["expected"]["errors"] for w in timed)
+
+
+def test_promoted_variable_matchers_are_anchored_like_the_converter() -> None:
+    promql = ['avg({otel_metric_name="m", host_name=~"$host", x=~"$unknown"})']
+    assert be.anchor_variable_matchers(promql, VARS) == [
+        'avg({otel_metric_name="m", host_name=~"^($host)$", x=~"$unknown"})'
+    ]
