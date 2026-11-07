@@ -39,40 +39,53 @@ Build a **deterministic converter from Datadog dashboards to Perses**, the open-
 
 ## 4. Repository layout (agreed module boundaries)
 
+Stack switched from TypeScript to Python on 2026-11-07 (user decision). The plans 01–10 still name
+TypeScript files and vitest commands; read them through this table: `src/<x>.ts` → `src/converter/<x>.py`,
+`src/source/datadog/<x>.ts` → `src/converter/source/datadog/<x>.py` (dashes become underscores),
+`tests/**/*.test.ts` → `tests/unit/**/test_*.py`, `npx vitest run <path>` / `npm test` → `uv run pytest <path>`,
+`zod` → explicit validation functions, `npm run typecheck` → none required for the MVP.
+
 ```text
-src/
-  cli.ts                     # commander wiring, exit codes
-  convert.ts                 # runConvert(): input → provider → writers → report
-  input.ts                   # collect files from --input paths (sorted, recursive)
-  target.ts                  # shared output types (Perses, rules, Diagnostic, outcomes)
-  promql.ts                  # label-value escaping and selector rendering
-  write.ts                   # stable JSON/YAML writers, slugs, sha256
-  report.ts                  # report.json, manifest.json, terminal summary
-  validation.ts              # Zod schemas for emitted Perses dashboards and rules
-  version.ts                 # COMPILER_VERSION
-  source/provider.ts         # SourceProvider interface + static table
-  source/datadog/index.ts    # datadogProvider
-  source/datadog/assets.ts   # recognize, unwrap and identify Datadog assets
-  source/datadog/model.ts    # parsed query/monitor types
-  source/datadog/parse-query.ts
-  source/datadog/mapping.ts
-  source/datadog/compile-query.ts
-  source/datadog/dashboard.ts
-  source/datadog/monitor.ts
-  destination/dash0.ts       # publish + read-back (plan 07 only)
+src/converter/
+  __init__.py
+  cli.py                     # argparse wiring, exit codes
+  convert.py                 # run_convert(): input → provider → writers → report
+  input.py                   # collect files from --input paths (sorted, recursive)
+  target.py                  # shared output types as dataclasses (Perses, rules, Diagnostic, outcomes)
+  promql.py                  # label-value escaping and selector rendering
+  write.py                   # stable JSON/YAML writers, slugs, sha256
+  report.py                  # report.json, manifest.json, terminal summary
+  validation.py              # schema checks for emitted Perses dashboards and rules
+  version.py                 # COMPILER_VERSION
+  source/provider.py         # SourceProvider protocol + static table
+  source/datadog/__init__.py # datadog provider; exports parse_metric_query, load_mapping,
+                             # translate_request, translate_widget, translate_dashboard (tests/README.md)
+  source/datadog/assets.py   # recognize, unwrap and identify Datadog assets
+  source/datadog/model.py    # parsed query/monitor dataclasses
+  source/datadog/parse_query.py
+  source/datadog/mapping.py
+  source/datadog/compile_query.py
+  source/datadog/dashboard.py
+  source/datadog/monitor.py
+  destination/dash0.py       # publish + read-back (plan 07 only)
 mappings/datadog/<service>.json   # reviewed mapping files
 fixtures/datadog/integrations-core/<service>/...   # pinned source assets
-fixtures/datadog/synthetic/...    # small hand-written edge cases
-fixtures/expected/<case>/...      # reviewed expected outputs
-tests/...                          # vitest
+fixtures/synthetic/...            # small hand-written edge cases (queries.yaml)
+fixtures/cases/<service>/<dashboard>.yaml          # deterministic case inventory (scripts/extract_cases.py)
+fixtures/oracle/agent0/<service>/<dashboard>/      # dev-time oracle prompt + frozen Agent0 answer (provenance only)
+fixtures/expected/<service>/<dashboard>/           # expected.yaml (generated) + overrides.yaml (human review)
+scripts/                          # dev-time fixture tooling only; never imported by the converter or tests
+tests/unit/requests/              # pytest: query parser, single request, single widget
+tests/unit/dashboards/            # pytest: whole dashboard
 ```
 
 ## 5. Stack
 
-- TypeScript in strict mode, ESM, Node ≥ 22 (tested locally: Node 26.5.0, npm 11.17.0).
-- Libraries: `commander`, `zod`, `yaml`, `@prometheus-io/lezer-promql` (PromQL syntax check).
-- Dev tooling: `vitest`, `tsx`, `typescript`, `@types/node`.
-- Scripts: `npm run dev -- <args>` (tsx), `npm run build`, `npm run typecheck`, `npm test`.
+- Python ≥ 3.11, one package `converter` under `src/` (`pyproject.toml`, setuptools). uv manages the interpreter (`.python-version`, uv-managed only) and all dependencies (`uv.lock`); no pip, venv or requirements files.
+- Runtime library: `PyYAML`. No network or credentials in the compiler.
+- Dev tooling (uv dependency group `dev`): `pytest`, `promql-parser` (PromQL syntax check and canonical comparison in tests). Group `oracle`: `mcp`, for the development-time `scripts/run_oracle.py` only.
+- Setup: `uv sync`. Add dependencies with `uv add <pkg>` (runtime) or `uv add --group dev <pkg>`.
+- Run: `uv run pytest` (skips unreviewed oracle cases) or `uv run pytest --include-unreviewed`. See `tests/README.md`.
 
 ## 6. Source facts (Datadog)
 

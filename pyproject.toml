@@ -1,0 +1,36 @@
+[project]
+name = "converter"
+version = "0.0.0"
+description = "Deterministic Datadog -> Perses dashboard converter (no LLM in any conversion step)"
+requires-python = ">=3.11"
+dependencies = ["PyYAML>=6"]
+
+# Managed with uv: `uv sync` installs the pinned Python (.python-version), the project, and the
+# default groups below from uv.lock. Run everything through `uv run ...`.
+[dependency-groups]
+dev = ["pytest>=8", "promql-parser>=0.12"]
+# Development-time Agent0 oracle runner (scripts/run_oracle.py); never used by the converter.
+oracle = ["mcp==2.3.0"]
+
+[tool.uv]
+default-groups = ["dev", "oracle"]
+# Use only uv-installed interpreters (never a system/Homebrew/framework Python).
+python-preference = "only-managed"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"
+markers = [
+    "p0: must pass for the MVP converter (plans 01-04)",
+    "p1: dashboard coverage ladder (plan 05)",
+    "p2: later coverage (plan 08 services)",
+    "unreviewed: expectation not yet confirmed by a human; skipped unless --include-unreviewed",
+]
