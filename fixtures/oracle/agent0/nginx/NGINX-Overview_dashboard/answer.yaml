@@ -1,0 +1,81 @@
+# Agent0 answer, verbatim. Asked 2026-11-07 ~17:44 local (dash0 MCP runTask, default model Advanced/High), thread: https://app.dash0.com/goto/agent0?thread_id=703b3c8a-9b01-4b2a-b5e1-9117b7291f5f&dataset=default&org=701d5eb3-98fe-4205-b6cc-f3a7f9104e43, prompt: prompt.md.
+# Provenance only, never test input.
+- source_path: 'widgets[1].definition.widgets[0].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum(increase({otel_metric_name="nginx.connections_accepted", otel_metric_type="sum"}[15m])) - sum(increase({otel_metric_name="nginx.connections_handled", otel_metric_type="sum"}[15m]))'
+  otel_metrics: [nginx.connections_accepted, nginx.connections_handled]
+  labels: {}
+  live_check: "yes, 1 series (window 14:05-15:21 UTC; value 0 throughout)"
+  notes: "The dataset has no dropped-connections metric. The Datadog nginx check computes nginx.net.conn_dropped_per_s as the rate of (accepts - handled), so this query takes the difference of the two OTel counters, and .as_count() becomes a 15m total. It assumes the query_value aggregator is sum over the widget's 15m window. Datadog drops the sample on a counter reset, while PromQL increase() handles each counter's reset separately. Both counters have one series at a time, so sum() does not double-count."
+
+- source_path: 'widgets[4].definition.widgets[0].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg(rate({otel_metric_name="nginx.requests", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [nginx.requests]
+  labels: {}
+  live_check: "yes, 1 series (window 14:05-15:21 UTC; about 1.9-4.0 req/s)"
+  notes: "nginx.requests is a monotonic sum of total requests, and its per-second rate matches Datadog's rate-type nginx.net.request_per_s. avg() is across hosts. The query_value's time aggregation (avg/last) is applied by the panel's reduction, not by PromQL."
+
+- source_path: 'widgets[4].definition.widgets[1].definition.requests.fill'
+  outcome: translated
+  promql:
+    - 'avg by (host_name) (rate({otel_metric_name="nginx.requests", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [nginx.requests]
+  labels: {host: host_name}
+  live_check: "yes, 1 series (host_name=docker-desktop)"
+  notes: "Datadog host is the agent hostname. host_name comes from the OTel host.name resource attribute, so the values may differ from the Datadog host names. Perses has no hostmap panel, so a table or bar panel per host_name is needed."
+
+- source_path: 'widgets[4].definition.widgets[4].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="reading"})'
+  otel_metrics: [nginx.connections_current]
+  labels: {}
+  live_check: "yes, 1 series (value 0 throughout)"
+  notes: "$Host defaults to * and is dropped. nginx.connections_current is a point-in-time connection count split by state, so it is used as-is with no rate(). The state label values are active, reading, waiting and writing."
+
+- source_path: 'widgets[4].definition.widgets[4].definition.requests[1]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="writing"})'
+  otel_metrics: [nginx.connections_current]
+  labels: {}
+  live_check: "yes, 1 series (value 1 throughout)"
+  notes: "$Host defaults to * and is dropped. The value is a point-in-time count with no rate()."
+
+- source_path: 'widgets[4].definition.widgets[4].definition.requests[2]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting"})'
+  otel_metrics: [nginx.connections_current]
+  labels: {}
+  live_check: "yes, 1 series (about 0-25)"
+  notes: "$Host defaults to * and is dropped. The value is a point-in-time count with no rate()."
+
+- source_path: 'widgets[4].definition.widgets[5].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent label for the Datadog service tag. nginx.requests has no service.name or other service attribute in this dataset (service.name has no values on nginx metrics), so the query cannot be grouped by service."
+  otel_metrics: [nginx.requests]
+  labels: {service: null}
+  live_check: "not run (blocked); the ungrouped base rate(nginx.requests) returns 1 series"
+  notes: "If grouping by service were dropped, rate(nginx.requests) would give the base value, but that would change the series set. The change widget's comparison to a previous period would also need its own offset query."
+
+- source_path: 'widgets[5].definition.widgets[0].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum(rate({otel_metric_name="nginx.connections_accepted", otel_metric_type="sum"}[$__rate_interval])) - sum(rate({otel_metric_name="nginx.connections_handled", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [nginx.connections_accepted, nginx.connections_handled]
+  labels: {}
+  live_check: "yes, 1 series (value 0 throughout)"
+  notes: "$Host defaults to * and is dropped. Dropped connections per second is the accepted rate minus the handled rate, matching the Datadog check's (accepts - handled) definition. No direct dropped-connections metric exists in the dataset."
+
+- source_path: 'widgets[5].definition.widgets[1].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="active"})'
+  otel_metrics: [nginx.connections_current]
+  labels: {}
+  live_check: "yes, 1 series (about 1-26)"
+  notes: "$Host defaults to * and is dropped. Datadog nginx.net.connections is stub_status 'Active connections', which is state=active here. It is a point-in-time count despite the 'per second' widget title, so no rate()."
