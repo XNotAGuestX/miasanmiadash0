@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+import promql_parser
 import pytest
 
 from migrator.source.asset import SourceAsset
@@ -232,3 +233,25 @@ def test_integer_thresholds_render_without_decimals() -> None:
     assert r.rule is not None
     exprs = [rule["expr"] for rule in r.rule.prometheus_rule_group["groups"][0]["rules"]]
     assert [e.rsplit(" ", 1)[1] for e in exprs] == ["80", "90"]
+
+
+def test_rate_monitor_uses_a_fixed_range_not_the_dashboard_variable() -> None:
+    body = golden_body()
+    body["query"] = "avg(last_5m):avg:postgresql.rows_fetched{*} > 1000"
+    body["options"]["thresholds"] = {"critical": 1000}
+    r = run(body)
+    assert r.rule is not None, r.diagnostics
+    exprs = [rule["expr"] for rule in r.rule.prometheus_rule_group["groups"][0]["rules"]]
+    exprs.append(r.rule.check_rule["expression"].replace("$__threshold", "1000"))
+    for expr in exprs:
+        assert "$" not in expr, expr
+        assert "[5m])" in expr, expr
+        promql_parser.parse(expr)  # raises on a syntax error
+
+
+def test_empty_window_is_an_unsupported_option() -> None:
+    body = golden_body()
+    body["query"] = body["query"].replace("last_15m", "last_0m")
+    r = run(body)
+    assert r.rule is None
+    assert codes(r) == ["UNSUPPORTED_MONITOR_OPTION"]

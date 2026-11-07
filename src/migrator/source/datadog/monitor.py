@@ -13,7 +13,12 @@ from dataclasses import dataclass, field
 from typing import Any, Literal, cast
 
 from migrator.source.asset import SourceAsset
-from migrator.source.datadog.compile_query import CompiledOk, QueryContext, compile_metric_query
+from migrator.source.datadog.compile_query import (
+    RATE_INTERVAL,
+    CompiledOk,
+    QueryContext,
+    compile_metric_query,
+)
 from migrator.source.datadog.mapping import DatadogMapping
 from migrator.source.datadog.model import (
     Comparator,
@@ -238,6 +243,13 @@ CHECK_INTERVAL = "1m"
 SUMMARY_MAX = 255
 DESCRIPTION_MAX = 2048
 MAX_WINDOW_MINUTES = 7 * 24 * 60
+# Rule expressions can't use the dashboard variable $__rate_interval: Prometheus
+# never interpolates it, and whether Dash0 check rules do is unverified (07.T1).
+# A monitor's rate() uses this fixed range instead: four times the 1m evaluation
+# step, so each step sees several samples at scrape intervals up to about 1m.
+MONITOR_RATE_RANGE = "5m"
+# Any other $variable left in a compiled query (none is expected for monitors).
+_DASHBOARD_VARIABLE = re.compile(r"\$(?:__)?[A-Za-z_]\w*")
 _UNIT_MINUTES: dict[str, int] = {"m": 1, "h": 60, "d": 24 * 60}
 _TIME_FUNCTIONS: dict[str, str] = {
     "avg": "avg_over_time",
@@ -401,6 +413,16 @@ def compile_monitor(asset: SourceAsset, slug: str, mapping: DatadogMapping) -> M
 
     # 6. Window within Dash0's limit.
     minutes = monitor.window.amount * _UNIT_MINUTES[monitor.window.unit]
+    if minutes == 0:
+        add(
+            "UNSUPPORTED_MONITOR_OPTION",
+            "error",
+            "query",
+            f"Window last_0{monitor.window.unit} is empty.",
+            "Use a window of at least one minute.",
+            query_text,
+        )
+        return blocked()
     if minutes > MAX_WINDOW_MINUTES:
         add(
             "UNSUPPORTED_MONITOR_OPTION",
@@ -418,6 +440,19 @@ def compile_monitor(asset: SourceAsset, slug: str, mapping: DatadogMapping) -> M
     )
     diags.extend(compiled.diagnostics)
     if not isinstance(compiled, CompiledOk) or any(d.severity == "error" for d in diags):
+        return blocked()
+    promql = compiled.promql.replace(f"[{RATE_INTERVAL}]", f"[{MONITOR_RATE_RANGE}]")
+    leftover = sorted(set(_DASHBOARD_VARIABLE.findall(promql)))
+    if leftover:
+        add(
+            "UNSUPPORTED_QUERY_SYNTAX",
+            "error",
+            "query",
+            f"The compiled query uses dashboard variables {', '.join(leftover)}, which a "
+            "rule expression can't use.",
+            "Rewrite the monitor query without template variables, or migrate it manually.",
+            query_text,
+        )
         return blocked()
 
     # 8. Notification handles are not migrated.
@@ -464,7 +499,7 @@ def compile_monitor(asset: SourceAsset, slug: str, mapping: DatadogMapping) -> M
 
     window = f"{monitor.window.amount}{monitor.window.unit}"
     over_time = _TIME_FUNCTIONS[monitor.time_aggregator]
-    condition = f"{over_time}(({compiled.promql})[{window}:{CHECK_INTERVAL}])"
+    condition = f"{over_time}(({promql})[{window}:{CHECK_INTERVAL}])"
     annotations = {"summary": summary, "description": description}
 
     levels: list[tuple[str, float]] = []
