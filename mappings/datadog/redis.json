@@ -1,0 +1,252 @@
+{
+  "metrics": {
+    "redis.clients.blocked": {
+      "kind": "gauge",
+      "labels": {
+        "host": "host_name"
+      },
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/#metrics-mappings (redisreceiver row redis.clients.blocked <-> redis.clients.blocked); type/unit from opentelemetry-collector-contrib v0.160.0 receiver/redisreceiver/metadata.yaml; Dash0 default, 2026-11-07 (read-only): count by (otel_metric_name) (last_over_time({otel_metric_name=\"redis.clients.blocked\", otel_metric_type=\"sum\"}[12h])) returned series; host_name=docker-desktop on the redisreceiver resource",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "connection",
+      "target": {
+        "name": "redis.clients.blocked",
+        "type": "sum"
+      },
+      "targetUnit": "{client}"
+    },
+    "redis.cpu.sys": {
+      "kind": "gauge",
+      "labels": {
+        "host": "host_name"
+      },
+      "matchers": {
+        "state": "sys"
+      },
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/#metrics-mappings (redisreceiver row redis.cpu.time <-> redis.cpu.sys); integrations-core@a9b9e42 redisdb/metadata.csv: gauge, no unit, 'Sys CPU consumed by the Redis server'; Dash0 default, 2026-11-07 (read-only): count by (otel_metric_name) (last_over_time({otel_metric_type=\"sum\", otel_metric_name=~\"...\"}[24h])) returned series for redis.cpu.time with state in (sys, sys_children, sys_main_thread, user, user_children, user_main_thread); host_name=docker-desktop. Datadog submits the running total as a gauge (no per-second unit), so the raw cumulative value is mapped, not rate(); the row filters state:sys. Reviewer: Dash0 also has sys_children and sys_main_thread, which the matcher excludes",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "second",
+      "target": {
+        "name": "redis.cpu.time",
+        "type": "sum"
+      },
+      "targetUnit": "s"
+    },
+    "redis.cpu.user": {
+      "kind": "gauge",
+      "labels": {
+        "host": "host_name"
+      },
+      "matchers": {
+        "state": "user"
+      },
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/#metrics-mappings (redisreceiver row redis.cpu.time <-> redis.cpu.user); integrations-core@a9b9e42 redisdb/metadata.csv: gauge, no unit, 'User CPU consumed by the Redis server'; Dash0 default, 2026-11-07 (read-only): count by (otel_metric_name) (last_over_time({otel_metric_type=\"sum\", otel_metric_name=~\"...\"}[24h])) returned series for redis.cpu.time with state in (sys, sys_children, sys_main_thread, user, user_children, user_main_thread); host_name=docker-desktop. Datadog submits the running total as a gauge (no per-second unit), so the raw cumulative value is mapped, not rate(); the row filters state:user. Reviewer: Dash0 also has user_children and user_main_thread, which the matcher excludes",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "second",
+      "target": {
+        "name": "redis.cpu.time",
+        "type": "sum"
+      },
+      "targetUnit": "s"
+    },
+    "redis.expires": {
+      "kind": "gauge",
+      "labels": {
+        "host": "host_name"
+      },
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/#metrics-mappings (redisreceiver row redis.db.expires <-> redis.expires); type/unit from opentelemetry-collector-contrib v0.160.0 receiver/redisreceiver/metadata.yaml; Dash0 default, 2026-11-07 (read-only): count by (otel_metric_name) (last_over_time({otel_metric_name=\"redis.db.expires\", otel_metric_type=\"gauge\"}[12h])) returned series; host_name=docker-desktop on the redisreceiver resource",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "key",
+      "target": {
+        "name": "redis.db.expires",
+        "type": "gauge"
+      },
+      "targetUnit": "{key}"
+    },
+    "redis.keys": {
+      "kind": "gauge",
+      "labels": {
+        "host": "host_name"
+      },
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/#metrics-mappings (redisreceiver row redis.db.keys <-> redis.keys); type/unit from opentelemetry-collector-contrib v0.160.0 receiver/redisreceiver/metadata.yaml; Dash0 default, 2026-11-07 (read-only): count by (otel_metric_name) (last_over_time({otel_metric_name=\"redis.db.keys\", otel_metric_type=\"gauge\"}[12h])) returned series; host_name=docker-desktop on the redisreceiver resource",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "key",
+      "target": {
+        "name": "redis.db.keys",
+        "type": "gauge"
+      },
+      "targetUnit": "{key}"
+    },
+    "redis.keys.evicted": {
+      "kind": "gauge",
+      "labels": {
+        "host": "host_name"
+      },
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/#metrics-mappings (redisreceiver row redis.keys.evicted <-> redis.keys.evicted); integrations-core@a9b9e42 redisdb/metadata.csv: gauge, key, 'The total number of keys evicted'; Dash0 default, 2026-11-07 (read-only): count by (otel_metric_name) (last_over_time({otel_metric_type=\"sum\", otel_metric_name=~\"...\"}[24h])) returned series for redis.keys.evicted; host_name=docker-desktop. Datadog submits the running total as a gauge (no per-second unit), so the raw cumulative value is mapped, not rate()",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "key",
+      "target": {
+        "name": "redis.keys.evicted",
+        "type": "sum"
+      },
+      "targetUnit": "{key}"
+    },
+    "redis.keys.expired": {
+      "kind": "gauge",
+      "labels": {
+        "host": "host_name"
+      },
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/#metrics-mappings (redisreceiver row redis.keys.expired <-> redis.keys.expired); integrations-core@a9b9e42 redisdb/metadata.csv: gauge, key, 'The total number of keys expired'; Dash0 default, 2026-11-07 (read-only): count by (otel_metric_name) (last_over_time({otel_metric_type=\"sum\", otel_metric_name=~\"...\"}[24h])) returned series for redis.keys.expired; host_name=docker-desktop. Datadog submits the running total as a gauge (no per-second unit), so the raw cumulative value is mapped, not rate()",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "key",
+      "target": {
+        "name": "redis.keys.expired",
+        "type": "sum"
+      },
+      "targetUnit": "{key}"
+    },
+    "redis.mem.fragmentation_ratio": {
+      "kind": "gauge",
+      "labels": {
+        "host": "host_name"
+      },
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/#metrics-mappings (redisreceiver row redis.memory.fragmentation_ratio <-> redis.mem.fragmentation_ratio); type/unit from opentelemetry-collector-contrib v0.160.0 receiver/redisreceiver/metadata.yaml; Dash0 default, 2026-11-07 (read-only): count by (otel_metric_name) (last_over_time({otel_metric_name=\"redis.memory.fragmentation_ratio\", otel_metric_type=\"gauge\"}[12h])) returned series; host_name=docker-desktop on the redisreceiver resource",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "fraction",
+      "target": {
+        "name": "redis.memory.fragmentation_ratio",
+        "type": "gauge"
+      },
+      "targetUnit": "1"
+    },
+    "redis.mem.rss": {
+      "kind": "gauge",
+      "labels": {
+        "host": "host_name"
+      },
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/#metrics-mappings (redisreceiver row redis.memory.rss <-> redis.mem.rss); type/unit from opentelemetry-collector-contrib v0.160.0 receiver/redisreceiver/metadata.yaml; Dash0 default, 2026-11-07 (read-only): count by (otel_metric_name) (last_over_time({otel_metric_name=\"redis.memory.rss\", otel_metric_type=\"gauge\"}[12h])) returned series; host_name=docker-desktop on the redisreceiver resource",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "byte",
+      "target": {
+        "name": "redis.memory.rss",
+        "type": "gauge"
+      },
+      "targetUnit": "By"
+    },
+    "redis.mem.used": {
+      "kind": "gauge",
+      "labels": {
+        "host": "host_name"
+      },
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/#metrics-mappings (redisreceiver row redis.memory.used <-> redis.mem.used); type/unit from opentelemetry-collector-contrib v0.160.0 receiver/redisreceiver/metadata.yaml; Dash0 default, 2026-11-07 (read-only): count by (otel_metric_name) (last_over_time({otel_metric_name=\"redis.memory.used\", otel_metric_type=\"gauge\"}[12h])) returned series; host_name=docker-desktop on the redisreceiver resource",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "byte",
+      "target": {
+        "name": "redis.memory.used",
+        "type": "gauge"
+      },
+      "targetUnit": "By"
+    },
+    "redis.net.clients": {
+      "kind": "gauge",
+      "labels": {
+        "host": "host_name"
+      },
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/#metrics-mappings (redisreceiver row redis.clients.connected <-> redis.net.clients); type/unit from opentelemetry-collector-contrib v0.160.0 receiver/redisreceiver/metadata.yaml; Dash0 default, 2026-11-07 (read-only): count by (otel_metric_name) (last_over_time({otel_metric_name=\"redis.clients.connected\", otel_metric_type=\"sum\"}[12h])) returned series; host_name=docker-desktop on the redisreceiver resource",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "connection",
+      "target": {
+        "name": "redis.clients.connected",
+        "type": "sum"
+      },
+      "targetUnit": "{client}"
+    },
+    "redis.net.rejected": {
+      "kind": "gauge",
+      "labels": {
+        "host": "host_name"
+      },
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/#metrics-mappings (redisreceiver row redis.connections.rejected <-> redis.net.rejected); integrations-core@a9b9e42 redisdb/metadata.csv: gauge, connection, 'The number of rejected connections'; Dash0 default, 2026-11-07 (read-only): count by (otel_metric_name) (last_over_time({otel_metric_type=\"sum\", otel_metric_name=~\"...\"}[24h])) returned series for redis.connections.rejected; host_name=docker-desktop. Datadog submits the running total as a gauge (no per-second unit), so the raw cumulative value is mapped, not rate()",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "connection",
+      "target": {
+        "name": "redis.connections.rejected",
+        "type": "sum"
+      },
+      "targetUnit": "{connection}"
+    },
+    "redis.net.slaves": {
+      "kind": "gauge",
+      "labels": {
+        "host": "host_name"
+      },
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/#metrics-mappings (redisreceiver row redis.slaves.connected <-> redis.net.slaves); type/unit from opentelemetry-collector-contrib v0.160.0 receiver/redisreceiver/metadata.yaml; Dash0 default, 2026-11-07 (read-only): count by (otel_metric_name) (last_over_time({otel_metric_name=\"redis.slaves.connected\", otel_metric_type=\"sum\"}[12h])) returned series; host_name=docker-desktop on the redisreceiver resource",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "connection",
+      "target": {
+        "name": "redis.slaves.connected",
+        "type": "sum"
+      },
+      "targetUnit": "{replica}"
+    },
+    "redis.rdb.changes_since_last": {
+      "kind": "gauge",
+      "labels": {
+        "host": "host_name"
+      },
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/#metrics-mappings (redisreceiver row redis.rdb.changes_since_last_save <-> redis.rdb.changes_since_last); type/unit from opentelemetry-collector-contrib v0.160.0 receiver/redisreceiver/metadata.yaml; Dash0 default, 2026-11-07 (read-only): count by (otel_metric_name) (last_over_time({otel_metric_name=\"redis.rdb.changes_since_last_save\", otel_metric_type=\"sum\"}[12h])) returned series; host_name=docker-desktop on the redisreceiver resource",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "change",
+      "target": {
+        "name": "redis.rdb.changes_since_last_save",
+        "type": "sum"
+      },
+      "targetUnit": "{change}"
+    },
+    "redis.stats.keyspace_hits": {
+      "kind": "rate",
+      "labels": {
+        "host": "host_name"
+      },
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/#metrics-mappings (redisreceiver row redis.keyspace.hits <-> redis.stats.keyspace_hits); integrations-core@a9b9e42 redisdb/metadata.csv: gauge, key per second, 'The rate of successful lookups'; Dash0 default, 2026-11-07 (read-only): count by (otel_metric_name) (last_over_time({otel_metric_type=\"sum\", otel_metric_name=~\"...\"}[24h])) returned series for redis.keyspace.hits; host_name=docker-desktop. Datadog submits a per-second rate; the target is a monotonic cumulative sum",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "key/second",
+      "target": {
+        "name": "redis.keyspace.hits",
+        "type": "sum"
+      },
+      "targetUnit": "{hit}"
+    },
+    "redis.stats.keyspace_misses": {
+      "kind": "rate",
+      "labels": {
+        "host": "host_name"
+      },
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/#metrics-mappings (redisreceiver row redis.keyspace.misses <-> redis.stats.keyspace_misses); integrations-core@a9b9e42 redisdb/metadata.csv: gauge, key per second, 'The rate of missed lookups'; Dash0 default, 2026-11-07 (read-only): count by (otel_metric_name) (last_over_time({otel_metric_type=\"sum\", otel_metric_name=~\"...\"}[24h])) returned series for redis.keyspace.misses; host_name=docker-desktop. Datadog submits a per-second rate; the target is a monotonic cumulative sum",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "key/second",
+      "target": {
+        "name": "redis.keyspace.misses",
+        "type": "sum"
+      },
+      "targetUnit": "{miss}"
+    }
+  },
+  "source": "datadog",
+  "version": 1
+}
