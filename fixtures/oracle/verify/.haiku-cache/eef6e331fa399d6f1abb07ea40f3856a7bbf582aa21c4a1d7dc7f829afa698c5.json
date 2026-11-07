@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "n/a",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "n/a",
+      "unit": "differs"
+    },
+    "reasons": [
+      "system.io.util is a percent disk-busy utilization, but the candidate uses system.disk.merged, a monotonic count of merged operations ({operations}). That is a different quantity, so it is not a valid mapping.",
+      "The candidate multiplies by 100, a numeric constant not in the Datadog source. The converter rules forbid this, and the percent-vs-ratio scale is not a fix for the wrong metric.",
+      "The rate of merged operations is not disk utilization. An OTel metric measuring disk busy time (e.g. a disk io_time-style sum, which is not in the provided definitions) would need a proper mapping; without one, the request should be blocked with MISSING_METRIC_MAPPING, and the candidate's translated outcome is wrong.",
+      "The template variable $scope has no prefix and default '*', so it is correctly dropped; that part is fine."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

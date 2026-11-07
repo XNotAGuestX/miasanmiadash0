@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The numerator uses a fixed window `[5m]` instead of `[$__rate_interval]`, which the converter rules forbid; both rate terms must use `$__rate_interval`.",
+      "The Datadog `{$host}` filter (template variable with prefix `host`, default `*`) is dropped. It should become `host_name=~\"$host\"` on both metric selectors, since `host_name` is the observed label in the dataset. Without it the series set is wider than the Datadog request.",
+      "Quantity, unit, aggregation and grouping match: rows_fetched maps to postgresql.tup_fetched and rows_returned to postgresql.tup_returned, both monotonic sums, summed with the source *100.",
+      "The `$scope` variable has no prefix and default `*`, so dropping it is correct. The translated outcome is correct because no Datadog function is used."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

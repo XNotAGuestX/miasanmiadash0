@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Datadog sums the series (sum:redis.clients.blocked) but the candidate uses avg(), so the aggregation is wrong; the PromQL should be sum(...).",
+      "The $host template variable (tag prefix host, default *) is dropped; it should become a matcher host=~\"$host\" on the selector, which the candidate omits.",
+      "The $scope variable has no prefix and default *, so dropping it is correct; $key is not referenced by the query and is also correctly absent.",
+      "The metric is a non-monotonic sum, so no rate() is needed and the outcome of translated is acceptable once the aggregation and host matcher are fixed."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

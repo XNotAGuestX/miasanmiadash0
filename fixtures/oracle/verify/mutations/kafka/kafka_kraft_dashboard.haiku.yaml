@@ -1,0 +1,172 @@
+# Claude Haiku cross-check of each candidate against the Datadog request (scripts/crosscheck.py input).
+# haiku verdicts for kafka/kafka_kraft_dashboard. Triage only, never approval: humans set reviewed: true.
+verifier: haiku
+meta:
+  tool: scripts/crosscheck.py
+  model: claude-haiku-5-5
+  effort: medium
+  max_tokens: 16000
+  structured_output: output_config.format json_schema
+  system_prompt_sha256: e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971
+  schema_sha256: db0053dd6f2478874e3174dd255c1254e11ec857cb649947efa0e76e6856f9c1
+  cache: fixtures/oracle/verify/.haiku-cache
+results:
+- source_path: widgets[3].definition.widgets[2].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation differs: the Datadog query uses max: for both operands, but the candidate applies min() to the expand rate and max() to the shrink rate, so the difference is not the same computation.'
+  - 'series selection differs: the Datadog {$env} tag-prefixed template variable (default *) should become an env matcher (env=~"$env"), but the candidate drops it.'
+  - 'label name is unverified against the dataset: the candidate matches operation="expand"/"shrink", but the observed dataset labels for kafka.isr.operation.count are group, topic, type, service_name and service_instance_id, with no operation label, so the matchers would select nothing. The label is likely type in the dataset.'
+  - 'quantity and unit are consistent: both sides are per-second rates of ISR expand and shrink operations on a monotonic sum, so rate() is appropriate, and the translation outcome is reasonable because the metric exists.'
+  checks:
+    quantity: ok
+    unit: ok
+    aggregation: differs
+    grouping: ok
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: 083bdb14c7a07520
+- source_path: widgets[3].definition.widgets[2].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'The expand selector uses otel_metric_type="gauge", but kafka.isr.operation.count is defined as a monotonic sum (dataset_types: sum). The selector matches nothing, so the expand side is empty and the formula breaks. It should be otel_metric_type="sum" and it is still a rate over a sum, which is valid.'
+  - The Datadog query filters on {$env}, a template variable with prefix env and default *. The candidate drops that matcher, so it returns all environments. It should carry env=~"$env". The label name cannot be confirmed because 'env' is not in the observed dataset labels (the deployment-environment label may use a newer name), so the label must be checked against the dataset before the matcher is finalised.
+  - Quantity, unit, aggregation (max over rate of a monotonic count, matching Datadog .rate with max) and grouping (none in Datadog, none in candidate) are consistent. The outcome of translated is appropriate since no function is used. The series set is wrong because of the dropped env filter.
+  checks:
+    quantity: ok
+    unit: ok
+    aggregation: ok
+    grouping: ok
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: d7ac46557ab507e7
+- source_path: widgets[3].definition.widgets[2].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - The candidate multiplies the result by 100, a numeric constant not in the Datadog source (the request is a plain max(...) - max(...) difference), so it computes a different quantity.
+  - The candidate uses the label `operation`, which is not among the observed dataset labels for kafka.isr.operation.count (group, topic, type, service_name, service_instance_id). Per the dataset rules, the observed label names are authoritative, so the selector is wrong and the series filter would match nothing unless `type` is the renamed equivalent, which must be verified.
+  - The `{$env}` template variable has prefix `env` and default `*`, so it should become an `env=~"$env"` matcher. The candidate drops it, so the series set differs from the Datadog request.
+  - Aggregation (max of rate per query) and the difference of the two series match the Datadog formula, and translating rather than blocking is plausible since a monotonic OTel sum exists.
+  checks:
+    quantity: differs
+    unit: ok
+    aggregation: ok
+    grouping: ok
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: 73693e74b10ced17
+- source_path: widgets[3].definition.widgets[2].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - 'Range violates the hard rule: the expand side uses rate(...[5m]) instead of [$__rate_interval].'
+  - The {$env} filter is dropped. The template variable has prefix env and default '*', so the PromQL should carry env=~"$env" on both selectors; the candidate selects all series.
+  - 'Label name is likely wrong: the candidate matches operation="expand"/"shrink", but the dataset''s observed labels for kafka.isr.operation.count include ''type'' and not ''operation''. Per the dataset-authority rule the label should be ''type'' (values unverified).'
+  - Quantity, unit (per-second rate of ISR operation counts) and the max aggregation match the Datadog request; outcome 'translated' is the right outcome since an exact mapping exists.
+  checks:
+    quantity: ok
+    unit: ok
+    aggregation: ok
+    grouping: ok
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: 4d856726984572a6
+- source_path: widgets[3].definition.widgets[2].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons:
+  - Candidate blocks with MISSING_METRIC_MAPPING, which is the allowed outcome when no OTel metric measures the same quantity.
+  - otel_metric_definitions is empty, so no OTel metric is shown for kafka.replication.isr_expands.rate or isr_shrinks.rate; the block cannot be checked against a real mapping and is accepted on that basis.
+  - Both queries are rate-style Datadog kafka replication counters with no OTel definition supplied, so blocking the formula query1 - query2 is consistent with the hard rules.
+  checks:
+    quantity: n/a
+    unit: n/a
+    aggregation: n/a
+    grouping: n/a
+    series_count: n/a
+    outcome: ok
+  method: haiku
+  cache: c0a6908931229ea7
+- source_path: widgets[6].definition.widgets[1].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - query1 sums kafka.consumer_lag across series, but the candidate uses avg by (host_name, group) for kafka.consumer_group.lag; the aggregation differs and the result is an average instead of a total.
+  - 'Grouping does not match: the Datadog request groups by host, consumer_group and env, but the candidate groups by host_name and group. host_name and env are not in the observed dataset labels, so the label names need to be corrected (host is not confirmed either) and env is missing from the candidate.'
+  - The consumer_group and env template variables (prefix-tagged, default *) should become matchers such as group=~"$consumer_group" and an env matcher, but the candidate drops them, so the series set differs from the request. The topic variable has no matcher in the Datadog request either, so it is correctly omitted.
+  - query2 (sum by offset) matches the Datadog sum aggregation, and the outcome (translated, no functions) is correct.
+  checks:
+    quantity: ok
+    unit: ok
+    aggregation: differs
+    grouping: differs
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: 9f4e8ecc41e6f07d
+- source_path: widgets[6].definition.widgets[1].definition.requests[0]#drop_by_label
+  verdict: block
+  reasons:
+  - Query1 groups by group only, but Datadog groups by host, consumer_group and env; the candidate drops the host and env grouping, so it collapses series that Datadog keeps separate.
+  - Query1 omits the env and consumer_group template-variable matchers (env=~"$env", consumer_group=~"$consumer_group"), so it selects a different set of series than the Datadog request.
+  - 'Query2 groups by host_name, which is not among the observed dataset labels for kafka.consumer_group.offset (observed: group, topic, type, service_name, service_instance_id), so the grouping cannot be trusted to resolve in the target dataset.'
+  - Query2 also drops env from the grouping and omits the same env and consumer_group matchers as query1.
+  - Metric quantity, unit (1) and sum aggregation are consistent with the OTel gauge definitions, and no Datadog function is present, so a translated outcome is the correct outcome.
+  checks:
+    quantity: ok
+    unit: ok
+    aggregation: ok
+    grouping: differs
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: 8d8b179a4d764c21
+- source_path: widgets[6].definition.widgets[1].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - query1 wraps the lag in a hard-coded `100 *` factor that is not in the Datadog source; the scale is not justified by any unit difference, so the quantity and unit are wrong.
+  - Both candidate queries drop the `env` and `consumer_group` template-variable matchers (`env=~"$env"`, `consumer_group=~"$consumer_group"`), so the series set differs from the Datadog request.
+  - Grouping uses `host_name`, which is not among the observed dataset labels for kafka.consumer_group.lag/offset (group, topic, type, service_name, service_instance_id); host grouping cannot be expressed with that label, and `env` is dropped from the `by` clause entirely.
+  - The formula list has query1 and query2 as displayed formulas, but query1 is not a plain sum of the lag metric in the candidate, so the first PromQL is not an exact translation.
+  - The metric mapping itself (kafka.consumer_lag to kafka.consumer_group.lag, kafka.consumer_offset to kafka.consumer_group.offset, both gauges, sum aggregation) is plausible, so a translated outcome is the right outcome but the PromQL must be corrected.
+  checks:
+    quantity: differs
+    unit: differs
+    aggregation: ok
+    grouping: differs
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: 671a4fdc1dbad509
+- source_path: widgets[6].definition.widgets[1].definition.requests[0]#sibling_metric
+  verdict: block
+  reasons:
+  - 'Template variable filters are dropped: $env (prefix env) should become env=~"$env" and $consumer_group (prefix consumer_group) should become consumer_group=~"$consumer_group" on both selectors, but neither matcher appears, so the candidate covers all series instead of the filtered set.'
+  - 'Grouping is wrong: the Datadog request groups by host, consumer_group and env, but the candidate groups by host_name and group and drops env entirely.'
+  - 'Label names are not in the dataset: host_name and env are not among the observed labels for either metric, and group is the observed name for consumer group, so the host and env groupings cannot be matched as written.'
+  - 'Quantity and aggregation look plausible: consumer lag and consumer offset map to kafka.consumer_group.lag_sum and kafka.consumer_group.offset, both are gauges summed over series, and the outcome is translated as expected. The unit is ''1'' on both sides, so no scale is needed.'
+  checks:
+    quantity: ok
+    unit: ok
+    aggregation: ok
+    grouping: differs
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: c1489f6a9766944d
+- source_path: widgets[6].definition.widgets[1].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons:
+  - Candidate is blocked with MISSING_METRIC_MAPPING, and otel_metric_definitions is empty, so no OTel metric is shown to measure kafka.consumer_lag or kafka.consumer_offset.
+  - Without any OTel definitions, an exact translation cannot be verified, so blocking is the only outcome the evidence supports.
+  - Verifying this would need the definitions for the candidate OTel consumer-lag and consumer-offset metrics (for example, a consumer-group lag metric), with their units, instrument types and attributes, to confirm that no exact equivalent exists.
+  checks:
+    quantity: n/a
+    unit: n/a
+    aggregation: n/a
+    grouping: n/a
+    series_count: n/a
+    outcome: ok
+  method: haiku
+  cache: 9d66aab8b2b69e48

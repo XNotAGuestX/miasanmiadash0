@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "differs",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "redis.memory.lua is a gauge in bytes for Lua memory, while the Datadog query redis.mem.fragmentation_ratio is a dimensionless fragmentation ratio. Different quantity and unit.",
+      "No OTel metric in the provided definitions measures fragmentation ratio, so the correct outcome is blocked with MISSING_METRIC_MAPPING, not a translation to an unrelated metric.",
+      "The Datadog host template variable ($host, prefix host) is dropped from the candidate, so the host matcher =~\"$host\" is missing and the series set differs.",
+      "The $scope variable (no prefix, default *) is correctly dropped, and the key variable is unused by the query."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

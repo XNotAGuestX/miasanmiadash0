@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "query1 is redis.stats.keyspace_hits but the candidate uses redis.keyspace.misses for all three terms, so the hit-rate numerator and denominator are wrong (the result collapses to a constant 50 instead of hits/(hits+misses)*100).",
+      "No OTel definition for a keyspace hits metric is supplied, and the candidate does not map or define one, so an exact translation is not shown; the outcome should be checked against an available hits metric.",
+      "The $host template variable (tag prefix host, default *) should add host=~\"$host\" to the selectors, but the candidate omits it, so the series set differs.",
+      "The $scope variable has no prefix and is correctly dropped; the $key variable is not used by any query and is correctly absent.",
+      "Aggregation avg(rate(...[$__rate_interval])) on a monotonic sum is an acceptable form; the unit ('{miss}' count) matches the quantity of counts."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

@@ -1,0 +1,23 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The candidate multiplies by a constant 100 that is not in the Datadog source; the no-constants rule forbids this, and the unit scale must go in notes, not in promql.",
+      "The candidate drops the $db and $host template-variable matchers (db and host prefixes with default *), so it does not filter the series the Datadog request filters.",
+      "The candidate reads postgresql.operations with operation=\"hot_upd\" and applies rate(), while the Datadog query is avg of postgresql.rows_hot_updated. The quantity is a count of rows, not a rate of operations, so the metric mapping needs review.",
+      "The candidate uses avg by (postgresql_database_name) over rate(...), while the Datadog request is avg by {db} over the raw metric. The aggregation chain differs.",
+      "Grouping by db maps to the observed label postgresql_database_name, which is correct, and the $scope variable without a prefix is correctly dropped.",
+      "Outcome is translated although the constant scale violates the hard rules, so the request should be blocked or rewritten without the constant."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

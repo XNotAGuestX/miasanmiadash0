@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Aggregation is inconsistent with the Datadog formula: the numerator uses sum(rate(hits)) while the denominator uses avg(rate(hits)) + avg(rate(misses)). Datadog applies one avg per query and then combines them, so all three terms should use the same aggregation.",
+      "Template variable $host (tag prefix host, default *) must become host=~\"$host\" on both metrics. The candidate omits this matcher, so grouping and series selection differ.",
+      "Template variable $key (tag prefix key, default *) must become key=~\"$key\". The candidate omits it. The dataset only lists redis_version as an observed label, so the key label's existence must be confirmed before the matcher is emitted.",
+      "The scope variable $scope has no prefix and default *, so dropping it is correct. The *100 scale is in the Datadog source, so it is allowed. Both metrics are monotonic sums, so rate() is permitted. The translated outcome is acceptable because an exact translation exists once the aggregation and matchers are fixed."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

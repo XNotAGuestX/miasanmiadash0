@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Datadog postgresql.connections (the number of open connections per database) maps to OTel postgresql.backends, which measures the same quantity: the number of backends per database. Both are point-in-time counts, so no rate is needed and the non-monotonic sum is selected correctly.",
+      "Grouping by db maps to the observed dataset label postgresql_database_name, not the absent db_namespace, which is the required label name in this dataset.",
+      "avg by (...) matches the Datadog avg aggregation with by {db}. The $scope variable has no prefix and defaults to *, so it is correctly dropped.",
+      "The request is translated, and an exact translation exists, so the outcome is correct."
+    ],
+    "verdict": "pass"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The selector uses otel_metric_type=\"gauge\", but tup_fetched is defined as type sum (monotonic) and the dataset only has dataset_types sum, so the selector matches no series. It should be otel_metric_type=\"sum\".",
+      "The rate() over a monotonic sum is the right choice, and the rate yields per-second values matching the widget's per-sec title.",
+      "The avg() over all series matches the Datadog avg aggregation with the {$scope} template variable dropped (no prefix, default *), and there is no grouping on either side.",
+      "The metric mapping (postgresql.rows_fetched to postgresql.tup_fetched) measures the same quantity, so the outcome of translated is correct."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

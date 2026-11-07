@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "ok",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "Candidate is blocked with MISSING_METRIC_MAPPING, and no OpenTelemetry metric definitions were supplied (otel_metric_definitions is empty), so no exact OTel equivalent of redis.mem.rss can be confirmed.",
+      "Blocking is the correct outcome for a request with no verified mapping; the query uses no Datadog functions, so no function-based block applies.",
+      "Template variables are not relevant to the blocking decision; the host and key prefixes would only matter if a translation were produced."
+    ],
+    "verdict": "pass"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

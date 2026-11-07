@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The candidate multiplies the metric by a constant 100, which is not in the Datadog source (system.load.1 is a plain load average, not a percentage), and the converter must not apply numeric constants.",
+      "The OTel metric system.cpu.load_average.1m is a gauge measuring the same 1-minute load average, so an exact translation exists and the outcome should be translated without the scale factor.",
+      "Drop the 100 factor to get avg({otel_metric_name=\"system.cpu.load_average.1m\", otel_metric_type=\"gauge\"}); no scope template variable is needed since its prefix is null and default is '*'."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

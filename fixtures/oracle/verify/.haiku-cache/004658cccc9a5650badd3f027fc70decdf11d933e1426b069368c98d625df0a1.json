@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Numerator uses avg(rate(...)) while the Datadog query is sum:postgresql.rows_fetched across all series; the formula divides sums, so the numerator must be sum(rate(...)) to match.",
+      "Template variable matchers are dropped: $host (prefix host) should become host_name=~\"$host\" (host_name is observed), and $table and $db should become postgresql_table_name=~\"$table\" and postgresql_database_name=~\"$db\" (db_namespace is absent, so the observed label is required). The candidate selects a different series set.",
+      "Metric mapping rows_fetched→tup_fetched and rows_returned→tup_returned matches the same PostgreSQL quantity, and the translation outcome is correct since both metrics exist in the dataset.",
+      "The *100 constant is present in the Datadog formula source, so it is not a violation."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "ok",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "Candidate is blocked with MISSING_METRIC_MAPPING, and otel_metric_definitions is empty, so no OTel metric is verified as measuring the Datadog quantity.",
+      "docker.cpu.user is a per-container CPU percentage. The closest OTel metric (container.cpu.usage.usermode, cumulative nanoseconds) would need rate() plus a percent scaling constant, which the rules do not allow applying in promql, so no exact translation is available from the supplied definitions.",
+      "The $scope template variable has no prefix and default *, so it would be dropped; this does not change the block decision.",
+      "If a definition for a cumulative ns usermode counter is later supplied, the correct output would be a nit with the scale proposed in notes rather than a silent translation."
+    ],
+    "verdict": "pass"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

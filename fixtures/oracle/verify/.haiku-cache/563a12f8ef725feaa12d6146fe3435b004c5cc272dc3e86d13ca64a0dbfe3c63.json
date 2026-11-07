@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Grouping is lost: the Datadog query is avg by {table}, but the candidate wraps the whole selector in a bare avg() with no by clause, so it returns one series instead of one per table.",
+      "Template filters are dropped: $table (tag prefix table) should become a postgresql_table_name=~\"$table\" matcher, $host should become host_name=~\"$host\", and $db should become postgresql_database_name=~\"$db\". The candidate applies none of them, so the series set is wrong.",
+      "The label_replace stripping everything up to the first dot of postgresql_table_name is an unsupported transformation that is not derivable from the Datadog request. Nothing in the request or the metric definition shows that table values contain a schema prefix, so this is an invented rewrite.",
+      "Quantity and unit match: postgresql.rows with state=\"live\" is a non-monotonic sum in unit '1', the same live-row count as postgresql.live_rows, and no rate() is needed. The outcome is a translation, which is correct since no Datadog function is involved."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

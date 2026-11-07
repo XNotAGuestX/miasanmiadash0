@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The candidate multiplies the Datadog value by 100, a numeric constant that is not in the Datadog source. The query is a plain sum of redis.clients.blocked, so the value must not be scaled.",
+      "The $host template variable has prefix host and default *, so it should become a matcher such as host_name=~\"$host\". The candidate drops it, which changes the set of series. The dataset has no observed host label, so the label name needs checking before the matcher is emitted.",
+      "The metric is a non-monotonic sum with unit {client}, so the selector and aggregation are otherwise acceptable and sum() matches the Datadog sum. The $scope variable (no prefix, default *) is correctly dropped, and $key is unused by the query and also correctly ignored.",
+      "The outcome translated is correct because no function is involved."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

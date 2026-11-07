@@ -1,0 +1,200 @@
+# Claude Haiku cross-check of each candidate against the Datadog request (scripts/crosscheck.py input).
+# haiku verdicts for postgres/postgresql_dashboard. Triage only, never approval: humans set reviewed: true.
+verifier: haiku
+meta:
+  tool: scripts/crosscheck.py
+  model: claude-haiku-5-5
+  effort: medium
+  max_tokens: 16000
+  structured_output: output_config.format json_schema
+  system_prompt_sha256: e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971
+  schema_sha256: db0053dd6f2478874e3174dd255c1254e11ec857cb649947efa0e76e6856f9c1
+  cache: fixtures/oracle/verify/.haiku-cache
+results:
+- source_path: widgets[0].definition.requests[0]
+  verdict: block
+  reasons:
+  - 'Quantity matches: Datadog postgresql.rows_fetched corresponds to pg_stat_database tup_fetched, and rate() of the monotonic sum gives the per-second value the widget title describes.'
+  - 'Series grain differs: the OTel tup_fetched series are per database and per table (postgresql_database_name, postgresql_table_name), while the Datadog series are per monitored instance/host. avg() over all table-level series averages per table, not per host, so the value differs.'
+  - 'Aggregation is not equivalent: a Datadog avg over host series should be a sum per host (over tables/databases) followed by an average across hosts; the candidate averages directly over table series. A correct translation needs sum by (host_name) before averaging, or at least a documented series-grain caveat in notes.'
+  - Outcome is translated, which is acceptable for this request since the metric exists in the dataset and no function is used; the template variable $scope has no prefix and default *, so dropping it is correct.
+  checks:
+    quantity: ok
+    unit: ok
+    aggregation: differs
+    grouping: differs
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: 24c1094c1a1219c6
+- source_path: widgets[0].definition.requests[1]
+  verdict: nit
+  reasons:
+  - 'Same quantity: postgresql.tup_returned is the monotonic counter behind Datadog postgresql.rows_returned, and rate() yields per-second rows, matching the ''(per sec)'' widget.'
+  - 'Unit is compatible: the rate is rows per second in both.'
+  - 'Aggregation and grouping match: avg with no by-clause mirrors the Datadog avg over all series in scope.'
+  - Template variable $scope has no tag prefix and default *, so dropping it is correct.
+  - 'Series grain caveat: OTel series are split per database, table, operation and source (observed labels postgresql_database_name and postgresql_table_name), so avg over them may differ from Datadog''s per-database series. Averaging across table-level series would need a database-level collapse, e.g. sum by (postgresql_database_name) before avg, to match the Datadog grain.'
+  - Outcome translated is correct since an exact-enough mapping exists.
+  checks:
+    quantity: ok
+    unit: ok
+    aggregation: ok
+    grouping: ok
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: d9b206b2123637a9
+- source_path: widgets[0].definition.requests[2]
+  verdict: block
+  reasons:
+  - 'The metric choice is plausible: postgresql.tup_inserted measures the same rows-inserted quantity as Datadog postgresql.rows_inserted, and otel_metric_type="sum" matches the dataset.'
+  - 'Grouping/aggregation mismatch: the Datadog series are per database, but postgresql.tup_inserted is also observed per postgresql_table_name. The candidate''s avg(rate(...)) averages over every table series, which is a different quantity from averaging per-database series. The expression should first sum the rate by postgresql_database_name (dataset label, not the absent db_namespace), then average across databases.'
+  - 'Series grain: the Datadog series are per database while the OTel series are per database and per table, so the candidate must collapse the table dimension, naming postgresql_table_name as the label to collapse.'
+  - 'Rate semantics should be confirmed: the Datadog query has no rate function and the widget title says per sec, so the rate() translation is plausible, but the candidate should be checked against that intent.'
+  checks:
+    quantity: ok
+    unit: ok
+    aggregation: differs
+    grouping: differs
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: 5c0ef1b114c190a3
+- source_path: widgets[0].definition.requests[3]
+  verdict: pass
+  reasons:
+  - postgresql.tup_updated is a monotonic sum counting updated rows, matching the Datadog rows-updated quantity shown per second.
+  - rate() over the monotonic sum yields the per-second rate, matching the '(per sec)' unit of the widget.
+  - 'avg() with no by-clause matches Datadog avg: one series across all matching series.'
+  - $scope has no tag prefix and default '*', so it is correctly dropped.
+  - Only dataset-observed label names are relevant and none are used in the selector, so no label-name issue arises.
+  checks:
+    quantity: ok
+    unit: ok
+    aggregation: ok
+    grouping: ok
+    series_count: ok
+    outcome: ok
+  method: haiku
+  cache: a97b9ccc5fade157
+- source_path: widgets[1].definition.requests[0]
+  verdict: pass
+  reasons:
+  - 'Datadog postgresql.connections (the number of open connections per database) maps to OTel postgresql.backends, which measures the same quantity: the number of backends per database. Both are point-in-time counts, so no rate is needed and the non-monotonic sum is selected correctly.'
+  - Grouping by db maps to the observed dataset label postgresql_database_name, not the absent db_namespace, which is the required label name in this dataset.
+  - avg by (...) matches the Datadog avg aggregation with by {db}. The $scope variable has no prefix and defaults to *, so it is correctly dropped.
+  - The request is translated, and an exact translation exists, so the outcome is correct.
+  checks:
+    quantity: ok
+    unit: ok
+    aggregation: ok
+    grouping: ok
+    series_count: ok
+    outcome: ok
+  method: haiku
+  cache: 269cc40cc284b00f
+- source_path: widgets[2].definition.requests[0]
+  verdict: pass
+  reasons: []
+  method: rule
+- source_path: widgets[3].definition.requests[0]
+  verdict: block
+  reasons:
+  - The candidate multiplies by the constant 100, which is not in the Datadog source. Datadog system.io.util is a percent, while system.disk.io_time rate is a busy fraction (s/s, 0 to 1), so the units differ. Per the rules the scale must not be applied in promql; it should be noted with a documentation link instead.
+  - 'The underlying quantity matches: rate of system.disk.io_time (cumulative seconds busy, monotonic sum) is the busy fraction that system.io.util expresses as a percent. Aggregation avg() across devices and the unfiltered scope match the Datadog request.'
+  - 'Grouping and series are consistent: no by-clause on either side, and the dropped $scope template variable (no prefix, default *) correctly yields all series.'
+  - The metric and labels used are valid in the dataset (system.disk.io_time is in_dataset with sum type), so no label rename is needed.
+  - Correct output is translated with avg(rate(...[$__rate_interval])) without the 100 factor, with a notes entry explaining the percent vs ratio scale.
+  checks:
+    quantity: ok
+    unit: differs
+    aggregation: ok
+    grouping: ok
+    series_count: ok
+    outcome: differs
+  method: haiku
+  cache: 55e7eb347d2a5563
+- source_path: widgets[4].definition.requests[0]
+  verdict: pass
+  reasons: []
+  method: rule
+- source_path: widgets[4].definition.requests[1]
+  verdict: pass
+  reasons: []
+  method: rule
+- source_path: widgets[4].definition.requests[2]
+  verdict: pass
+  reasons: []
+  method: rule
+- source_path: widgets[5].definition.requests[0]
+  verdict: pass
+  reasons: []
+  method: rule
+- source_path: widgets[6].definition.requests[0]
+  verdict: block
+  reasons:
+  - The PromQL applies a numeric constant (100) that is not in the Datadog source; the hard rules forbid this in promql. The percent-vs-ratio scale should be stated in notes with a documentation link, not applied.
+  - 'The unit differs: Datadog system.cpu.iowait is reported in percent, while system.cpu.time is a cumulative sum in seconds, so the rate is a ratio before scaling.'
+  - 'Aggregation and grouping are plausible: max over per-host averages of the wait-mode rate matches an ungrouped max over per-host series. cpu_mode is an observed dataset label, so the matcher name is correct.'
+  - The host_name label is not in the observed dataset_labels for system.cpu.time, so its presence in the PromQL grouping could not be confirmed from the provided definitions.
+  checks:
+    quantity: ok
+    unit: differs
+    aggregation: ok
+    grouping: ok
+    series_count: ok
+    outcome: ok
+  method: haiku
+  cache: 944646b056fa27bd
+- source_path: widgets[7].definition.requests[0]
+  verdict: pass
+  reasons:
+  - system.mem.usable (available memory, including reclaimable cache) has no direct OpenTelemetry gauge equivalent; OTel system.memory.usage is split by state and would need a computed expression, so blocking with MISSING_METRIC_MAPPING is the rule-compliant outcome.
+  - The request is blocked, so quantity, unit, aggregation, grouping and series checks do not apply.
+  - The otel_metric_definitions block is empty, so the candidate's omission cannot be checked against the catalog; the verdict rests on the known semantics of the metrics.
+  - The $scope template variable has no prefix and default *, so dropping it is correct and does not affect the block decision.
+  checks:
+    quantity: n/a
+    unit: n/a
+    aggregation: n/a
+    grouping: n/a
+    series_count: n/a
+    outcome: ok
+  method: haiku
+  cache: 59e7a0c4cdaf8621
+- source_path: widgets[8].definition.requests[0]
+  verdict: pass
+  reasons:
+  - Datadog system.net.bytes_rcvd is bytes received per second summed across devices and hosts; rate() over the monotonic byte counter system.network.io with direction=receive yields the same bytes/s quantity.
+  - 'Unit matches: the OTel metric is in By and rate() gives bytes per second, matching the Datadog per-sec widget.'
+  - 'Aggregation and grouping match: the Datadog query is a plain sum with no by-clause, and the candidate is a plain sum.'
+  - The unprefixed $scope variable with default * is correctly dropped.
+  - The label system_network_direction is in the observed dataset labels, while the catalog's direction and network.io.direction are not used, so the label name is correct for the dataset.
+  - Outcome translated is correct, since no function is involved and an exact translation exists.
+  checks:
+    quantity: ok
+    unit: ok
+    aggregation: ok
+    grouping: ok
+    series_count: ok
+    outcome: ok
+  method: haiku
+  cache: a5ef9d6fe1308f65
+- source_path: widgets[8].definition.requests[1]
+  verdict: pass
+  reasons:
+  - Datadog sum:system.net.bytes_sent with no grouping maps to a cross-series sum of OTel system.network.io transmit bytes, matching the candidate's sum() with no by-clause.
+  - The direction filter system_network_direction="transmit" uses a label observed in the dataset, so the matcher is valid and selects the transmit side of the counter.
+  - Unit is bytes in both (OTel unit By), and rate() is applied only to a monotonic sum, which is allowed; the per-second display in the widget title supports the rate().
+  - The template variable $scope has no prefix and default *, so dropping it (all series) is correct.
+  - Outcome translated is correct since no function or missing metric mapping blocks the request.
+  checks:
+    quantity: ok
+    unit: ok
+    aggregation: ok
+    grouping: ok
+    series_count: ok
+    outcome: ok
+  method: haiku
+  cache: 78e7837e9cf5fd8d

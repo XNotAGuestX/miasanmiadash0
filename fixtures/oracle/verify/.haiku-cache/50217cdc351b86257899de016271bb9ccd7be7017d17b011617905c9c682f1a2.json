@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Aggregation differs: the Datadog query is sum:nginx.net.connections with no rollup, but the candidate wraps the selector in avg(), which yields a different value.",
+      "The candidate adds state=\"active\" filter that the Datadog request does not have; the source sums all connections, so the candidate selects a different set of series.",
+      "The Datadog template variable $Host (prefix host, default *) is dropped; it should become a host matcher such as host_name=~\"$Host\" (label name must be checked against the dataset), so the candidate is not scoped the same way.",
+      "Outcome translated is correct since no Datadog function is present in the query or formula; the widget title 'per second' does not add a function.",
+      "Unit {connections} is consistent between Datadog and the OTel definition."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

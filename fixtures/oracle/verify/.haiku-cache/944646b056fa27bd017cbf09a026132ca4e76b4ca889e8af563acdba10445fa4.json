@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The PromQL applies a numeric constant (100) that is not in the Datadog source; the hard rules forbid this in promql. The percent-vs-ratio scale should be stated in notes with a documentation link, not applied.",
+      "The unit differs: Datadog system.cpu.iowait is reported in percent, while system.cpu.time is a cumulative sum in seconds, so the rate is a ratio before scaling.",
+      "Aggregation and grouping are plausible: max over per-host averages of the wait-mode rate matches an ungrouped max over per-host series. cpu_mode is an observed dataset label, so the matcher name is correct.",
+      "The host_name label is not in the observed dataset_labels for system.cpu.time, so its presence in the PromQL grouping could not be confirmed from the provided definitions."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Aggregation differs: the Datadog query sums nginx.net.writing across all matching series with no grouping, but the candidate wraps the selector in avg(), which returns the mean across series instead of the total.",
+      "Quantity and unit match: nginx.connections_current with state=\"writing\" measures the same current writing connections as nginx.net.writing, in connections. The non-monotonic sum needs no rate().",
+      "Grouping matches (none in both). The $scope template variable has no prefix and default *, so dropping it is correct.",
+      "Outcome translated is correct because an exact translation exists; only the aggregation operator is wrong. The expected form is sum({otel_metric_name=\"nginx.connections_current\", otel_metric_type=\"sum\", state=\"writing\"})."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

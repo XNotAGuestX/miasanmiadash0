@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Datadog sums across all matching series (sum: with no by-clause), but the candidate uses avg(), which gives the mean per series instead of the total; the correct aggregation is sum(rate(...)).",
+      "The quantity matches: nginx.requests is a monotonic sum of requests, so rate() over $__rate_interval yields requests per second, the same unit as nginx.net.request_per_s.",
+      "No grouping is present on either side, and the $scope template variable has no prefix and default *, so it is correctly dropped and the series set is the same.",
+      "Outcome translated is appropriate because no Datadog function is involved and an exact translation exists."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

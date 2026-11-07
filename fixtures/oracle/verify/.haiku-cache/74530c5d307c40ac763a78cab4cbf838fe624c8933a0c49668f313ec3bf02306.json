@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Range uses a fixed window [5m]; the converter may only use [$__rate_interval], so this candidate is invalid as written.",
+      "Grouping label container_image_name is correct: it is observed in the dataset and matches docker_image.",
+      "The metric has an interface attribute and the candidate averages across per-interface series, while Datadog docker.net.bytes_sent is one series per container. The average therefore differs from the per-container value, and the candidate does not account for this series grain.",
+      "The template variable $scope has no prefix and default *, so dropping it is correct.",
+      "Whether rate() is right depends on whether docker.net.bytes_sent is a cumulative total; the candidate assumes it is, which should be confirmed. The correct form would be avg by (container_image_name) (rate(...[$__rate_interval])) with the interface grain addressed."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

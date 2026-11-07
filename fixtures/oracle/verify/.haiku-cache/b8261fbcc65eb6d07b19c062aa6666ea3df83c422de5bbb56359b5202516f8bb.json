@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The candidate multiplies the result by 100, a numeric constant that is not in the Datadog source (query1 is a plain sum). The rules forbid this, so the PromQL must not be emitted as written.",
+      "The Datadog metric redis.rdb.changes_since_last is a count of changes since the last RDB save, which matches the OTel metric redis.rdb.changes_since_last_save (non-monotonic sum, unit {change}), so the metric mapping itself is reasonable.",
+      "The $host template variable (tag prefix host, default *) should become a host matcher, but the candidate omits it and the OTel metric has no host-related attributes or observed labels to match against, so the series filtering is not reproduced and the gap is not reported in notes.",
+      "Since the metric is a non-monotonic sum, not wrapping it in rate() is correct, and dropping the unprefixed $scope variable is correct."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

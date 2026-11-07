@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Range uses fixed [5m] instead of the required [$__rate_interval].",
+      "Template variable $host (prefix host, default *) is not applied as a host=~\"$host\" matcher, so the candidate ignores the Datadog host scoping.",
+      "Quantity and aggregation look plausible: nginx.requests is a monotonic sum, so rate() gives requests per second, matching the per-second gauge in the Datadog query. The candidate should be corrected to use $__rate_interval and add the host matcher before it is accepted."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

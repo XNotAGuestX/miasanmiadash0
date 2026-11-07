@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "query1 uses sum by (postgresql_database_name) while the Datadog request uses avg by {db}; the aggregation differs, and query2 and query3 match only by accident.",
+      "Template variables with tag prefixes are dropped: $db should become postgresql_database_name=~\"$db\", $host should become host_name=~\"$host\", and $table should become postgresql_table_name=~\"$table\". The candidate emits no matchers, so the series set is not the same as the Datadog request.",
+      "Metric mapping is plausible: postgresql.rows_inserted/updated/deleted correspond to postgresql.tup_inserted/updated/deleted, which are monotonic sums with the observed label postgresql_database_name for grouping. The rate() use is valid on these monotonic sums.",
+      "Datadog rows_* values are per-interval counts, while the candidate returns a per-second rate. This is a unit-scale caveat to note, not a block reason on its own.",
+      "Outcome translated is correct: no Datadog functions are used."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

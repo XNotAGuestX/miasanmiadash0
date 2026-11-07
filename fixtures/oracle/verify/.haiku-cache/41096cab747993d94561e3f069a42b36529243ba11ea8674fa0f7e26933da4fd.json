@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Quantity matches: system.disk.io_time is cumulative busy seconds per device, so its rate is the busy fraction that system.io.util measures as a percent.",
+      "Unit differs: the candidate hard-codes `100 *` to turn the ratio into a percent. Numeric constants not in the Datadog source are forbidden in promql, so the scale belongs in notes with a documentation link, not in the query.",
+      "Aggregation differs: Datadog `avg:` averages utilization across disks, but the candidate uses `sum(...)`, which adds busy fractions across devices and yields totals above 100% on multi-disk hosts. It should be `avg(...)` without the constant.",
+      "Grouping and series count are unchanged: both forms return one ungrouped series, and no per-device grain is needed.",
+      "The outcome is translated, which is acceptable because an OTel equivalent exists for this metric. The attribute-derived label names are not used in the query, so no label-name issue arises."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "ok",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "Candidate blocks with MISSING_METRIC_MAPPING, and no OTel metric definitions were supplied to show an exact equivalent exists, so blocking is consistent with the provided evidence.",
+      "Datadog nginx.net.connections is a count of active connections (a gauge-like quantity), so a rate() translation would be wrong and the candidate correctly avoids it.",
+      "The widget title says 'per second', but the query is the raw connections count; this mismatch is worth noting but does not change the outcome.",
+      "Unverified: the OTel nginx receiver may expose a gauge such as nginx.connections_current with a state label. If the catalog defines it, a translation filtered to state=\"active\" could be exact and this block would need revisiting."
+    ],
+    "verdict": "pass"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

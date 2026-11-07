@@ -5,6 +5,10 @@ and is skipped unless you run `pytest --include-unreviewed`. This page lists Age
 project rules already applied, so a human can accept or correct them in `overrides.yaml` (format in
 `tests/README.md`, section "Review").
 
+**Review order:** [TRIAGE.md](TRIAGE.md) ranks every request red / yellow / unverified / green from the
+verifiers in issue #87 (deterministic lint, agent0 judge, second agent0 round, Haiku cross-check). Start
+with red; it is triage only, and nothing there marks a case reviewed.
+
 How these were made (development time only, never in the converter): `scripts/render_oracle_prompt.py` →
 Agent0 (dash0 MCP `runTask`, dataset `default`, Advanced/High, 2026-11-07) → frozen
 `fixtures/oracle/agent0/<key>/answer.yaml` (thread links in each header) → `scripts/build_expected.py`.

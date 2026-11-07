@@ -31,6 +31,7 @@ dev = [
     "types-pyyaml>=6.0.12.20261103",
 ]
 oracle = [
+    "anthropic>=2.6.0",
     "mcp==2.3.0",
 ]
 
@@ -50,12 +51,16 @@ ignore_missing_imports = true
 # Development-time fixture tooling under scripts/ (tests/scripts puts it on sys.path); it is
 # never imported by the converter, so it is not part of the typed package.
 [[tool.mypy.overrides]]
-module = ["build_expected", "render_oracle_prompt", "run_oracle", "build_otel_catalog"]
+module = [
+    "build_expected", "render_oracle_prompt", "run_oracle", "build_otel_catalog",
+    "verify_common", "lint_expected", "mutate_expected", "crosscheck", "triage",
+    "render_review_dashboard",
+]
 ignore_missing_imports = true
 
 # The Agent0 MCP client is an opt-in group (`uv sync --group oracle`); type-check without it too.
 [[tool.mypy.overrides]]
-module = ["mcp", "mcp.*"]
+module = ["mcp", "mcp.*", "anthropic", "anthropic.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

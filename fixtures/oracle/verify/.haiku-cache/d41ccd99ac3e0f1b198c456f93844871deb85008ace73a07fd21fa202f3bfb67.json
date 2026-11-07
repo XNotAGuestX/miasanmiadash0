@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Applies a literal 100 scale in promql; the units differ (Datadog iowait is a percent, the OTel cpu.time rate is a seconds-per-second ratio), so the scale must go in notes with a documentation link, not in promql.",
+      "Uses a fixed [5m] range instead of [$__rate_interval], which the converter rules forbid.",
+      "Otherwise the quantity (CPU wait fraction per host, then max across hosts) and the monotonic sum rate look compatible; cpu_mode is an observed dataset label, but host_name is not listed in dataset_labels and needs confirmation against the dataset (possibly host_name vs a newer label name).",
+      "Outcome 'translated' is not justified while the scale and window rules are violated; the request should be re-derived under the rules."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}
