@@ -44,6 +44,7 @@ NETWORK_CSV = f"https://github.com/DataDog/integrations-core/blob/{SHA}/network/
 UPSTREAM_BLOBS = {
     "docker_daemon": "1ef28eb2a1f231951d603a0361410557ee5dd52f",
     "kafka": "3439fcd79daa3f01b184106b99dd7d4142e99c8e",
+    "kafka_consumer": "2985bcac5bde8407bafd0cd7122014f4bb789915",
     "nginx": "07acfdaa69e6bca1348ce0adbea14f8b9d616466",
     "postgres": "b3bdef91abc7796447a6be7292c371e463343039",
     "redisdb": "20c488356336ddc8330ca0272b2a092c8ddd1963",
