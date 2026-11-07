@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Datadog sum:system.net.bytes_sent with no grouping maps to a cross-series sum of OTel system.network.io transmit bytes, matching the candidate's sum() with no by-clause.",
+      "The direction filter system_network_direction=\"transmit\" uses a label observed in the dataset, so the matcher is valid and selects the transmit side of the counter.",
+      "Unit is bytes in both (OTel unit By), and rate() is applied only to a monotonic sum, which is allowed; the per-second display in the widget title supports the rate().",
+      "The template variable $scope has no prefix and default *, so dropping it (all series) is correct.",
+      "Outcome translated is correct since no function or missing metric mapping blocks the request."
+    ],
+    "verdict": "pass"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

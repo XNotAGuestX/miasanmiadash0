@@ -1,0 +1,179 @@
+# lint verdicts for docker_daemon/docker_dashboard. Triage only, never approval: humans set reviewed: true.
+verifier: lint
+meta:
+  tool: scripts/lint_expected.py
+results:
+- source_path: widgets[6].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'literal: constant 1e+07 is not in the Datadog source'
+  - 'aggregation: q: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[6].definition.requests[0]#drop_by_label
+  verdict: block
+  reasons:
+  - 'literal: constant 1e+07 is not in the Datadog source'
+  - 'grouping: q: Datadog by {container_name}, PromQL by (); answer labels: container_name->container_name'
+  - 'grouping: q: answer maps tag container_name -> container_name, PromQL groups by ()'
+- source_path: widgets[6].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: container.cpu.usage.usermode is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on container.cpu.usage.usermode with otel_metric_type=gauge'
+  - 'literal: constant 1e+07 is not in the Datadog source'
+- source_path: widgets[6].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+  - 'literal: constant 1e+07 is not in the Datadog source'
+- source_path: widgets[6].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+  - 'literal: constant 1e+07 is not in the Datadog source'
+- source_path: widgets[6].definition.requests[0]#sibling_metric
+  verdict: block
+  reasons:
+  - 'literal: constant 1e+07 is not in the Datadog source'
+- source_path: widgets[6].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[20].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: q: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[20].definition.requests[0]#drop_by_label
+  verdict: block
+  reasons:
+  - 'grouping: q: Datadog by {docker_image}, PromQL by (); answer labels: docker_image->container_image_name'
+  - 'grouping: q: answer maps tag docker_image -> container_image_name, PromQL groups by ()'
+- source_path: widgets[20].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: container.blockio.io_service_bytes_recursive is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on container.blockio.io_service_bytes_recursive with otel_metric_type=gauge'
+- source_path: widgets[20].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[20].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+- source_path: widgets[20].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[20].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[21].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: q: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[21].definition.requests[0]#drop_by_label
+  verdict: block
+  reasons:
+  - 'grouping: q: Datadog by {docker_image}, PromQL by (); answer labels: docker_image->container_image_name'
+  - 'grouping: q: answer maps tag docker_image -> container_image_name, PromQL groups by ()'
+- source_path: widgets[21].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: container.blockio.io_service_bytes_recursive is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on container.blockio.io_service_bytes_recursive with otel_metric_type=gauge'
+- source_path: widgets[21].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[21].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+- source_path: widgets[21].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[21].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[23].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: q: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[23].definition.requests[0]#drop_by_label
+  verdict: block
+  reasons:
+  - 'grouping: q: Datadog by {docker_image}, PromQL by (); answer labels: docker_image->container_image_name'
+  - 'grouping: q: answer maps tag docker_image -> container_image_name, PromQL groups by ()'
+- source_path: widgets[23].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: container.network.io.usage.rx_bytes is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on container.network.io.usage.rx_bytes with otel_metric_type=gauge'
+- source_path: widgets[23].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[23].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+- source_path: widgets[23].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[23].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[24].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: q: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[24].definition.requests[0]#drop_by_label
+  verdict: block
+  reasons:
+  - 'grouping: q: Datadog by {docker_image}, PromQL by (); answer labels: docker_image->container_image_name'
+  - 'grouping: q: answer maps tag docker_image -> container_image_name, PromQL groups by ()'
+- source_path: widgets[24].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: container.network.io.usage.tx_bytes is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on container.network.io.usage.tx_bytes with otel_metric_type=gauge'
+- source_path: widgets[24].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[24].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+- source_path: widgets[24].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[24].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[26].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: q: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[26].definition.requests[0]#drop_by_label
+  verdict: block
+  reasons:
+  - 'grouping: q: Datadog by {container_name}, PromQL by (); answer labels: container_name->container_name'
+  - 'grouping: q: answer maps tag container_name -> container_name, PromQL groups by ()'
+- source_path: widgets[26].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: container.network.io.usage.tx_bytes is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on container.network.io.usage.tx_bytes with otel_metric_type=gauge'
+- source_path: widgets[26].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[26].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+- source_path: widgets[26].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[26].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []

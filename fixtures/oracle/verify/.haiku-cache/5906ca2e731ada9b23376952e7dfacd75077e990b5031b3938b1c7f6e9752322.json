@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The candidate multiplies the result by 100, a numeric constant that does not appear in the Datadog source; the converter must not introduce it, so the unit/scale is wrong.",
+      "The metric choice is sound: postgresql.tup_inserted is a monotonic sum counting rows inserted, matching postgresql.rows_inserted, and rate() over $__rate_interval gives a per-second value consistent with the widget title.",
+      "The unfiltered scope variable (no tag prefix, default *) is correctly dropped, and avg() over all series matches the Datadog avg with no grouping.",
+      "Outcome is translated and no blocking rule applies, so the only defect is the unsourced constant 100; the correct promql would be avg(rate({otel_metric_name=\"postgresql.tup_inserted\", otel_metric_type=\"sum\"}[$__rate_interval])) without the scale."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

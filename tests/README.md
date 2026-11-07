@@ -147,9 +147,30 @@ what enforces them.
 Agent0's live checks ran against the Dash0 `default` dataset, where receiver data only exists
 2026-11-07 ~14:05–15:21 UTC.
 
+## Verifying the oracle (development time only, issue #87)
+
+Before a human signs off, verifiers triage each request's expectation. Their verdicts
+(`pass | nit | block`, contract in `scripts/verify_common.py`) are written to
+`fixtures/oracle/verify/<svc>/<id>/<verifier>.yaml`. They only set the **review order**: no test
+and no converter code reads them, and only a human sets `reviewed: true`.
+
+| Layer | Command | What it checks |
+|---|---|---|
+| L0 lint (deterministic) | `uv run scripts/lint_expected.py --all` | PromQL parses; aggregator and `by` grouping match the Datadog query; `rate()` only on monotonic sums; instrument type vs catalog; no invented constants; only `[$__rate_interval]`; formula shape and count |
+| Mutations | `uv run scripts/mutate_expected.py --all`, then `lint_expected.py --all --mutations` / `crosscheck.py input … --mutations` | known-bad variants (`agg_swap`, `drop_by_label`, `rate_on_gauge`, `add_scale`, `range_change`, `sibling_metric`, `outcome_flip`) measure each verifier's catch rate |
+| W2 agent0 judge | `uv run scripts/run_oracle.py --mode judge [--case <svc>/<id>]` (prompt: `fixtures/oracle/JUDGE.md`) | agent0, in a fresh thread, first derives its own answer from the Datadog request, then compares it to the anonymous candidate and runs it live |
+| W3a round 2 | `uv run scripts/run_oracle.py --full --out-dir fixtures/oracle/agent0-r2`, then `uv run scripts/crosscheck.py rerun --all` | a second agent0 round; outcome mismatch → block, `canonical_promql`-equal → pass, otherwise Haiku decides equivalent / cosmetic / semantic |
+| W3b Haiku vs input | `uv run scripts/crosscheck.py input <svc>/<id> \| --all` (`claude-haiku-5-5`, `ANTHROPIC_API_KEY`) | the candidate against the Datadog request, the OTel catalog definitions and the labels observed in the dataset (`fixtures/oracle/dash0_default_labels.yaml`); answers are cached in `fixtures/oracle/verify/.haiku-cache/` |
+| Triage | `uv run scripts/triage.py --all` → `fixtures/expected/TRIAGE.md` | red = any block; yellow = a nit or judge/Haiku split; green = all pass and judge or Haiku ran; unverified otherwise. A verifier below 80 % mutation catch rate is *untrusted*: its findings still count, its pass does not |
+| W1 review dashboards | `uv run scripts/render_review_dashboard.py <svc>/<id>`, then `scripts/review/README.md` | one Perses panel per translated request (triage colour, Datadog query in the description), viewed in a local Perses that queries Dash0; Dash0 publish is the fallback |
+
+Agreement between LLM verifiers is not proof: they make correlated errors. Use disagreement and
+findings to decide what to look at first; a green request still needs a human look.
+
 ## Review (`overrides.yaml`)
 
-Unreviewed expectations are proposals. A human reviews `fixtures/expected/REVIEW.md`, then records
+Unreviewed expectations are proposals. A human reviews `fixtures/expected/TRIAGE.md` (review order)
+and `fixtures/expected/REVIEW.md` (flagged deviations), then records
 decisions in `fixtures/expected/<svc>/<id>/overrides.yaml`, keyed by request `source_path`:
 
 ```yaml

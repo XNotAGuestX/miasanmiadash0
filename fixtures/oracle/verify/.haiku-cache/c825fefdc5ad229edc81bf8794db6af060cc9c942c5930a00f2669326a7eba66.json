@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The candidate multiplies the result by a constant 100 that does not appear in the Datadog source query, which the hard rules forbid. Any percent-style scale must go in notes with a documentation link, not in the PromQL.",
+      "The Datadog query applies no rate or per_second function, so the candidate's rate(...[$__rate_interval]) changes the unit from a raw count to a per-second value. The widget title says '(per sec)', but the query itself does not state a rate, so this needs to be called out rather than assumed.",
+      "The metric mapping is plausible: postgresql.tup_updated is a monotonic sum measuring rows updated, so the quantity matches and rate() is allowed on it. Grouping and series scope match because neither side groups and the $scope template variable has no prefix and default '*', so it is dropped on both sides.",
+      "Correct outcome would be translated without the constant (or blocked if the per-second semantics cannot be settled), so the candidate's translated outcome with the scale is wrong."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

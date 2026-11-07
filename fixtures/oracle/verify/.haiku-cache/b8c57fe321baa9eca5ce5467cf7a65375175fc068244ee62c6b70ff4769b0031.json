@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "differs",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "Candidate blocks with MISSING_METRIC_MAPPING, but otel_metric_definitions is empty, so the claim that no OTel metric measures this quantity is unsupported by the supplied evidence.",
+      "The Datadog query is a plain avg of postgresql.rows_inserted with no functions, and the template variable $scope has no prefix and defaults to *, so it is dropped. Nothing in the request forces a block.",
+      "The OTel PostgreSQL receiver likely exposes inserted-row counts as a monotonic sum such as postgresql.operations filtered by operation=\"ins\". This needs checking against the catalog before the block is accepted. If it exists, an exact translation (rate over $__rate_interval, averaged, no scope matcher) is expected and blocking is wrong.",
+      "The widget title says 'per sec', but the query has no per_second function, so the rate is implied by the rate() conversion of a monotonic sum, not by a Datadog function."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

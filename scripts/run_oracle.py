@@ -6,8 +6,24 @@ conversion path (AGENTS.md): nothing under src/ imports it, and the converter
 never reads its output.
 
 Usage:
-  uv run scripts/run_oracle.py [INPUT_JSON] [--jobs N] [--retries N] [--full]
-                                [--case SVC/ID ...] [--adopt-existing] [--dry-run]
+  uv run scripts/run_oracle.py [INPUT_JSON] [--mode answer|judge] [--jobs N] [--retries N]
+                                [--full] [--case SVC/ID ...] [--out-dir DIR]
+                                [--adopt-existing] [--dry-run]
+
+Modes (same runner, state, retries and resume; only prompt, validation and output differ):
+  --mode answer (default)  scripts/render_oracle_prompt.py -> fixtures/oracle/agent0/<key>/
+                           {prompt.md, answer.yaml} -> scripts/build_expected.py.
+                           State: fixtures/oracle/agent0/state.json.
+  --mode judge             issue #87 verifier `judge`: scripts/render_judge_prompt.py
+                           (fixtures/oracle/JUDGE.md; needs fixtures/expected/<key>/expected.yaml)
+                           -> fixtures/oracle/verify/<key>/{judge.prompt.md, judge.answer.yaml}
+                           plus the normalized verdicts judge.yaml (scripts/verify_common.py).
+                           No build step. State: fixtures/oracle/verify/state.judge.json.
+  --out-dir DIR            write <DIR>/<key>/... instead of the mode's directory, keep state in
+                           <DIR>/state.json (judge: <DIR>/state.judge.json), and never run
+                           build_expected (it only reads fixtures/oracle/agent0). A second,
+                           independent answer round for comparison (issue #87, W3a):
+                             uv run scripts/run_oracle.py --full --out-dir fixtures/oracle/agent0-r2
 
 INPUT_JSON (default fixtures/oracle/dashboards.json):
   {"dataset": "default", "model_class": "advanced", "reasoning_effort": "high",
@@ -61,11 +77,16 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import build_expected  # noqa: E402
+import render_judge_prompt  # noqa: E402
 import render_oracle_prompt  # noqa: E402
+import verify_common  # noqa: E402
 
 DEFAULT_INPUT = ROOT / "fixtures" / "oracle" / "dashboards.json"
 DEFAULT_STATE = ROOT / "fixtures" / "oracle" / "agent0" / "state.json"
 AGENT0_DIR = ROOT / "fixtures" / "oracle" / "agent0"
+VERIFY_DIR = ROOT / "fixtures" / "oracle" / "verify"
+DEFAULT_JUDGE_STATE = VERIFY_DIR / "state.judge.json"
+EXPECTED_DIR = ROOT / "fixtures" / "expected"
 DEFAULT_MCP_URL = "https://api.eu-west-1.aws.dash0.com/mcp"
 
 STATE_VERSION = 1
@@ -75,6 +96,9 @@ REASONING_EFFORTS = {"low", "medium", "high", "xhigh", "max"}
 THREAD_ID = re.compile(r"(?:thread_id=|Thread ID: `)([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})")
 YAML_BLOCK = re.compile(r"```ya?ml[ \t]*\n(.*?)\n```", re.DOTALL)
 STILL_WORKING = re.compile(r"still working", re.IGNORECASE)
+
+JUDGE_CHECKS = ("quantity", "unit", "aggregation", "grouping", "series_count", "outcome")
+JUDGE_CHECK_VALUES = ("ok", "differs", "n/a")
 
 
 # --------------------------------------------------------------------------- errors
@@ -288,14 +312,202 @@ def validate_answer(yaml_text: str, case: dict) -> list[dict]:
     return items
 
 
-def answer_header(job: Job, thread_id: str, asked_at: str) -> str:
+def validate_judge(yaml_text: str, case: dict) -> list[dict]:
+    """Structural checks of a judge answer; returns normalized verdict results in case order.
+
+    Each result keeps source_path, verdict and reasons plus the judge's extra keys (independent,
+    checks, live_check, notes) and satisfies verify_common.check_result. A single reason given as a
+    string is accepted as a one-item list; verdict and check values are lower-cased.
+    """
+    try:
+        items = yaml.safe_load(yaml_text)
+    except yaml.YAMLError as exc:
+        raise AnswerError(f"answer is not valid YAML: {exc}") from exc
+    if not isinstance(items, list) or not all(isinstance(i, dict) for i in items):
+        raise AnswerError("answer must be a YAML list of mappings")
+
+    requests = verify_common.case_requests(case)
+    errors: list[str] = []
+    results: dict[str, dict[str, Any]] = {}
+    for item in items:
+        sp = item.get("source_path")
+        if sp not in requests:
+            errors.append(f"unknown source_path {sp!r}")
+            continue
+        if sp in results:
+            errors.append(f"duplicate source_path {sp!r}")
+            continue
+        verdict = str(item.get("verdict") or "").strip().lower()
+        if verdict not in verify_common.VERDICTS:
+            errors.append(f"{sp}: verdict must be one of {', '.join(verify_common.VERDICTS)}, got {item.get('verdict')!r}")
+        reasons = item.get("reasons")
+        reasons = [] if reasons is None else [reasons] if isinstance(reasons, str) else reasons
+        if not isinstance(reasons, list) or not all(isinstance(r, str) and r.strip() for r in reasons):
+            errors.append(f"{sp}: reasons must be a list of strings (quote values that contain a colon)")
+            reasons = []
+        elif verdict in ("nit", "block") and not reasons:
+            errors.append(f"{sp}: {verdict} needs at least one reason")
+        checks = item.get("checks")
+        if not isinstance(checks, dict):
+            errors.append(f"{sp}: checks must be a mapping of {', '.join(JUDGE_CHECKS)}")
+            checks = {}
+        else:
+            absent = [c for c in JUDGE_CHECKS if c not in checks]
+            if absent:
+                errors.append(f"{sp}: checks missing {absent}")
+            checks = {c: str(checks[c]).strip().lower() for c in JUDGE_CHECKS if c in checks}
+            bad = {c: v for c, v in checks.items() if v not in JUDGE_CHECK_VALUES}
+            if bad:
+                errors.append(f"{sp}: check values must be one of {', '.join(JUDGE_CHECK_VALUES)}, got {bad}")
+        independent = item.get("independent")
+        if independent in (None, "", []):
+            errors.append(f"{sp}: independent result missing")
+        if item.get("live_check") in (None, ""):
+            errors.append(f"{sp}: live_check missing")
+        result: dict[str, Any] = {
+            "source_path": sp,
+            "verdict": verdict,
+            "reasons": reasons,
+            "independent": independent,
+            "checks": checks,
+            "live_check": str(item.get("live_check")),
+        }
+        if item.get("notes"):
+            result["notes"] = item["notes"]
+        results[sp] = result
+    missing = [sp for sp in requests if sp not in results]
+    if missing:
+        errors.append(f"no verdict for {len(missing)} request(s): {missing[:3]}{' ...' if len(missing) > 3 else ''}")
+    if errors:
+        raise AnswerError("; ".join(errors))
+    ordered = [results[sp] for sp in requests]
+    for r in ordered:
+        verify_common.check_result(r)
+    return ordered
+
+
+def answer_header(
+    job: Job,
+    thread_id: str,
+    asked_at: str,
+    *,
+    kind: str = "answer",
+    prompt_name: str = "prompt.md",
+    note: str = "Provenance only, never test input.",
+) -> str:
     model = "/".join(x for x in (job.spec.model_class, job.spec.reasoning_effort) if x) or "connection default"
+    what, how = ("answer", "scripts/run_oracle.py") if kind == "answer" else (f"{kind} answer", f"scripts/run_oracle.py --mode {kind}")
     return (
-        f"# Agent0 answer, verbatim. Asked {asked_at} via dash0 MCP runTask (scripts/run_oracle.py,"
+        f"# Agent0 {what}, verbatim. Asked {asked_at} via dash0 MCP runTask ({how},"
         f" requested {model}), dataset {job.spec.dataset}, thread {thread_id},"
-        f" prompt: prompt.md (sha256 {prompt_sha256(job.prompt)[:12]}).\n"
-        "# Provenance only, never test input.\n"
+        f" prompt: {prompt_name} (sha256 {prompt_sha256(job.prompt)[:12]}).\n"
+        f"# {note}\n"
     )
+
+
+# --------------------------------------------------------------------------- modes
+
+
+Writer = Callable[[Path, Job, str, str, list[dict], str], None]
+
+
+@dataclasses.dataclass(frozen=True)
+class Mode:
+    """The mode-specific parts of a run. Runner, State, McpAgent0, retries and resume are shared."""
+
+    name: str
+    render: Callable[[str, str], str]  # (case key, dataset) -> prompt text
+    validate: Callable[[str, dict], list[dict]]  # (answer YAML, case) -> items; raises AnswerError
+    write: Writer  # (out_dir, job, thread_id, answer YAML, items, asked_at) -> files
+    summary: Callable[[list[dict]], str]
+    out_dir: Path
+    state_path: Path
+    prompt_name: str
+    answer_name: str
+    builds: bool  # run build_expected after an answer
+    needs_expected: bool  # the prompt is rendered from fixtures/expected/<key>/expected.yaml
+
+
+def write_answer_files(out_dir: Path, job: Job, thread_id: str, answer_text: str, items: list[dict], asked_at: str) -> None:
+    out = out_dir / job.spec.key
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "prompt.md").write_text(job.prompt)
+    (out / "answer.yaml").write_text(answer_header(job, thread_id, asked_at) + answer_text)
+
+
+def write_judge_files(out_dir: Path, job: Job, thread_id: str, answer_text: str, items: list[dict], asked_at: str) -> None:
+    out = out_dir / job.spec.key
+    out.mkdir(parents=True, exist_ok=True)
+    (out / render_judge_prompt.PROMPT_NAME).write_text(job.prompt)
+    header = answer_header(
+        job, thread_id, asked_at, kind="judge", prompt_name=render_judge_prompt.PROMPT_NAME,
+        note="Triage signal only, never test input or approval.",
+    )
+    (out / "judge.answer.yaml").write_text(header + answer_text)
+    meta = {
+        "thread_id": thread_id,
+        "asked_at": asked_at,
+        "prompt_sha256": prompt_sha256(job.prompt),
+        "dataset": job.spec.dataset,
+        "model_class": job.spec.model_class,
+        "reasoning_effort": job.spec.reasoning_effort,
+    }
+    verify_common.write_verdicts(
+        job.spec.key,
+        "judge",
+        items,
+        meta=meta,
+        header=f"Normalized from judge.answer.yaml (Agent0 thread {thread_id}) by scripts/run_oracle.py --mode judge.",
+        path=out / "judge.yaml",
+    )
+
+
+def answer_summary(items: list[dict]) -> str:
+    return f"{sum(1 for i in items if i.get('outcome') == 'translated')}/{len(items)} translated"
+
+
+def judge_summary(items: list[dict]) -> str:
+    counts = {v: sum(1 for i in items if i["verdict"] == v) for v in verify_common.VERDICTS}
+    return ", ".join(f"{n} {v}" for v, n in counts.items())
+
+
+MODES = ("answer", "judge")
+
+
+def get_mode(name: str = "answer", out_dir: Path | None = None) -> Mode:
+    """The strategy for one mode; paths come from the module constants at call time. With `out_dir`
+    the outputs and the default state move there and build_expected never runs."""
+    if name == "answer":
+        base = out_dir or AGENT0_DIR
+        return Mode(
+            name="answer",
+            render=render_oracle_prompt.render,
+            validate=validate_answer,
+            write=write_answer_files,
+            summary=answer_summary,
+            out_dir=base,
+            state_path=out_dir / "state.json" if out_dir else DEFAULT_STATE,
+            prompt_name="prompt.md",
+            answer_name="answer.yaml",
+            builds=out_dir is None,
+            needs_expected=False,
+        )
+    if name == "judge":
+        base = out_dir or VERIFY_DIR
+        return Mode(
+            name="judge",
+            render=render_judge_prompt.render,
+            validate=validate_judge,
+            write=write_judge_files,
+            summary=judge_summary,
+            out_dir=base,
+            state_path=out_dir / "state.judge.json" if out_dir else DEFAULT_JUDGE_STATE,
+            prompt_name=render_judge_prompt.PROMPT_NAME,
+            answer_name="judge.answer.yaml",
+            builds=False,
+            needs_expected=True,
+        )
+    raise InputError(f"unknown mode {name!r} (one of {', '.join(MODES)})")
 
 
 def header_thread_id(answer_path: Path) -> str | None:
@@ -399,7 +611,8 @@ class Runner:
         state: State,
         opts: Options,
         *,
-        agent0_dir: Path = AGENT0_DIR,
+        mode: Mode | None = None,
+        agent0_dir: Path | None = None,
         sleep: Sleep = asyncio.sleep,
         clock: Callable[[], float] | None = None,
         log: Log = print,
@@ -408,7 +621,8 @@ class Runner:
         self.agent0 = agent0
         self.state = state
         self.opts = opts
-        self.agent0_dir = agent0_dir
+        self.mode = mode or get_mode("answer")
+        self.agent0_dir = agent0_dir or self.mode.out_dir  # output root: <dir>/<key>/...
         self.sleep = sleep
         self.clock = clock or (lambda: asyncio.get_running_loop().time())
         self.log = log
@@ -458,14 +672,14 @@ class Runner:
                     self.log(f"[{key}] waiting on thread {thread_id}")
                 if answer_text is None:
                     answer_text = await self.wait_for_answer(thread_id, job.spec.dataset)
-                items = validate_answer(answer_text, case)
-                self.write_answer(job, thread_id, answer_text)
-                translated = sum(1 for i in items if i.get("outcome") == "translated")
+                items = self.mode.validate(answer_text, case)
+                self.write_answer(job, thread_id, answer_text, items)
+                summary = self.mode.summary(items)
                 self.state.update(key, status="done", answered_at=now_iso(), error=None)
-                if self.opts.build:
+                if self.opts.build and self.mode.builds:
                     self.build(key)
-                self.log(f"[{key}] done: {translated}/{len(items)} requests translated")
-                return Result(key, "done", f"{translated}/{len(items)} translated")
+                self.log(f"[{key}] done: {summary}")
+                return Result(key, "done", summary)
             except WaitLimit as exc:
                 self.state.update(key, status="pending", error=str(exc))
                 self.log(f"[{key}] {exc}; rerun to resume thread {thread_id}")
@@ -502,25 +716,32 @@ class Runner:
                 continue
             raise AnswerError(f"no YAML block in the answer: {text[:200]!r}")
 
-    def write_answer(self, job: Job, thread_id: str, answer_text: str) -> None:
-        out = self.agent0_dir / job.spec.key
-        out.mkdir(parents=True, exist_ok=True)
-        (out / "prompt.md").write_text(job.prompt)
+    def write_answer(self, job: Job, thread_id: str, answer_text: str, items: list[dict] | None = None) -> None:
         asked_at = (self.state.get(job.spec.key) or {}).get("asked_at") or now_iso()
-        (out / "answer.yaml").write_text(answer_header(job, thread_id, asked_at) + answer_text)
+        if items is None:
+            items = self.mode.validate(answer_text, load_case(job.spec.key))
+        self.mode.write(self.agent0_dir, job, thread_id, answer_text, items, asked_at)
 
 
 def build_expected_for(key: str) -> None:
     build_expected.write(key)
 
 
-def adopt_existing(specs: list[CaseSpec], state: State, prompts: dict[str, str], agent0_dir: Path = AGENT0_DIR) -> list[str]:
+def adopt_existing(
+    specs: list[CaseSpec],
+    state: State,
+    prompts: dict[str, str],
+    agent0_dir: Path = AGENT0_DIR,
+    *,
+    prompt_name: str = "prompt.md",
+    answer_name: str = "answer.yaml",
+) -> list[str]:
     adopted = []
     for spec in specs:
-        answer = agent0_dir / spec.key / "answer.yaml"
+        answer = agent0_dir / spec.key / answer_name
         if state.get(spec.key) or not answer.is_file():
             continue
-        prompt_file = agent0_dir / spec.key / "prompt.md"
+        prompt_file = agent0_dir / spec.key / prompt_name
         recorded_prompt = prompt_file.read_text() if prompt_file.is_file() else None
         state.update(
             spec.key,
@@ -555,10 +776,19 @@ def read_env(name: str) -> str | None:
     return None
 
 
+def display_path(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("input", nargs="?", type=Path, default=DEFAULT_INPUT, help="dashboards JSON (default: %(default)s)")
-    p.add_argument("--state", type=Path, default=DEFAULT_STATE, help="state JSON (default: %(default)s)")
+    p.add_argument("--mode", choices=MODES, default="answer", help="answer: propose expectations; judge: verdicts on expected.yaml (default: answer)")
+    p.add_argument("--out-dir", type=Path, help="write <DIR>/<key>/... and <DIR>/state.json instead; implies --no-build")
+    p.add_argument("--state", type=Path, help="state JSON (default: per mode, see above)")
     p.add_argument("--jobs", "-j", type=int, default=3, help="dashboards asked in parallel (default: 3)")
     p.add_argument("--retries", type=int, default=3, help="retries per dashboard after an error (default: 3)")
     p.add_argument("--full", action="store_true", help="ask again for every dashboard in the input")
@@ -576,24 +806,38 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(sys.argv[1:] if argv is None else argv)
     try:
+        mode = get_mode(args.mode, args.out_dir)
         specs = load_input(args.input)
         only = set(args.case) if args.case else None
         if only:
             unknown = only - {s.key for s in specs}
             if unknown:
                 raise InputError(f"--case not in {args.input}: {sorted(unknown)}")
-        state = State(args.state)
+        if mode.needs_expected:
+            no_expected = [s.key for s in specs if not (EXPECTED_DIR / s.key / "expected.yaml").is_file()]
+            if only and only & set(no_expected):
+                raise InputError(f"no fixtures/expected/<key>/expected.yaml to judge for {sorted(only & set(no_expected))}")
+            for key in no_expected:
+                print(f"warning: {key}: no expected.yaml to judge, skipped", file=sys.stderr)
+            specs = [s for s in specs if s.key not in no_expected]
+        state = State(args.state or mode.state_path)
     except InputError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 
-    prompts = {s.key: render_oracle_prompt.render(s.key, s.dataset) for s in specs}
+    build = args.no_build is False and mode.builds
+    print(
+        f"mode {mode.name}: writes {display_path(mode.out_dir)}/<key>/{{{mode.prompt_name}, {mode.answer_name}"
+        f"{', judge.yaml' if mode.name == 'judge' else ''}}}, state {display_path(state.path)},"
+        f" build_expected: {'yes' if build else 'no'}"
+    )
+    prompts = {s.key: mode.render(s.key, s.dataset) for s in specs}
     if args.adopt_existing:
         if args.dry_run:
             print("dry run: --adopt-existing not applied")
         else:
-            for key in adopt_existing(specs, state, prompts):
-                print(f"[{key}] adopted existing answer.yaml as done")
+            for key in adopt_existing(specs, state, prompts, mode.out_dir, prompt_name=mode.prompt_name, answer_name=mode.answer_name):
+                print(f"[{key}] adopted existing {mode.answer_name} as done")
     jobs, warnings = select_jobs(specs, state, prompts, full=args.full, only=only)
     for w in warnings:
         print(f"warning: {w}", file=sys.stderr)
@@ -613,8 +857,8 @@ def main(argv: list[str] | None = None) -> int:
     url = read_env("DASH0_MCP_URL") or (
         read_env("DASH0_API_URL").rstrip("/") + "/mcp" if read_env("DASH0_API_URL") else DEFAULT_MCP_URL
     )
-    opts = Options(jobs=args.jobs, retries=args.retries, max_wait_s=args.max_wait, build=not args.no_build)
-    runner = Runner(McpAgent0.over_http(url, token, read_timeout_s=opts.wait_chunk_s + 120), state, opts)
+    opts = Options(jobs=args.jobs, retries=args.retries, max_wait_s=args.max_wait, build=build)
+    runner = Runner(McpAgent0.over_http(url, token, read_timeout_s=opts.wait_chunk_s + 120), state, opts, mode=mode)
     results = asyncio.run(runner.run(jobs))
 
     print()
