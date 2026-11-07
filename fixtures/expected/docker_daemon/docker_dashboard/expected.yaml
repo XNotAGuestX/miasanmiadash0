@@ -14,7 +14,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -26,7 +26,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -38,13 +38,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: yes, 5 series (topk over 14:20-15:20 UTC evaluated at 15:20 UTC)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
     - UNSUPPORTED_QUERY_FUNCTION
-  notes:
-  - 'rule overlay: Datadog function(s) top block the request (plans 02/03/05); Agent0''s translation is discarded: topk(5, max_over_time((avg by (container_name) (rate({otel_metric_name="container.cpu.usage.usermode", otel_metric_type="sum"}[$__rate_interval])) / 1e7)[$__range:]))'
 - source_path: widgets[3].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -52,13 +50,22 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not in dataset
+  dataset:
+    available: false
+    missing_metrics:
+    - container.memory.anon
+    otel_sources:
+    - collector-contrib/receiver/dockerstatsreceiver/metadata.yaml
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    promql:
+    - avg by (container_name) ({otel_metric_name="container.memory.anon", otel_metric_type="sum"})
+    errors: []
+    warnings:
+    - TEMPLATE_VARIABLE_DROPPED
   notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+  - OTel metric(s) container.memory.anon are defined by OpenTelemetry but not present in dataset `default`; the translation stands, but it cannot be live-checked
 - source_path: widgets[4].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -66,13 +73,22 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not in dataset
+  dataset:
+    available: false
+    missing_metrics:
+    - container.state.status
+    otel_sources:
+    - collector-contrib/receiver/dockerstatsreceiver/metadata.yaml
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    promql:
+    - sum({otel_metric_name="container.state.status", otel_metric_type="sum", container_state_status="running"})
+    errors: []
+    warnings:
+    - TEMPLATE_VARIABLE_DROPPED
   notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+  - OTel metric(s) container.state.status are defined by OpenTelemetry but not present in dataset `default`; the translation stands, but it cannot be live-checked
 - source_path: widgets[5].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -80,7 +96,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -94,11 +110,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: yes, 23 series (22-23 per step over 14:05-15:21 UTC)
+    agent0: yes, 23 series (rate window 5m substituted for $__rate_interval, 14:05–15:21Z)
   expected:
     outcome: translated
     promql:
-    - avg by (container_name) (rate({otel_metric_name="container.cpu.usage.usermode", otel_metric_type="sum"}[$__rate_interval])) / 1e7
+    - avg by (container_name) (rate({otel_metric_name="container.cpu.usage.usermode", otel_metric_type="sum"}[$__rate_interval]))
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -109,7 +125,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series (not translated; without fill the base query avg by (container_image_name) of the rate returns 23 series)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -121,7 +137,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -133,7 +149,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -145,7 +161,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series (not translated)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -157,13 +173,14 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: yes, 23 series (14:05–15:21Z)
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
-  notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+    outcome: translated
+    promql:
+    - sum by (container_image_name) ({otel_metric_name="container.memory.file", otel_metric_type="sum"})
+    errors: []
+    warnings:
+    - TEMPLATE_VARIABLE_DROPPED
 - source_path: widgets[18].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -171,7 +188,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -185,7 +202,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: yes, 23 series (20-23 per step over 14:05-15:21 UTC)
+    agent0: yes, 23 series (rate window 5m substituted for $__rate_interval, 14:05–15:21Z)
   expected:
     outcome: translated
     promql:
@@ -200,7 +217,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: yes, 23 series (20-23 per step over 14:05-15:21 UTC)
+    agent0: yes, 23 series (rate window 5m substituted for $__rate_interval, 14:05–15:21Z)
   expected:
     outcome: translated
     promql:
@@ -215,7 +232,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: yes, 23 series (22-23 per step over 14:05-15:21 UTC)
+    agent0: yes, 23 series (rate window 5m substituted for $__rate_interval, 14:05–15:21Z)
   expected:
     outcome: translated
     promql:
@@ -230,7 +247,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: yes, 23 series (22-23 per step over 14:05-15:21 UTC)
+    agent0: yes, 23 series (rate window 5m substituted for $__rate_interval, 14:05–15:21Z)
   expected:
     outcome: translated
     promql:
@@ -245,13 +262,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: yes, 5 series (topk over 14:20-15:20 UTC evaluated at 15:20 UTC)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
     - UNSUPPORTED_QUERY_FUNCTION
-  notes:
-  - 'rule overlay: Datadog function(s) top block the request (plans 02/03/05); Agent0''s translation is discarded: topk(5, max_over_time((avg by (container_name) (rate({otel_metric_name="container.network.io.usage.tx_bytes", otel_metric_type="sum"}[$__rate_interval])))[$__range:]))'
 - source_path: widgets[26].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -259,7 +274,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: yes, 23 series (22-23 per step over 14:05-15:21 UTC)
+    agent0: yes, 23 series (rate window 5m substituted for $__rate_interval, 14:05–15:21Z)
   expected:
     outcome: translated
     promql:
@@ -274,7 +289,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/docker_daemon/docker_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
