@@ -8,7 +8,7 @@ The demo migrates the pinned DataDog/integrations-core Postgres assets (commit `
 
 | Step | State |
 |---|---|
-| `convert` on the Postgres fixtures | Run. Output below is real; it matches the goldens `fixtures/expected/postgres-p1/` and `fixtures/expected/postgres-monitors/` |
+| `convert` on the Postgres fixtures | Run. Output below is real. Its dashboard, check-rule and Prometheus rule files match the goldens `fixtures/expected/postgres-p1/` and `fixtures/expected/postgres-monitors/`; `report.json` and `manifest.json` differ, because each golden converts only its own folder |
 | `publish --dry-run` | Run, with placeholder credentials (a dry run sends nothing) |
 | `publish` (live) | **Not run.** Needs blocker B1, the Dash0 token, and the user's go-ahead (plan 07 Tasks 1 and 5) |
 | Converted queries in Dash0 | Checked read-only through the Dash0 MCP server (dataset `default`); results in `docs/STATUS.md` |
@@ -23,10 +23,12 @@ Update this table as the live steps happen. Never present generated JSON as a mi
 2. **Credentials in the shell, never in arguments or files you share:**
 
    ```bash
-   export DASH0_API_URL=…        # e.g. https://api.eu-west-1.aws.dash0.com
-   export DASH0_AUTH_TOKEN=…     # scoped to dataset default
+   export DASH0_API_URL='<your API URL>'   # e.g. https://api.eu-west-1.aws.dash0.com
    export DASH0_DATASET=default
+   read -rs DASH0_AUTH_TOKEN; export DASH0_AUTH_TOKEN   # paste the token (scoped to dataset default); it isn't echoed
    ```
+
+   Or keep all three in a local `.env` (copied from `.env.example`, never committed) and load it with `set -a; . ./.env; set +a`.
 
 3. **Start the threshold crossing early.** The check's window is 15 minutes, so a crossing shows up only after at least 15 minutes of held connections. Current usage is about 0.08 against thresholds of 0.8 (degraded) and 0.9 (failed). The holder script adds idle sessions and refuses to exceed `max_connections`:
 
@@ -36,7 +38,16 @@ Update this table as the live steps happen. Never present generated JSON as a mi
    scripts/hold-pg-connections.sh <count> 1800             # Ctrl-C releases every session
    ```
 
-   Pick `<count>` so that (current + count) / max_connections lands between 0.8 and 0.9 for "degraded", or above 0.9 for "failed". Capture screenshots of both states as they happen. They are the evidence for step 6 if the live crossing isn't finished in time.
+   Pick `<count>` so that (current + count) / max_connections lands between 0.8 and 0.9 for "degraded", or above 0.9 for "failed". The script refuses to go past `max_connections` − `superuser_reserved_connections`. Capture screenshots of both states as they happen. They are the evidence for step 6 if the live crossing isn't finished in time.
+
+   **Planned numbers (not yet run live; blocker B2).** A read-only Dash0 check on 2026-11-07 showed about 8 backends (ratio ≈ 0.08), so `max_connections` ≈ 100:
+
+   | `<count>` | Usage | State |
+   |---|---|---|
+   | 75 | (8 + 75) / 100 ≈ 0.83 | degraded |
+   | 85 | (8 + 85) / 100 ≈ 0.93 | failed |
+
+   The `--dry-run` line prints the measured `max_connections` and current count. Record the live values here after the run.
 
 4. **Have the fallback ready** (see "Fallback" below).
 
@@ -83,8 +94,8 @@ Running it twice produces identical bytes; `tests/test_golden_dashboards.py` che
 Open `report.json`. Every widget and monitor has an outcome and, if blocked, a diagnostic with a source path and a suggested action:
 
 - `replication_delay` is blocked with `UNSUPPORTED_QUERY_FUNCTION`: `Function 'anomalies' is not supported.`
-- In "Postgres - Metrics", widgets 2, 4 and 5 are blocked with `MISSING_AGGREGATOR` (Datadog documents no default space aggregator), and widgets 3 and 7 with `MISSING_METRIC_MAPPING` (`system.io.util`, `system.mem.*`).
-- "Postgres - Overview" blocks 22 of 30 widgets, mostly toplist/table widget types and functions such as `week_before`.
+- In "Postgres - Metrics" (zero-based paths, as in `report.json`), `widgets[2]`, `widgets[4]` and `widgets[5]` are blocked with `MISSING_AGGREGATOR` (Datadog documents no default space aggregator), and `widgets[3]` and `widgets[7]` with `MISSING_METRIC_MAPPING` (`system.io.util`, `system.mem.*`).
+- "Postgres - Overview" blocks 22 of 30 widgets: `toplist`, `query_table` and `log_stream` widgets (`UNSUPPORTED_WIDGET`); unmapped metrics such as `postgresql.dead_rows` (`MISSING_METRIC_MAPPING`); formulas such as `week_before(...)` (`UNSUPPORTED_FORMULA`); and the query functions `.as_count()` and `.rollup()` (`UNSUPPORTED_QUERY_FUNCTION`).
 
 Nothing is silently dropped. A widget is all or nothing.
 
@@ -103,7 +114,7 @@ DRY-RUN POST https://api.eu-west-1.aws.dash0.com/api/import/dashboard?dataset=de
 DRY-RUN POST https://api.eu-west-1.aws.dash0.com/api/import/dashboard?dataset=default  Postgres - Overview  (publish)
 ```
 
-Without `--allow-partial`, the two partial dashboards are skipped too. Then, with the user's explicit go-ahead, run it without `--dry-run`. Show the `IMPORTED … id=…` lines and `/tmp/pg-demo/import-results.json`. A second run reports `UNCHANGED`; publishing is create-only and never overwrites.
+Without `--allow-partial`, the two partial dashboards are skipped too. `publish` reads JSON, so convert without `--format yaml` for a run you'll publish. Then, with the user's explicit go-ahead, run it without `--dry-run`. Show the `IMPORTED … id=…` lines and `/tmp/pg-demo/import-results.json`. A second run reports `UNCHANGED`; publishing is create-only and never overwrites.
 
 ### 5. The dashboard in Dash0
 

@@ -65,6 +65,10 @@ uv run migrator publish --from /tmp/pg-out --dry-run           # print the plan;
 uv run migrator publish --from /tmp/pg-out --allow-partial     # import, including partial dashboards
 ```
 
+> **Not yet run live.** The dry run has been run; the live import (second line) waits on a Dash0 token (blocker B1) and has only been tested against a fake HTTP transport.
+
+`publish` reads JSON output only: a run converted with `--format yaml` fails with "not valid JSON".
+
 **What it sends:** translated dashboards and check rules from `manifest.json`. Partial dashboards go only with `--allow-partial`. Prometheus rule files and sources are never sent.
 
 **How it sends them:**
@@ -84,6 +88,8 @@ Exit codes:
 uv run migrator fetch --source datadog --dashboard-id abc-def-123 --monitor-id 4242 --out /tmp/dd-in
 uv run migrator convert --source datadog --input /tmp/dd-in --mapping mappings/datadog/postgres.json --out /tmp/dd-out
 ```
+
+> **Not yet run live.** Waits on a Datadog account (blocker B3). The argument and site validation paths have been run; the requests have only been tested against a fake API, including a fetch → convert round trip that matches the Postgres golden byte for byte.
 
 **What it does:** downloads the selected dashboards and monitors unchanged, into `dashboards/<id>.json` and `monitors/<id>.json`.
 
