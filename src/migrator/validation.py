@@ -5,6 +5,7 @@ These checks prove syntax and schema only, never API acceptance or semantics.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Annotated, Any, Literal
 
 import promql_parser
@@ -17,6 +18,9 @@ _PLACEHOLDERS = {
     "$__range": "5m",
     "$__threshold": "0",
 }
+# A Dash0 check rule may use only $__threshold; a Prometheus rule file none at all.
+_CHECK_RULE_PLACEHOLDERS = {"$__threshold": "0"}
+_NO_PLACEHOLDERS: dict[str, str] = {}
 
 
 class _Strict(BaseModel):
@@ -154,10 +158,14 @@ def validate_dashboard(d: Any) -> list[str]:
     return problems
 
 
-def check_promql_syntax(expr: str) -> str | None:
-    """Return None if ``expr`` parses as PromQL, else a short error message."""
+def check_promql_syntax(expr: str, placeholders: Mapping[str, str] = _PLACEHOLDERS) -> str | None:
+    """Return None if ``expr`` parses as PromQL, else a short error message.
+
+    ``placeholders`` are substituted before parsing; the default is the dashboard
+    set. Rule artifacts pass a narrower set so a dashboard variable fails there.
+    """
     text = expr
-    for placeholder, value in _PLACEHOLDERS.items():
+    for placeholder, value in placeholders.items():
         text = text.replace(placeholder, value)
     try:
         promql_parser.parse(text)
@@ -225,7 +233,7 @@ def validate_check_rule(r: Any) -> list[str]:
     if model.thresholds.degraded is None and isinstance(r, dict):
         if "degraded" in r.get("thresholds", {}):
             problems.append("thresholds.degraded: must be omitted, not null")
-    syntax = check_promql_syntax(model.expression)
+    syntax = check_promql_syntax(model.expression, _CHECK_RULE_PLACEHOLDERS)
     if syntax is not None:
         problems.append(f"expression: {syntax}")
     return problems
@@ -240,7 +248,7 @@ def validate_prometheus_rule_group(g: Any) -> list[str]:
     problems: list[str] = []
     for gi, group in enumerate(model.groups):
         for ri, rule in enumerate(group.rules):
-            syntax = check_promql_syntax(rule.expr)
+            syntax = check_promql_syntax(rule.expr, _NO_PLACEHOLDERS)
             if syntax is not None:
                 problems.append(f"groups[{gi}].rules[{ri}].expr: {syntax}")
     return problems

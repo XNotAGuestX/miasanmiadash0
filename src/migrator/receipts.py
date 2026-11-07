@@ -32,6 +32,8 @@ class Receipt(BaseModel):
     id: str | None = None
     http_status: int | None = Field(default=None, alias="httpStatus")
     message: str | None = None
+    # The publish --name-prefix the asset was sent with (None: no prefix).
+    name_prefix: str | None = Field(default=None, alias="namePrefix")
 
     @property
     def key(self) -> tuple[str, str, str]:
@@ -71,7 +73,12 @@ def record_receipt(receipts: list[Receipt], new: Receipt) -> list[Receipt]:
 
 
 def decide(
-    receipts: list[Receipt], path: str, sha256: str, api_url: str, dataset: str
+    receipts: list[Receipt],
+    path: str,
+    sha256: str,
+    api_url: str,
+    dataset: str,
+    name_prefix: str | None = None,
 ) -> ReceiptDecision:
     existing = next((r for r in receipts if r.key == (path, api_url, dataset)), None)
     if existing is None:
@@ -80,5 +87,6 @@ def decide(
         return "reject-unknown"  # a human must reconcile first
     if existing.status == "imported":
         # no update flow: an edited artifact is never pushed over the old one
-        return "skip-unchanged" if existing.sha256 == sha256 else "reject-changed"
+        same = existing.sha256 == sha256 and existing.name_prefix == name_prefix
+        return "skip-unchanged" if same else "reject-changed"
     return "publish"  # a definite HTTP failure created nothing

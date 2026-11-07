@@ -104,3 +104,14 @@ def test_decide_matrix() -> None:
     # a receipt for another destination does not count
     assert decide([receipt(p)], p, "s1", API, "other") == "publish"
     assert decide([receipt(p)], p, "s1", "https://other", "default") == "publish"
+
+
+def test_decide_compares_the_name_prefix() -> None:
+    p = "dashboards/a.json"
+    tagged = receipt(p, namePrefix="demo-")
+    assert decide([tagged], p, "s1", API, "default", "demo-") == "skip-unchanged"
+    assert decide([tagged], p, "s1", API, "default") == "reject-changed"
+    assert decide([receipt(p)], p, "s1", API, "default", "demo-") == "reject-changed"
+    assert decide([receipt(p, status="failed", namePrefix="x-")], p, "s1", API, "default") == (
+        "publish"
+    )

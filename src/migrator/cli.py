@@ -47,7 +47,10 @@ def _cmd_publish(args: argparse.Namespace) -> int:
     try:
         run = run_publish(
             PublishOptions(
-                source_dir=args.source_dir, dry_run=args.dry_run, allow_partial=args.allow_partial
+                source_dir=args.source_dir,
+                dry_run=args.dry_run,
+                allow_partial=args.allow_partial,
+                name_prefix=args.name_prefix,
             ),
             os.environ,
         )
@@ -118,6 +121,11 @@ def build_parser() -> argparse.ArgumentParser:
     pub.add_argument("--dry-run", action="store_true", help="print the plan; send nothing")
     pub.add_argument(
         "--allow-partial", action="store_true", help="also publish partially translated dashboards"
+    )
+    pub.add_argument(
+        "--name-prefix",
+        metavar="PREFIX",
+        help="prepend PREFIX (a-z, 0-9, '-'; e.g. demo-) to every published name",
     )
 
     fet = sub.add_parser("fetch", help="download selected source assets by ID (read-only)")
