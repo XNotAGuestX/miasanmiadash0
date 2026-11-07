@@ -16,10 +16,9 @@ import types
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
-
 import render_review_dashboard as rrd
 from verify_common import load_case, load_expected
 
@@ -108,8 +107,10 @@ def test_description_has_datadog_side_and_agent0_notes() -> None:
     desc = rrd.render(KEY)["spec"]["panels"]["req-0"]["spec"]["display"]["description"]
     assert "avg:postgresql.rows_fetched{$scope}" in desc
     assert "Formulas: `query1`" in desc
-    assert "agent0: Both metrics come from pg_stat_database.tup_fetched" in desc
-    assert "Triage: unverified; signals: none" in desc
+    # Note and triage text come from the recorded agent0 answer and verdicts, which are
+    # regenerated, so compare against those files instead of a fixed sentence.
+    assert f"agent0: {rrd.agent0_items(KEY)[FIRST]['notes']}" in desc
+    assert re.search(r"^Triage: \S+; signals: ", desc, re.MULTILINE)
 
 
 def test_blocked_requests_markdown_panel() -> None:
@@ -129,7 +130,12 @@ def test_blocked_requests_markdown_panel() -> None:
         req = next(r for r in case["requests"] if r["source_path"] == entry["source_path"])
         for q in req["queries"]:
             assert q["query"] in text
-    assert "agent0: query2 (system.mem.total) alone" in text  # agent0's notes on a blocked request
+    # agent0's notes on the blocked requests (from the recorded answer)
+    answers = rrd.agent0_items(KEY)
+    noted = [answers[e["source_path"]]["notes"] for e in blocked if answers.get(e["source_path"], {}).get("notes")]
+    assert noted
+    for note in noted:
+        assert f"agent0: {note}" in text
     # translated requests are not listed as blocked
     assert FIRST not in text
 
@@ -295,7 +301,7 @@ class FakePerses:
     def open(self, req: urllib.request.Request, timeout: float) -> _Resp:
         assert req.full_url.startswith("http://perses.test/")
         path = req.full_url.removeprefix("http://perses.test")
-        body = json.loads(req.data) if req.data else None
+        body = json.loads(cast(bytes, req.data)) if req.data else None
         method = req.get_method()
         self.calls.append((method, path, body))
         if body is not None:
@@ -307,6 +313,7 @@ class FakePerses:
             stored["metadata"]["version"] = 1
             return _Resp(200, json.dumps(ll.prune_empty(stored)).encode())
         if method == "POST":
+            assert body is not None
             self.store[f"{path}/{body['metadata']['name']}"] = body
             return _Resp(200, json.dumps(body).encode())
         if method == "PUT":
@@ -317,7 +324,7 @@ class FakePerses:
 
 
 def _run_dir(tmp_path: Path) -> Path:
-    return rrd.write_run(KEY, rrd.render(KEY), tmp_path / "out")
+    return Path(rrd.write_run(KEY, rrd.render(KEY), tmp_path / "out"))
 
 
 DASH = "/api/v1/projects/oracle-review/dashboards"

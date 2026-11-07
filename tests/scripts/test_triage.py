@@ -6,10 +6,9 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-import yaml
-
 import triage
 import verify_common as vc
+import yaml
 
 KEY = "postgres/postgresql_dashboard"
 

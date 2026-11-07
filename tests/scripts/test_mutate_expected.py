@@ -5,12 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import pytest
-import yaml
-
 import lint_expected as le
 import mutate_expected as me
+import pytest
 import verify_common as vc
+import yaml
 
 KEY = "postgres/postgresql_screenboard_dashboard"
 SUM = 'rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum"}[$__rate_interval])'
