@@ -22,7 +22,7 @@
               "content": {
                 "$ref": "#/spec/panels/widget-0-0"
               },
-              "height": 2,
+              "height": 6,
               "width": 8,
               "x": 0,
               "y": 0
@@ -31,7 +31,7 @@
               "content": {
                 "$ref": "#/spec/panels/widget-0-1"
               },
-              "height": 2,
+              "height": 6,
               "width": 8,
               "x": 8,
               "y": 0
@@ -50,7 +50,7 @@
               "content": {
                 "$ref": "#/spec/panels/widget-1-0"
               },
-              "height": 2,
+              "height": 6,
               "width": 8,
               "x": 0,
               "y": 0
@@ -59,10 +59,10 @@
               "content": {
                 "$ref": "#/spec/panels/widget-1-1"
               },
-              "height": 2,
+              "height": 6,
               "width": 8,
               "x": 0,
-              "y": 2
+              "y": 6
             }
           ]
         }
@@ -78,7 +78,7 @@
               "content": {
                 "$ref": "#/spec/panels/widget-4-0"
               },
-              "height": 2,
+              "height": 6,
               "width": 8,
               "x": 0,
               "y": 0
@@ -87,7 +87,7 @@
               "content": {
                 "$ref": "#/spec/panels/widget-4-1"
               },
-              "height": 2,
+              "height": 6,
               "width": 8,
               "x": 8,
               "y": 0
@@ -96,10 +96,10 @@
               "content": {
                 "$ref": "#/spec/panels/widget-4-3"
               },
-              "height": 2,
+              "height": 6,
               "width": 8,
               "x": 0,
-              "y": 2
+              "y": 6
             }
           ]
         }
@@ -115,10 +115,10 @@
               "content": {
                 "$ref": "#/spec/panels/widget-5-2"
               },
-              "height": 1,
+              "height": 3,
               "width": 14,
               "x": 0,
-              "y": 3
+              "y": 9
             }
           ]
         }

@@ -553,6 +553,19 @@ def _fits_source_grid(widget: Any) -> bool:
 
 
 class _GridBuilder:
+    # Datadog layout units -> Perses grid units. Columns: Datadog has 12, Perses 24, so x2.
+    # Rows: Datadog cells are square ("a maximum width of 12 grid squares",
+    # https://docs.datadoghq.com/dashboards/), so one Datadog row is as tall as one Datadog
+    # column (= two Perses columns) is wide. Perses rows are 30 px plus a 10 px margin
+    # (ROW_HEIGHT, DEFAULT_MARGIN in perses/shared@933b45b
+    # dashboards/src/constants/grid-layout-config.ts; the Grid Item spec at
+    # https://perses.dev/docs/perses/latest/api/dashboard/ gives no unit). On a W px wide grid
+    # that is (W + 10) / 480 Perses rows per Datadog row; no doc fixes W. ROW_SCALE = 3 keeps
+    # cells square at W = 1430 px. Proposed constant, pending decision on issue #109.
+    # Scaling every item by the same factors keeps non-overlapping layouts non-overlapping.
+    COL_SCALE = 2
+    ROW_SCALE = 3
+
     def __init__(self, widgets: list[Any], title: str | None, ordered: bool) -> None:
         self.use_source = ordered and bool(widgets) and all(_fits_source_grid(w) for w in widgets)
         self.title = title
@@ -561,7 +574,8 @@ class _GridBuilder:
     def place(self, key: str, widget: Any) -> None:
         layout = _source_layout(widget) if self.use_source else None
         if layout is not None:
-            x, y, w, h = 2 * layout["x"], layout["y"], 2 * layout["width"], layout["height"]
+            x, w = self.COL_SCALE * layout["x"], self.COL_SCALE * layout["width"]
+            y, h = self.ROW_SCALE * layout["y"], self.ROW_SCALE * layout["height"]
         else:
             k = len(self.items)
             x, y, w, h = (k % 2) * AUTO_WIDTH, (k // 2) * AUTO_HEIGHT, AUTO_WIDTH, AUTO_HEIGHT
