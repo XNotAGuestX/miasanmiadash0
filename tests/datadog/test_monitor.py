@@ -196,6 +196,29 @@ def test_notification_handles_and_ignored_fields() -> None:
     assert {"priority", "tags"} <= set(ignored)
 
 
+@pytest.mark.parametrize(
+    ("message", "handle"),
+    [
+        ("{{#is_alert}}@pagerduty-db{{/is_alert}}", "@pagerduty-db"),
+        ("notify (@slack-ops) now", "@slack-ops"),
+        ("@oncall first", "@oncall"),
+        ("line one\n@webhook-x", "@webhook-x"),
+    ],
+)
+def test_handles_after_template_or_punctuation_are_reported(message: str, handle: str) -> None:
+    body = golden_body()
+    body["message"] = message
+    notes = [d for d in run(body).diagnostics if d.code == "NOTIFICATION_NOT_MIGRATED"]
+    assert len(notes) == 1
+    assert handle in notes[0].message
+
+
+def test_email_addresses_are_not_handles() -> None:
+    body = golden_body()
+    body["message"] = "mail ops+db@example.com or a.b@c.d"
+    assert "NOTIFICATION_NOT_MIGRATED" not in codes(run(body))
+
+
 def test_diagnostics_are_sorted_by_path() -> None:
     paths = [d.source_path for d in run(golden_body()).diagnostics]
     assert paths == sorted(paths)
