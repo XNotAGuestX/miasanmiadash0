@@ -23,6 +23,15 @@ uv run migrator convert --source datadog \
 
 `convert` is offline. It writes `dashboards/`, `source/` copies, `report.json` and `manifest.json` into an empty `--out` directory, and exits `0` (all translated), `2` (some item partial or blocked) or `1` (bad input, mapping or arguments).
 
+To view the converted dashboards in a local Perses (Docker, bound to `127.0.0.1`; queries go to Dash0 through its proxy, so set `DASH0_AUTH_TOKEN` to see data, or any placeholder to see the layout only):
+
+```bash
+DASH0_AUTH_TOKEN=... docker compose -f scripts/review/docker-compose.yaml up -d
+uv run scripts/review/load_local.py /tmp/pg-out    # prints each dashboard's URL
+```
+
+See [scripts/review/README.md](scripts/review/README.md).
+
 ## Start here
 
 1. Read [AGENTS.md](AGENTS.md), the shared working rules for humans, Codex, and Claude.
