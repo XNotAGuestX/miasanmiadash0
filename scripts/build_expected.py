@@ -14,12 +14,12 @@ adds the project's deterministic rules on top:
   * a `dataset` block for translations whose OTel metrics are defined but missing from the dataset
     (they stay translated; only the live check is impossible),
   * the converter's mapping-independent checks (PR #85 is the source of truth): request read
-    errors (data source, formula syntax) first, then per displayed query a function, a missing
-    space aggregator (MISSING_AGGREGATOR; #85 has no default aggregator) or an unsupported
-    template variable,
+    errors (data source, formula syntax) first, then per displayed query a function or an
+    unsupported template variable (a missing space aggregator means Datadog's default, avg),
   * diagnostic codes derived from the source text (not from Agent0's prose); a block that no rule
     explains gets MISSING_METRIC_MAPPING with a note that the code is a proposal,
   * warnings: TEMPLATE_VARIABLE_DROPPED for unprefixed `*` variables (prefixed ones are promoted),
+    DEFAULT_AGGREGATOR_APPLIED for a query without a space aggregator,
   * widget and dashboard expectations derived from the request expectations,
   * milestones.
 Nothing here is ever called by the converter or by the tests.
@@ -114,7 +114,7 @@ def displayed_queries(request: dict) -> list[dict]:
 
 def query_error(text: str, variables: dict[str, dict]) -> str | None:
     """First mapping-independent blocking check that fails, in PR #85's order: parse_metric_query
-    (wrapping function, then syntax), then compile_metric_query (function, aggregator, ...)."""
+    (wrapping function, then syntax), then compile_metric_query (function, template variables)."""
     if WRAPPING_FN.match(text):
         return "UNSUPPORTED_QUERY_FUNCTION"
     prefix = LEADING_WORD.match(text)
@@ -122,8 +122,6 @@ def query_error(text: str, variables: dict[str, dict]) -> str | None:
         return "UNSUPPORTED_QUERY_SYNTAX"  # e.g. `100*(...)`, `-sum:...`, `count:`, `p95:`
     if TRAILING_FN.search(text):
         return "UNSUPPORTED_QUERY_FUNCTION"
-    if not AGGREGATOR.match(text):
-        return "MISSING_AGGREGATOR"  # #85 deliberately has no default aggregator
     for name in VARIABLE.findall(text.split("}")[0]):
         var = variables.get(name)
         if var is None or var.get("default") not in (None, "*"):
@@ -187,9 +185,12 @@ def anchor_variable_matchers(promql: list[str], variables: dict[str, dict]) -> l
 def rule_warnings(request: dict, variables: dict[str, dict]) -> list[str]:
     """Warning codes (as a set) for a translated request. PR #85 drops an unprefixed `*` variable
     with TEMPLATE_VARIABLE_DROPPED and promotes a prefixed one to a Perses ListVariable (matcher
-    `<label>=~"^($name)$"`, no warning), assuming the reviewed mapping maps the prefix tag."""
+    `<label>=~"^($name)$"`, no warning), assuming the reviewed mapping maps the prefix tag. A
+    query without a space aggregator compiles with avg and DEFAULT_AGGREGATOR_APPLIED."""
     warnings = set()
     for q in displayed_queries(request):
+        if not AGGREGATOR.match(q["query"] or ""):
+            warnings.add("DEFAULT_AGGREGATOR_APPLIED")
         for name in VARIABLE.findall((q["query"] or "").split("}")[0]):
             var = variables.get(name)
             if var is not None and var.get("prefix") is None and var.get("default") in (None, "*"):
