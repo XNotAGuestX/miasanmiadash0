@@ -353,6 +353,22 @@
       "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
     },
     {
+      "code": "OPTION_IGNORED",
+      "message": "Template variable '$db' became a Perses ListVariable on label 'postgresql_database_name'; variable rendering unverified in Dash0. Selected values are matched as an anchored regex (=~\"^($db)$\"); they are not escaped, so values containing regex characters such as '.' can match more series.",
+      "severity": "info",
+      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
+      "sourcePath": "template_variables[2]",
+      "suggestedAction": "Check the variable in Dash0 after publishing."
+    },
+    {
+      "code": "OPTION_IGNORED",
+      "message": "Template variable '$host' became a Perses ListVariable on label 'host_name'; variable rendering unverified in Dash0. Selected values are matched as an anchored regex (=~\"^($host)$\"); they are not escaped, so values containing regex characters such as '.' can match more series.",
+      "severity": "info",
+      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
+      "sourcePath": "template_variables[3]",
+      "suggestedAction": "Check the variable in Dash0 after publishing."
+    },
+    {
       "code": "LAYOUT_APPROXIMATED",
       "message": "Datadog layout converted to a 24-column Perses grid; positions are approximate.",
       "severity": "info",
@@ -547,15 +563,6 @@
       "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
     },
     {
-      "code": "TEMPLATE_VARIABLE_DROPPED",
-      "message": "Template variable '$host' (default '*') dropped; the converted panel shows all series.",
-      "severity": "warning",
-      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
-      "sourcePath": "widgets[1].definition.widgets[0].definition.requests[0].queries[0].query",
-      "sourceText": "max:postgresql.percent_usage_connections{$scope,$host}",
-      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
-    },
-    {
       "code": "OPTION_IGNORED",
       "message": "Widget option 'text_align' is ignored.",
       "severity": "info",
@@ -622,15 +629,6 @@
       "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
     },
     {
-      "code": "TEMPLATE_VARIABLE_DROPPED",
-      "message": "Template variable '$host' (default '*') dropped; the converted panel shows all series.",
-      "severity": "warning",
-      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
-      "sourcePath": "widgets[1].definition.widgets[1].definition.requests[0].queries[0].query",
-      "sourceText": "sum:postgresql.rows_fetched{$scope,$host}",
-      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
-    },
-    {
       "code": "OPTION_IGNORED",
       "message": "Query option 'semantic_mode' is ignored.",
       "severity": "info",
@@ -650,15 +648,6 @@
     {
       "code": "TEMPLATE_VARIABLE_DROPPED",
       "message": "Template variable '$scope' (default '*') dropped; the converted panel shows all series.",
-      "severity": "warning",
-      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
-      "sourcePath": "widgets[1].definition.widgets[1].definition.requests[0].queries[1].query",
-      "sourceText": "sum:postgresql.rows_returned{$scope,$host}",
-      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
-    },
-    {
-      "code": "TEMPLATE_VARIABLE_DROPPED",
-      "message": "Template variable '$host' (default '*') dropped; the converted panel shows all series.",
       "severity": "warning",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[1].definition.widgets[1].definition.requests[0].queries[1].query",
@@ -1248,24 +1237,6 @@
       "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
     },
     {
-      "code": "TEMPLATE_VARIABLE_DROPPED",
-      "message": "Template variable '$db' (default '*') dropped; the converted panel shows all series.",
-      "severity": "warning",
-      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
-      "sourcePath": "widgets[4].definition.widgets[0].definition.requests[0].queries[0].query",
-      "sourceText": "avg:postgresql.rows_inserted{$scope,$db,$host} by {db}",
-      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
-    },
-    {
-      "code": "TEMPLATE_VARIABLE_DROPPED",
-      "message": "Template variable '$host' (default '*') dropped; the converted panel shows all series.",
-      "severity": "warning",
-      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
-      "sourcePath": "widgets[4].definition.widgets[0].definition.requests[0].queries[0].query",
-      "sourceText": "avg:postgresql.rows_inserted{$scope,$db,$host} by {db}",
-      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
-    },
-    {
       "code": "OPTION_IGNORED",
       "message": "Query option 'semantic_mode' is ignored.",
       "severity": "info",
@@ -1365,24 +1336,6 @@
     {
       "code": "TEMPLATE_VARIABLE_DROPPED",
       "message": "Template variable '$scope' (default '*') dropped; the converted panel shows all series.",
-      "severity": "warning",
-      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
-      "sourcePath": "widgets[4].definition.widgets[1].definition.requests[0].queries[0].query",
-      "sourceText": "avg:postgresql.rows_updated{$scope,$db,$host} by {db}",
-      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
-    },
-    {
-      "code": "TEMPLATE_VARIABLE_DROPPED",
-      "message": "Template variable '$db' (default '*') dropped; the converted panel shows all series.",
-      "severity": "warning",
-      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
-      "sourcePath": "widgets[4].definition.widgets[1].definition.requests[0].queries[0].query",
-      "sourceText": "avg:postgresql.rows_updated{$scope,$db,$host} by {db}",
-      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
-    },
-    {
-      "code": "TEMPLATE_VARIABLE_DROPPED",
-      "message": "Template variable '$host' (default '*') dropped; the converted panel shows all series.",
       "severity": "warning",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[1].definition.requests[0].queries[0].query",
@@ -1497,24 +1450,6 @@
     {
       "code": "TEMPLATE_VARIABLE_DROPPED",
       "message": "Template variable '$scope' (default '*') dropped; the converted panel shows all series.",
-      "severity": "warning",
-      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
-      "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[0].query",
-      "sourceText": "avg:postgresql.rows_deleted{$scope,$db,$host} by {db}",
-      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
-    },
-    {
-      "code": "TEMPLATE_VARIABLE_DROPPED",
-      "message": "Template variable '$db' (default '*') dropped; the converted panel shows all series.",
-      "severity": "warning",
-      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
-      "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[0].query",
-      "sourceText": "avg:postgresql.rows_deleted{$scope,$db,$host} by {db}",
-      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
-    },
-    {
-      "code": "TEMPLATE_VARIABLE_DROPPED",
-      "message": "Template variable '$host' (default '*') dropped; the converted panel shows all series.",
       "severity": "warning",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[0].query",
