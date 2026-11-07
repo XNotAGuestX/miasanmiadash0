@@ -1,0 +1,252 @@
+"""Shared output types: Perses dashboards, rules, diagnostics and outcomes.
+
+Shared code (CLI, report, validation, destination) depends only on these types and on
+the SourceProvider interface; it never imports a provider's internals.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Literal, NotRequired, TypedDict
+
+Severity = Literal["error", "warning", "info"]
+
+DiagnosticCode = Literal[
+    "UNSUPPORTED_ASSET_KIND",
+    "DUPLICATE_SOURCE_ID",
+    "INVALID_JSON",
+    "UNSUPPORTED_QUERY_SYNTAX",
+    "UNSUPPORTED_QUERY_FUNCTION",
+    "MISSING_AGGREGATOR",
+    "MISSING_METRIC_MAPPING",
+    "MISSING_LABEL_MAPPING",
+    "UNSUPPORTED_UNIT_CONVERSION",
+    "TEMPLATE_VARIABLE_DROPPED",
+    "UNSUPPORTED_TEMPLATE_VARIABLE",
+    "UNREVIEWED_MAPPING",
+    "UNSUPPORTED_WIDGET",
+    "UNSUPPORTED_DATA_SOURCE",
+    "UNSUPPORTED_FORMULA",
+    "LAYOUT_APPROXIMATED",
+    "OPTION_IGNORED",
+    "TARGET_VALIDATION_FAILED",
+    "DEFAULT_AGGREGATOR_APPLIED",
+    "UNSUPPORTED_MONITOR_TYPE",
+    "UNSUPPORTED_MONITOR_OPTION",
+    "MONITOR_OPTION_APPROXIMATED",
+    "THRESHOLD_MISMATCH",
+    "NOTIFICATION_NOT_MIGRATED",
+    "TEXT_TRUNCATED",
+    "IMPORT_FAILED",
+    "IMPORT_RESULT_UNKNOWN",
+]
+
+Outcome = Literal["translated", "partial", "blocked"]
+ItemKind = Literal["dashboard", "widget", "monitor"]
+Level = Literal["passed", "failed", "not_run"]
+
+
+@dataclass(frozen=True)
+class Diagnostic:
+    code: DiagnosticCode
+    severity: Severity
+    source_id: str
+    source_path: str
+    message: str
+    suggested_action: str
+    source_text: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        out: dict[str, Any] = {
+            "code": self.code,
+            "severity": self.severity,
+            "sourceId": self.source_id,
+            "sourcePath": self.source_path,
+            "message": self.message,
+            "suggestedAction": self.suggested_action,
+        }
+        if self.source_text is not None:
+            out["sourceText"] = self.source_text
+        return out
+
+
+@dataclass(frozen=True)
+class ItemResult:
+    source_id: str
+    source_path: str
+    kind: ItemKind
+    title: str
+    outcome: Outcome
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "sourceId": self.source_id,
+            "sourcePath": self.source_path,
+            "kind": self.kind,
+            "title": self.title,
+            "outcome": self.outcome,
+        }
+
+
+# --- Perses (JSON-shaped; emitted as-is) -------------------------------------------
+
+
+class PromQuerySpec(TypedDict):
+    query: str
+    seriesNameFormat: NotRequired[str]
+
+
+class PromQueryPlugin(TypedDict):
+    kind: Literal["PrometheusTimeSeriesQuery"]
+    spec: PromQuerySpec
+
+
+class PersesQuerySpec(TypedDict):
+    plugin: PromQueryPlugin
+
+
+class PersesQuery(TypedDict):
+    kind: Literal["TimeSeriesQuery"]
+    spec: PersesQuerySpec
+
+
+class PersesDisplay(TypedDict):
+    name: str
+    description: str
+
+
+class PersesPlugin(TypedDict):
+    kind: str
+    spec: dict[str, Any]
+
+
+class PersesPanelSpec(TypedDict):
+    display: PersesDisplay
+    plugin: PersesPlugin
+    queries: list[PersesQuery]
+
+
+class PersesPanel(TypedDict):
+    kind: Literal["Panel"]
+    spec: PersesPanelSpec
+
+
+class PersesGridItem(TypedDict):
+    x: int
+    y: int
+    width: int
+    height: int
+    content: dict[str, str]  # {"$ref": "#/spec/panels/<key>"}
+
+
+class PersesGridDisplay(TypedDict):
+    title: str
+
+
+class PersesGridSpec(TypedDict):
+    display: NotRequired[PersesGridDisplay]
+    items: list[PersesGridItem]
+
+
+class PersesGrid(TypedDict):
+    kind: Literal["Grid"]
+    spec: PersesGridSpec
+
+
+class PersesMetadata(TypedDict):
+    name: str
+    project: str
+
+
+class PersesDashboardSpec(TypedDict):
+    display: PersesDisplay
+    duration: str
+    variables: list[dict[str, Any]]
+    panels: dict[str, PersesPanel]
+    layouts: list[PersesGrid]
+
+
+class PersesDashboard(TypedDict):
+    kind: Literal["Dashboard"]
+    metadata: PersesMetadata
+    spec: PersesDashboardSpec
+
+
+# --- Rules -------------------------------------------------------------------------
+
+
+class PrometheusRule(TypedDict):
+    alert: str
+    expr: str
+    labels: dict[str, str]
+    annotations: dict[str, str]
+
+
+class PrometheusRuleGroupEntry(TypedDict):
+    name: str
+    interval: str
+    rules: list[PrometheusRule]
+
+
+class PrometheusRuleGroup(TypedDict):
+    groups: list[PrometheusRuleGroupEntry]
+
+
+class CheckRuleThresholds(TypedDict):
+    degraded: NotRequired[float]
+    failed: float
+
+
+class CheckRuleAnnotations(TypedDict):
+    summary: str
+    description: str
+
+
+class Dash0CheckRule(TypedDict):
+    name: str
+    expression: str
+    thresholds: CheckRuleThresholds
+    interval: str
+    # "for" is a Python keyword; the key is still "for" in the emitted dict.
+    enabled: bool
+    labels: dict[str, str]
+    annotations: CheckRuleAnnotations
+
+
+@dataclass(frozen=True)
+class DashboardArtifact:
+    slug: str
+    source_id: str
+    dashboard: PersesDashboard
+
+
+@dataclass(frozen=True)
+class RuleArtifact:
+    slug: str
+    source_id: str
+    prometheus_rule_group: PrometheusRuleGroup
+    check_rule: dict[str, Any]
+
+
+@dataclass
+class CompileResult:
+    dashboards: list[DashboardArtifact] = field(default_factory=list)
+    rules: list[RuleArtifact] = field(default_factory=list)
+    items: list[ItemResult] = field(default_factory=list)
+    diagnostics: list[Diagnostic] = field(default_factory=list)
+
+
+@dataclass
+class ValidationLevels:
+    syntax: Level = "not_run"
+    schema: Level = "not_run"
+    api: Level = "not_run"
+    semantics: Level = "not_run"
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "syntax": self.syntax,
+            "schema": self.schema,
+            "api": self.api,
+            "semantics": self.semantics,
+        }

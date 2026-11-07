@@ -1,0 +1,162 @@
+import json
+import subprocess
+import sys
+import tomllib
+from pathlib import Path
+
+import pytest
+import yaml
+
+from migrator.convert import ConvertOptions, ConvertResult, Format, run_convert
+from migrator.input import InputError, collect_input_files
+from migrator.source.provider import get_provider
+from migrator.version import COMPILER_VERSION
+from migrator.write import assign_slugs, slugify, stable_stringify
+
+SYNTH = Path("fixtures/datadog/synthetic/dashboards")
+MAPPING = "mappings/datadog/postgres.json"
+
+
+def convert(tmp: Path, inputs: list[str], fmt: Format = "json", name: str = "out") -> ConvertResult:
+    return run_convert(ConvertOptions("datadog", inputs, MAPPING, str(tmp / name), fmt))
+
+
+def tree(root: Path) -> dict[str, bytes]:
+    return {
+        p.relative_to(root).as_posix(): p.read_bytes()
+        for p in sorted(root.rglob("*"))
+        if p.is_file()
+    }
+
+
+def test_version_matches_pyproject() -> None:
+    assert (
+        COMPILER_VERSION == tomllib.loads(Path("pyproject.toml").read_text())["project"]["version"]
+    )
+
+
+def test_writers() -> None:
+    assert stable_stringify({"b": 1, "a": {"d": [{"z": 1, "y": 2}]}}) == (
+        '{\n  "a": {\n    "d": [\n      {\n        "y": 2,\n        "z": 1\n      }\n    ]\n  },\n'
+        '  "b": 1\n}\n'
+    )
+    assert slugify("Postgres - Metrics") == "postgres-metrics"
+    assert slugify("  ##  ") == "dashboard"
+    assert len(slugify("a" * 80)) == 64
+    assert assign_slugs(["A b", "a-b", "A B"]) == ["a-b", "a-b-2", "a-b-3"]
+
+
+def test_inputs_are_sorted_and_symlinks_skipped(tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    (root / "a").mkdir(parents=True)
+    (root / "b.json").write_text("{}")
+    (root / "a" / "z.json").write_text("{}")
+    (root / "a" / "readme.md").write_text("x")
+    (root / "loop").symlink_to(root)
+    assert [f.source_id for f in collect_input_files([str(root)])] == [
+        "root/a/z.json",
+        "root/b.json",
+    ]
+    with pytest.raises(InputError, match="DUPLICATE_SOURCE_ID: b.json"):
+        collect_input_files([str(root / "b.json")] * 2)
+    with pytest.raises(InputError, match="input not found"):
+        collect_input_files([str(tmp_path / "missing")])
+
+
+def test_unknown_provider() -> None:
+    assert get_provider("datadog").id == "datadog"
+    with pytest.raises(InputError, match="unknown --source 'grafana'; known: datadog"):
+        get_provider("grafana")
+
+
+def test_writes_one_dashboard_per_non_blocked_source(tmp_path: Path) -> None:
+    r = convert(tmp_path, [str(SYNTH / "supported.json"), str(SYNTH / "unsupported.json")])
+    assert r.exit_code == 2
+    assert sorted(p.name for p in (tmp_path / "out" / "dashboards").iterdir()) == [
+        "synthetic-supported.json",
+        "synthetic-unsupported.json",
+    ]
+    manifest = json.loads((tmp_path / "out" / "manifest.json").read_text())
+    dash = {
+        e["path"]: (e["outcome"], e["eligible"])
+        for e in manifest["entries"]
+        if e["kind"] == "dashboard"
+    }
+    assert dash == {
+        "dashboards/synthetic-supported.json": ("translated", True),
+        "dashboards/synthetic-unsupported.json": ("partial", False),
+    }
+    report = json.loads((tmp_path / "out" / "report.json").read_text())
+    assert report["validation"] == {
+        "syntax": "passed",
+        "schema": "passed",
+        "api": "not_run",
+        "semantics": "not_run",
+    }
+
+
+def test_duplicate_titles_get_distinct_slugs(tmp_path: Path) -> None:
+    src = tmp_path / "in"
+    for sub in ("b", "a"):
+        (src / sub).mkdir(parents=True)
+        (src / sub / "supported.json").write_text((SYNTH / "supported.json").read_text())
+    r = convert(tmp_path, [str(src)])
+    assert r.slugs == {
+        "in/a/supported.json": "synthetic-supported",
+        "in/b/supported.json": "synthetic-supported-2",
+    }
+
+
+def test_yaml_format_round_trips(tmp_path: Path) -> None:
+    convert(tmp_path, [str(SYNTH / "supported.json")], "json", "j")
+    convert(tmp_path, [str(SYNTH / "supported.json")], "yaml", "y")
+    j = json.loads((tmp_path / "j/dashboards/synthetic-supported.json").read_text())
+    y = yaml.safe_load((tmp_path / "y/dashboards/synthetic-supported.yaml").read_text())
+    assert j == y
+
+
+def test_convert_is_deterministic_and_copies_sources(tmp_path: Path) -> None:
+    inputs = ["fixtures/datadog/integrations-core/postgres", str(SYNTH)]
+    convert(tmp_path, inputs, name="one")
+    convert(tmp_path, inputs, name="two")
+    one, two = tree(tmp_path / "one"), tree(tmp_path / "two")
+    assert one == two
+    fixture = Path("fixtures/datadog/integrations-core/postgres/monitors/replication_delay.json")
+    assert one["source/postgres/monitors/replication_delay.json"] == fixture.read_bytes()
+
+
+def test_refuses_non_empty_out_and_bad_mapping(tmp_path: Path) -> None:
+    (tmp_path / "out").mkdir()
+    (tmp_path / "out" / "x").write_text("")
+    with pytest.raises(InputError, match="output directory is not empty"):
+        convert(tmp_path, [str(SYNTH)])
+    bad = tmp_path / "bad.json"
+    bad.write_text('{"version": 1, "source": "datadog", "metrics": {"m": {"kind": "nope"}}}')
+    with pytest.raises(InputError, match="invalid mapping"):
+        run_convert(ConvertOptions("datadog", [str(SYNTH)], str(bad), str(tmp_path / "o2")))
+
+
+def test_cli_entry_point_exit_codes(tmp_path: Path) -> None:
+    def cli(*args: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, "-m", "migrator.cli", *args],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    r = cli("convert", "--source", "nope", "--input", "x", "--mapping", "m", "--out", "o")
+    assert r.returncode == 1 and "unknown --source 'nope'" in r.stderr
+    r = cli(
+        "convert",
+        "--source",
+        "datadog",
+        "--input",
+        str(SYNTH / "supported.json"),
+        "--mapping",
+        MAPPING,
+        "--out",
+        str(tmp_path / "ok"),
+    )
+    assert r.returncode == 0, r.stderr
+    assert r.stdout.startswith("TRANSLATED synthetic-supported 2/2 widgets")
