@@ -394,6 +394,36 @@ def test_load_local_rejects_sha_mismatch(tmp_path: Path, capsys: pytest.CaptureF
     assert not any(p.startswith(DASH) for _, p, _ in perses.calls)
 
 
+def test_load_local_loads_converter_output(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from migrator.cli import main as migrator_main
+
+    run = tmp_path / "convert-out"
+    args = [
+        "convert", "--source", "datadog",
+        "--input", str(ROOT / "fixtures/datadog/integrations-core/postgres"),
+        "--mapping", str(ROOT / "mappings/datadog/postgres.json"),
+        "--out", str(run),
+    ]
+    assert migrator_main(args) in (0, 2)
+    capsys.readouterr()
+    perses = FakePerses()
+    assert ll.main([str(run), "--perses-url", "http://perses.test"], opener=perses, env={}) == 0
+    writes = [(m, p) for m, p, _ in perses.calls if m != "GET"]
+    dash = "/api/v1/projects/datadog-migration/dashboards"
+    assert writes == [
+        ("POST", "/api/v1/projects"),
+        ("POST", "/api/v1/projects/datadog-migration/secrets"),
+        ("POST", "/api/v1/projects/datadog-migration/datasources"),
+        ("POST", dash),
+        ("POST", dash),
+    ]
+    out = capsys.readouterr().out
+    assert "created postgres-metrics (verified)" in out
+    assert "http://perses.test/projects/datadog-migration/dashboards/postgres-overview?" in out
+
+
 def test_datasource_defaults_without_env() -> None:
     proxy = ll.datasource_body({})["spec"]["plugin"]["spec"]["proxy"]["spec"]
     assert proxy["url"] == "https://api.eu-west-1.aws.dash0.com/api/prometheus"

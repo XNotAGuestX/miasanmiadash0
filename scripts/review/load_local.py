@@ -1,10 +1,12 @@
-"""Load rendered oracle review dashboards into a LOCAL Perses (issue #87, development time only).
+"""Load Perses dashboards from run directories into a LOCAL Perses (development/review only).
 
-Reads run directories written by scripts/render_review_dashboard.py (manifest.json + dashboards/),
-checks each dashboard's sha256 against the manifest, then talks to the Perses REST API:
+Reads run directories in the `migrator publish` format (manifest.json + dashboards/): those written
+by `migrator convert --out <dir>` (project `datadog-migration`) or by
+scripts/render_review_dashboard.py (project `oracle-review`, issue #87). Checks each dashboard's
+sha256 against the manifest, then talks to the Perses REST API:
 
-  * creates project `oracle-review` (and its `dash0` Secret + default Prometheus Datasource) when
-    provisioning has not already done so (docker-compose.yaml provisions them),
+  * creates each dashboard's project (and its `dash0` Secret + default Prometheus Datasource) when
+    missing (docker-compose.yaml provisions only `oracle-review`),
   * POSTs each dashboard, or PUTs it when it already exists,
   * GETs it back and checks name, project and spec came back unchanged,
   * prints the dashboard URL with the absolute review window (start/end in epoch ms).
@@ -18,7 +20,8 @@ secret.md, dashboard.md). URL time params: `start`/`end` as epoch milliseconds
 (perses/shared plugin-system/src/runtime/TimeRangeProvider/query-params.ts).
 
 Usage: uv run scripts/review/load_local.py [<run dir> ...] [--perses-url http://localhost:8080]
-       (default: every run dir under out/oracle-review)
+       (default: every run dir under out/oracle-review; pass a `migrator convert --out` dir to view
+       converter output)
 """
 
 from __future__ import annotations
@@ -119,25 +122,26 @@ class Client:
 # --------------------------------------------------------------------------- resources
 
 
-def project_body() -> dict[str, Any]:
-    return {"kind": "Project", "metadata": {"name": PROJECT}, "spec": {"display": {"name": "Oracle review (issue 87)"}}}
+def project_body(project: str = PROJECT) -> dict[str, Any]:
+    display = "Oracle review (issue 87)" if project == PROJECT else project
+    return {"kind": "Project", "metadata": {"name": project}, "spec": {"display": {"name": display}}}
 
 
-def secret_body() -> dict[str, Any]:
+def secret_body(project: str = PROJECT) -> dict[str, Any]:
     return {
         "kind": "Secret",
-        "metadata": {"name": SECRET, "project": PROJECT},
+        "metadata": {"name": SECRET, "project": project},
         "spec": {"authorization": {"type": "Bearer", "credentialsFile": TOKEN_FILE}},
     }
 
 
-def datasource_body(env: Mapping[str, str]) -> dict[str, Any]:
+def datasource_body(env: Mapping[str, str], project: str = PROJECT) -> dict[str, Any]:
     """Same datasource docker-compose.yaml provisions; URL and dataset from env (not secret)."""
     api = (env.get("DASH0_API_URL") or DEFAULT_DASH0_API_URL).strip().rstrip("/")
     dataset = (env.get("DASH0_DATASET") or "default").strip()
     return {
         "kind": "Datasource",
-        "metadata": {"name": DATASOURCE, "project": PROJECT},
+        "metadata": {"name": DATASOURCE, "project": project},
         "spec": {
             "default": True,
             "display": {"name": f"Dash0 ({dataset})"},
@@ -161,12 +165,13 @@ def datasource_body(env: Mapping[str, str]) -> dict[str, Any]:
     }
 
 
-def ensure_project(client: Client, env: Mapping[str, str]) -> list[str]:
-    p = f"/api/v1/projects/{PROJECT}"
+def ensure_project(client: Client, env: Mapping[str, str], project: str = PROJECT) -> list[str]:
+    p = f"/api/v1/projects/{quote(project, safe='')}"
     return [
-        f"project {PROJECT}: {client.ensure('/api/v1/projects', PROJECT, project_body())}",
-        f"secret {SECRET}: {client.ensure(p + '/secrets', SECRET, secret_body())}",
-        f"datasource {DATASOURCE}: {client.ensure(p + '/datasources', DATASOURCE, datasource_body(env))}",
+        f"project {project}: {client.ensure('/api/v1/projects', project, project_body(project))}",
+        f"secret {SECRET}: {client.ensure(p + '/secrets', SECRET, secret_body(project))}",
+        f"datasource {DATASOURCE}: "
+        f"{client.ensure(p + '/datasources', DATASOURCE, datasource_body(env, project))}",
     ]
 
 
@@ -253,15 +258,17 @@ def main(argv: list[str] | None = None, opener: Opener | None = None, env: Mappi
     failed = False
     try:
         dashboards = [d for run in runs for d in load_run(run)]  # every sha256 check before any write
-        for line in ensure_project(client, os.environ if env is None else env):
-            print(line)
+        for project in sorted({d["metadata"]["project"] for d in dashboards}):
+            for line in ensure_project(client, os.environ if env is None else env, project):
+                print(line)
         for dashboard in dashboards:
             verb = upsert_dashboard(client, dashboard)
             problems = verify_dashboard(client, dashboard)
             failed |= bool(problems)
             status = "verified" if not problems else "MISMATCH: " + "; ".join(problems)
             print(f"{verb} {dashboard['metadata']['name']} ({status})")
-            print(f"  {dashboard_url(args.perses_url, dashboard['metadata']['name'])}")
+            meta = dashboard["metadata"]
+            print(f"  {dashboard_url(args.perses_url, meta['name'], meta['project'])}")
     except PersesError as err:
         print(f"error: {err}", file=sys.stderr)
         return 1
