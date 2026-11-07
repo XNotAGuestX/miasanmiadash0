@@ -61,6 +61,9 @@ The starter/fork workflow is still unresolved; settle it before the first implem
 - Target labels are settled by the data: postgresqlreceiver 0.160.0, legacy `postgresql_database_name` and `postgresql_table_name`. The user still needs to confirm this (`PLANNING_HANDOFF.md` §7.1).
 - This branch is 2 `.gitignore` commits behind `main`. Reconcile it before implementation.
 - Stack changed to Python + uv (user instruction, 2026-11-07). The handoff's TypeScript names map to Python modules; pydantic replaces Zod, `promql-parser` replaces Lezer PromQL. `00-context.md` §5 still describes TypeScript.
+- `AGENTS.md` Definition of Done still says `npm test` / `npm run typecheck`; with the Python stack the equivalent is `uv run migrator check` (ruff + mypy --strict + pytest).
+- Semantics, manual read-only check (2026-11-07, dataset `default`, data until ~15:10 UTC): the converted Connections query (with grain) returned `astronomy_db` ≈ 5 and `postgres` ≈ 3–4; the `percent_usage_connections` ratio returned ≈ 0.08. Not recorded in `report.validation.semantics`.
+- Every mapping entry (`postgres.json`, `kafka.json`, `docker.json`) has `reviewed: null` and needs a human review before goldens are frozen.
 - The official check-rule documentation has differing ID references in prose and schema; verify the actual request shape during the destination spike.
 
 ## Handoff entry template
