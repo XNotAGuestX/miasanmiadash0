@@ -94,6 +94,10 @@ requests:
   reviewed: false                         # false -> skipped unless --include-unreviewed
   provenance: {kind: agent0 | human, ref: <file>}
   live_check: {agent0: <did Agent0's PromQL return data in Dash0>}
+  dataset:                                # optional fixture metadata, never compared to converter output
+    available: false                      # OTel metric is defined but absent from the Dash0 `default` dataset
+    missing_metrics: [zookeeper.connection.active]
+    otel_sources: [collector-contrib/receiver/zookeeperreceiver/metadata.yaml]
   expected:
     outcome: translated | blocked
     promql: [...]                         # translated only
@@ -104,6 +108,12 @@ requests:
 widgets:   [{source_path, type, milestone, reviewed, expected: {outcome, panel_key, title, panel_plugin, promql, errors, warnings}}]
 dashboard: {milestone, reviewed, expected: {outcome, widgets: [{source_path, outcome, panel_key, promql}]}}
 ```
+
+Entries may carry extra top-level metadata keys (`provenance`, `live_check`, `dataset`, `notes`);
+tests read only `source_path`, `milestone`, `reviewed` and `expected`, and ignore everything else.
+A request whose OTel metrics exist in the pinned OTel catalog (`fixtures/otel/`) but are missing from
+the Dash0 dataset stays `translated`; only metrics defined nowhere in that catalog are `blocked`
+with `MISSING_METRIC_MAPPING`.
 
 Widget and dashboard expectations are derived from the request expectations: a widget is
 translated only if its type is supported (`timeseries`, `query_value`, `note`) and all its requests

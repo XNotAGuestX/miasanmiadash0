@@ -85,7 +85,9 @@ class Case:
 
 
 def iter_cases(level: str) -> Iterator[Case]:
-    key = {"request": "requests", "widget": "widgets"}.get(level)
+    # Only source_path / milestone / reviewed / expected are read. Other entry keys
+    # (provenance, live_check, dataset, notes, ...) are fixture metadata and ignored on purpose.
+    key ={"request": "requests", "widget": "widgets"}.get(level)
     for path in expected_files():
         spec = yaml.safe_load(path.read_text())
         dash_id = f"{path.parent.parent.name}/{path.parent.name}"
