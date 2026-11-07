@@ -117,7 +117,7 @@ This collapses target series to the Datadog series grain. It handles both resour
   - Group labels come first; then grain labels not already in the group, in mapping order.
   - With `rate`, the inner expression is the `rate(...)`.
 - [ ] **Step 3: Set grains in the mapping.**
-  - `postgresql.connections`: `{labels: ["service_instance_id"], aggregation: "max"}`.
+  - `postgresql.connections`: `{labels: ["service_instance_id"], aggregation: "max"}`. Changed in PR #85 (unreviewed assumption) to `["service_instance_id", "postgresql_database_name"]`, and the same grain was added to `postgresql.rows_*`. With `service_instance_id` alone, a query without `by {db}` takes the max over databases instead of their sum or average. With `by {db}`, the output is unchanged.
   - The CPU entries: `{labels: ["host_name"], aggregation: "avg"}`.
 - [ ] **Step 4: Verify.** Run `uv run migrator test`; it must PASS. Request a human review. Commit.
 

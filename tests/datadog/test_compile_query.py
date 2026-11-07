@@ -1,3 +1,5 @@
+import json
+from pathlib import Path
 from typing import Any
 
 from migrator.source.datadog.compile_query import (
@@ -7,7 +9,12 @@ from migrator.source.datadog.compile_query import (
     TemplateVariable,
     compile_metric_query,
 )
-from migrator.source.datadog.mapping import DatadogMapping
+from migrator.source.datadog.mapping import (
+    DatadogMapping,
+    ExpressionMapping,
+    MappingOk,
+    parse_mapping,
+)
 from migrator.source.datadog.model import ParseOk
 from migrator.source.datadog.parse_query import parse_metric_query
 from migrator.validation import check_promql_syntax
@@ -217,3 +224,42 @@ def test_promoted_variable_becomes_regex_matcher() -> None:
     )
     assert check_promql_syntax(r.promql) is None
     assert codes(r) == []
+
+
+def _postgres_mapping() -> DatadogMapping:
+    result = parse_mapping(json.loads(Path("mappings/datadog/postgres.json").read_text()))
+    assert isinstance(result, MappingOk), result
+    return result.mapping
+
+
+def test_postgres_mapping_dedups_per_instance_and_database() -> None:
+    """Resource-hash duplicates collapse per (instance, database), so a sum or avg over
+    databases is unchanged (docs/DASH0_INVENTORY.md, caveat 2)."""
+    pg = _postgres_mapping()
+    grain = "max by (service_instance_id, postgresql_database_name)"
+    tup = 'rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum"}'
+    assert ok("sum:postgresql.rows_fetched{*}", pg).promql == (
+        f"sum ({grain} ({tup}[$__rate_interval])))"
+    )
+    by_db = ok("avg:postgresql.rows_fetched{*} by {db}", pg).promql
+    assert by_db == (
+        "avg by (postgresql_database_name) "
+        "(max by (postgresql_database_name, service_instance_id) "
+        f"({tup}[$__rate_interval])))"
+    )
+    assert ok("avg:postgresql.connections{*}", pg).promql == f"avg ({grain} ({SEL}))"
+    for metric in ("deleted", "fetched", "inserted", "returned", "updated"):
+        e = pg.metrics[f"postgresql.rows_{metric}"]
+        assert not isinstance(e, ExpressionMapping) and e.grain is not None
+        assert e.grain.labels == ["service_instance_id", "postgresql_database_name"]
+
+
+def test_postgres_network_keeps_every_interface_and_has_no_grain() -> None:
+    """Datadog's network check excludes no interface by default (excluded_interfaces
+    defaults to []), so loopback stays in, and no grain collapses interfaces."""
+    r = ok("sum:system.net.bytes_rcvd{*}", _postgres_mapping())
+    assert r.promql == (
+        'sum (rate({otel_metric_name="system.network.io", otel_metric_type="sum", '
+        'system_network_direction="receive"}[$__rate_interval]))'
+    )
+    assert check_promql_syntax(r.promql) is None
