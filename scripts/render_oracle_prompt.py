@@ -7,12 +7,50 @@ Deterministic: same case inventory -> same prompt text.
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
+CATALOG = ROOT / "fixtures" / "otel" / "catalog.yaml"
+DATASET_SNAPSHOT = ROOT / "fixtures" / "oracle" / "dash0_default_metrics.yaml"
+
+# Datadog metric prefix (first name segment in the dashboard's queries) -> OTel catalog prefixes
+# whose metrics go into the prompt's candidate list. A reviewed, static table: no fuzzy matching.
+# `data_streams` (Datadog Data Streams Monitoring) has no OTel counterpart.
+OTEL_PREFIXES = {
+    "docker": ["container."],
+    "jvm": ["jvm."],
+    "kafka": ["kafka.", "messaging."],
+    "nginx": ["nginx."],
+    "postgresql": ["postgresql."],
+    "redis": ["redis."],
+    "system": ["system."],
+    "zookeeper": ["zookeeper."],
+}
+DATADOG_PREFIX = re.compile(r"(?:^|[:(,\s])([a-z_]+)\.[A-Za-z0-9_.]+\{")
+
+
+def candidate_lines(case: dict) -> list[str]:
+    """Catalog metrics for the Datadog prefixes used in the case, one line each, sorted by name."""
+    used = sorted({m for r in case["requests"] for q in r["queries"] for m in DATADOG_PREFIX.findall(q["query"] or "")})
+    prefixes = tuple(p for d in used for p in OTEL_PREFIXES.get(d, []))
+    if not prefixes:
+        return ["(none)"]
+    catalog = yaml.safe_load(CATALOG.read_text())
+    present = set(yaml.safe_load(DATASET_SNAPSHOT.read_text())["metrics"])
+    lines = []
+    for name, m in catalog.items():
+        if not name.startswith(prefixes):
+            continue
+        kind = m["type"] if m["type"] != "sum" else ("monotonic sum" if m["monotonic"] else "non-monotonic sum")
+        attrs = ", ".join(m["attributes"]) or "none"
+        where = "in dataset" if name in present else "not in dataset"
+        deprecated = ", deprecated" if m.get("deprecated") else ""
+        lines.append(f"- {name} ({kind}, unit {m['unit'] or '-'}{deprecated}; attributes: {attrs}; {where}; {m['sources'][0]})")
+    return lines or ["(none)"]
 
 
 def render(case_key: str, dataset: str = "default") -> str:
@@ -39,6 +77,7 @@ def render(case_key: str, dataset: str = "default") -> str:
         )
         or "none",
         "{requests_flow}": requests,
+        "{otel_candidates}": "\n".join(candidate_lines(case)),
     }
     for key, value in values.items():
         body = body.replace(key, value)

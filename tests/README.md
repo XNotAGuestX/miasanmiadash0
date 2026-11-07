@@ -111,9 +111,10 @@ dashboard: {milestone, reviewed, expected: {outcome, widgets: [{source_path, out
 
 Entries may carry extra top-level metadata keys (`provenance`, `live_check`, `dataset`, `notes`);
 tests read only `source_path`, `milestone`, `reviewed` and `expected`, and ignore everything else.
-A request whose OTel metrics exist in the pinned OTel catalog (`fixtures/otel/`) but are missing from
-the Dash0 dataset stays `translated`; only metrics defined nowhere in that catalog are `blocked`
-with `MISSING_METRIC_MAPPING`.
+A request whose OTel metrics exist in the pinned OTel catalog (`fixtures/otel/catalog.yaml`) but are
+missing from the Dash0 dataset snapshot (`fixtures/oracle/dash0_default_metrics.yaml`) stays
+`translated` and gets the `dataset` block; only metrics found in neither are `blocked` with
+`MISSING_METRIC_MAPPING`.
 
 Widget and dashboard expectations are derived from the request expectations: a widget is
 translated only if its type is supported (`timeseries`, `query_value`, `note`) and all its requests
@@ -123,7 +124,8 @@ are translated; otherwise it is blocked (`UNSUPPORTED_WIDGET` or the requests' e
 
 ```text
 scripts/extract_cases.py                 pinned dashboards -> fixtures/cases/<svc>/<id>.yaml   (deterministic)
-scripts/render_oracle_prompt.py <svc>/<id>   fixtures/oracle/PROMPT.md template -> fixtures/oracle/agent0/<svc>/<id>/prompt.md
+scripts/build_otel_catalog.py            pinned OTel definitions (fixtures/otel/, NOTICE.md) -> fixtures/otel/catalog.yaml (deterministic)
+scripts/render_oracle_prompt.py <svc>/<id>   fixtures/oracle/PROMPT.md template + OTel candidates (catalog.yaml, dataset snapshot) -> fixtures/oracle/agent0/<svc>/<id>/prompt.md
   ask Agent0 (dash0 MCP runTask, dataset default) with prompt.md verbatim
   save the YAML answer verbatim         -> fixtures/oracle/agent0/<svc>/<id>/answer.yaml  (header: date, thread link, any quoting fix)
 scripts/build_expected.py <svc>/<id>     case + answer + rules overlay + overrides.yaml -> fixtures/expected/<svc>/<id>/expected.yaml
@@ -134,7 +136,10 @@ metrics query, and requests that use **any** Datadog function in a query or form
 `.as_count()`, `.weighted()`, `top()`, `per_second()`, `diff()`, ...), are forced to `blocked`, whatever
 Agent0 proposed (plans 02/03/05). `ALLOWED_FUNCTIONS` in the script is empty; a function may only be
 added through its own plan task with an exact test. Error codes are derived from the source text, not
-Agent0's prose; warnings come from template variables and missing aggregators. Other Agent0 choices
+Agent0's prose; warnings come from template variables and missing aggregators. Every OTel metric in
+a translated request is checked against the dataset snapshot and the catalog: present in the dataset →
+nothing to note; only in the catalog → stays `translated` with a `dataset` block and a note (no live check
+possible); in neither → `blocked` with `MISSING_METRIC_MAPPING`. Other Agent0 choices
 (scaling constants, derived metrics, grain) are flagged in `fixtures/expected/REVIEW.md` for a human
 decision. The oracle prompt (`fixtures/oracle/PROMPT.md`) states the same rules, but the overlay is
 what enforces them.

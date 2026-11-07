@@ -12,7 +12,13 @@ Fill `{…}` placeholders exactly; do not reword the template between runs.
 
 Read-only task, do not create or change anything. Answer with one YAML code block only.
 
-You are helping define expected test outcomes for migrating a Datadog dashboard to a Perses dashboard backed by the OpenTelemetry data in this Dash0 organization (dataset `{dataset}`). Use only metrics and labels that actually exist in this dataset (verify with the metric catalog and PromQL). Do not guess equivalences from similar names.
+You are helping define expected test outcomes for migrating a Datadog dashboard to a Perses dashboard backed by OpenTelemetry metrics, checked against this Dash0 organization (dataset `{dataset}`).
+
+Which metric to use:
+- First choice: a metric that exists in this dataset (verify with the metric catalog and PromQL).
+- If no metric in this dataset measures the same thing, use a metric that OpenTelemetry defines, from the candidate list at the end of this prompt (collector-contrib receivers and scrapers, semantic conventions, OTel Java JMX scraper). Then set `in_dataset: no`, name the defining file in `otel_source`, and write `live_check: not in dataset`. The request is still `translated`.
+- Block with "no OTel metric" only if neither this dataset nor the candidate list has a metric that measures the same quantity.
+- Equivalence must come from the metric definitions (what is measured, unit, instrument type), never from similar names alone. Use the attribute keys given for a candidate (dots become `_` in labels).
 
 Dash0 PromQL conventions:
 - Select a metric as `{otel_metric_name="<dotted.name>", otel_metric_type="<sum|gauge|histogram>"}`, with further matchers appended as `, <label>="<value>"`.
@@ -34,15 +40,20 @@ For every request below, answer with one YAML list item:
   promql: [<one PromQL string per displayed formula, in formula order>]   # translated only
   reason: <why blocked: no equivalent metric in this dataset / unsupported function / unit mismatch ...>
   otel_metrics: [<dotted OTel metric names you used>]
+  in_dataset: yes | no | partly   # translated only: are all otel_metrics present in dataset `{dataset}`?
+  otel_source: [<defining file from the candidate list, one per metric not in the dataset>]   # only when in_dataset is no/partly
   labels: {<datadog tag>: <dash0 label>}
-  live_check: <did the PromQL return series in the last 1h? yes/no, number of series>
+  live_check: <did the PromQL return series in the data window? yes/no, number of series; "not in dataset" when in_dataset is no>
   notes: <semantic caveats>
 
 Rules: a request is all-or-nothing; if any formula cannot be expressed exactly, mark the whole request blocked. Never drop a series. Never invent a metric. Quote every YAML string value that contains a colon.
 
-Note: receiver data in this dataset only arrived between about 14:05 and 15:21 UTC today, so run live checks over that window.
+Note: receiver data in this dataset only exists between about 2026-11-07T14:05Z and 15:21Z, so run live checks over that window.
 
 Dashboard: `{title}` (`{fixture}`), template variables: {template_variables}. A request with empty `formulas` displays its single query directly. A request with empty `queries` is not a metrics request (e.g. logs).
 
 Requests:
 {requests_flow}
+
+OTel candidate metrics (pinned definitions; "in dataset" from a snapshot of dataset `{dataset}`):
+{otel_candidates}

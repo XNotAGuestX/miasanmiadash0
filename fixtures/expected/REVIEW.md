@@ -29,6 +29,15 @@ Agent0 live checks ran against `default`, where receiver data only exists 2026-1
 Leaf-widget counts include `note` widgets (always translated to Markdown) and unsupported widget types
 (always blocked with `UNSUPPORTED_WIDGET`).
 
+## Metrics outside the dataset (rule since 2026-11-07)
+
+A request is blocked with `MISSING_METRIC_MAPPING` only if its metric exists neither in the `default`
+dataset snapshot (`fixtures/oracle/dash0_default_metrics.yaml`) nor in the pinned OTel catalog
+(`fixtures/otel/catalog.yaml`). A translation that uses an OTel metric missing from the dataset stays
+`translated` and carries a `dataset` block in `expected.yaml` (it cannot be live-checked). The answers
+below were recorded before Agent0 could propose catalog metrics, so none has a `dataset` block yet; the 67
+`MISSING_METRIC_MAPPING` requests are candidates for the next Agent0 run (`run_oracle.py --full`).
+
 ## Decide these first: flagged deviations
 
 `build_expected.py` forces `blocked` for requests without a metrics query and, since 2026-11-07, for **every

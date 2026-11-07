@@ -268,6 +268,13 @@ def validate_answer(yaml_text: str, case: dict) -> list[dict]:
                 errors.append(f"{sp}: translated needs a list of PromQL strings")
             elif len(promql) != want:
                 errors.append(f"{sp}: {len(promql)} PromQL strings for {want} displayed formula(s)")
+            # `in_dataset` / `otel_source` came with the OTel-catalog prompt; answers recorded with the
+            # older prompt have neither, so they are only checked when present.
+            in_dataset = item.get("in_dataset")
+            if in_dataset is not None and str(in_dataset).lower() not in ("yes", "no", "partly", "true", "false"):
+                errors.append(f"{sp}: in_dataset must be yes, no or partly, got {in_dataset!r}")
+            elif str(in_dataset).lower() in ("no", "partly", "false") and not item.get("otel_source"):
+                errors.append(f"{sp}: in_dataset {in_dataset!r} needs otel_source")
         elif outcome == "blocked":
             if not item.get("reason"):
                 errors.append(f"{sp}: blocked needs a reason")

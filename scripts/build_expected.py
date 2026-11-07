@@ -7,8 +7,12 @@ Inputs, all in the repo:
 
 Agent0 proposes WHAT a request becomes (metric, matchers, aggregation). This script
 adds the project's deterministic rules on top:
-  * blocking rules that Agent0 cannot lift: no metrics query, and any Datadog function
-    (see ALLOWED_FUNCTIONS),
+  * blocking rules that Agent0 cannot lift: no metrics query, any Datadog function
+    (see ALLOWED_FUNCTIONS), and an OTel metric that exists neither in the `default` dataset
+    snapshot (fixtures/oracle/dash0_default_metrics.yaml) nor in the pinned OTel catalog
+    (fixtures/otel/catalog.yaml),
+  * a `dataset` block for translations whose OTel metrics are defined but missing from the dataset
+    (they stay translated; only the live check is impossible),
   * diagnostic codes derived from the source text (not from Agent0's prose),
   * warnings (template variables dropped, default aggregator applied),
   * widget and dashboard expectations derived from the request expectations,
@@ -20,6 +24,7 @@ Usage: uv run scripts/build_expected.py <service>/<dashboard_id> [...]
 
 from __future__ import annotations
 
+import functools
 import json
 import re
 import sys
@@ -41,6 +46,7 @@ WRAPPING_FN = re.compile(r"^\s*([a-z_]+)\(")
 TRAILING_FN = re.compile(r"\.([a-z_]+)\(")
 FORMULA_FN = re.compile(r"\b([a-z_]+)\(")
 VARIABLE = re.compile(r"\$([A-Za-z_][A-Za-z0-9_]*)")
+METRIC_SELECTOR = re.compile(r'otel_metric_name="([^"]+)"(?:\s*,\s*otel_metric_type="([^"]+)")?')
 
 P0_CASES = {("postgres/postgresql_dashboard", "widgets[1]")}
 
@@ -83,6 +89,34 @@ def blocked_functions(request: dict) -> list[str]:
     """Datadog functions in the request's queries or formulas that are not allowlisted, sorted."""
     texts = [q["query"] or "" for q in request["queries"]] + [f or "" for f in request["formulas"]]
     return sorted({fn for t in texts for fn in FORMULA_FN.findall(t)} - ALLOWED_FUNCTIONS)
+
+
+@functools.cache
+def otel_catalog() -> dict:
+    """Every metric OpenTelemetry defines in the pinned sources (scripts/build_otel_catalog.py)."""
+    return yaml.safe_load((ROOT / "fixtures" / "otel" / "catalog.yaml").read_text())
+
+
+@functools.cache
+def dataset_metrics() -> dict:
+    """Metric names present in the Dash0 `default` dataset snapshot -> types seen."""
+    return yaml.safe_load((ROOT / "fixtures" / "oracle" / "dash0_default_metrics.yaml").read_text())["metrics"]
+
+
+def metric_availability(promql: list[str]) -> tuple[list[str], list[str], list[str]]:
+    """Split the OTel metrics used in `promql` into (not defined anywhere, defined but not in the
+    dataset, type mismatches against the catalog for metrics outside the dataset)."""
+    catalog, present = otel_catalog(), dataset_metrics()
+    used = sorted({(m, t) for q in promql for m, t in METRIC_SELECTOR.findall(q)})
+    names = sorted({m for m, _ in used})
+    undefined = [m for m in names if m not in present and m not in catalog]
+    absent = [m for m in names if m not in present and m in catalog]
+    mismatched = sorted(
+        f"{m} is {catalog[m]['type']} in {catalog[m]['sources'][0]}, PromQL selects {t}"
+        for m, t in used
+        if m in absent and t and t != catalog[m]["type"]
+    )
+    return undefined, absent, mismatched
 
 
 def rule_warnings(request: dict, variables: dict[str, dict]) -> list[str]:
@@ -136,6 +170,25 @@ def build(key: str) -> dict:
                 f" Agent0's translation is discarded: {' ; '.join(promql)}"
             )
             outcome, promql = "blocked", []
+        elif outcome == "translated":
+            undefined, absent, mismatched = metric_availability(promql)
+            if undefined:
+                notes.append(
+                    f"rule overlay: metric(s) {', '.join(undefined)} exist neither in dataset `default` nor in the"
+                    f" pinned OTel catalog (fixtures/otel/catalog.yaml); Agent0's translation is discarded: {' ; '.join(promql)}"
+                )
+                outcome, promql = "blocked", []
+            elif absent:
+                entry["dataset"] = {
+                    "available": False,
+                    "missing_metrics": absent,
+                    "otel_sources": sorted({s for m in absent for s in otel_catalog()[m]["sources"]}),
+                }
+                notes.append(
+                    f"OTel metric(s) {', '.join(absent)} are defined by OpenTelemetry but not present in dataset"
+                    " `default`; the translation stands, but it cannot be live-checked"
+                )
+                notes.extend(f"type mismatch: {m}" for m in mismatched)
         expected = {"outcome": outcome}
         if outcome == "translated":
             expected["promql"] = promql
