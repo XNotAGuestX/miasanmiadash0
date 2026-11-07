@@ -130,6 +130,18 @@ def test_other_non_2xx_is_failed_and_clipped() -> None:
     assert len(out.message) == 500
 
 
+def test_unauthorized_is_failed_with_status_401() -> None:
+    out = publish_dashboard(DASHBOARD, CFG, raw(401, "unauthorized"))
+    assert isinstance(out, Failed)
+    assert out.http_status == 401
+
+
+def test_redirect_status_is_failed() -> None:
+    out = publish_dashboard(DASHBOARD, CFG, raw(302, ""))
+    assert isinstance(out, Failed)
+    assert out.http_status == 302
+
+
 def test_non_json_2xx_is_unknown() -> None:
     assert isinstance(publish_dashboard(DASHBOARD, CFG, raw(200, "<html>")), Unknown)
 
