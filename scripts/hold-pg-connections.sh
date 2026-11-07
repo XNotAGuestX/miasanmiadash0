@@ -16,11 +16,14 @@
 # so it never locks out superuser access.
 #
 # Planned crossing numbers (2026-11-07, not yet run live; needs blocker B2).
-# Dash0 read-only check: current ~= 8 backends (astronomy_db 5 + postgres 3),
+# Dash0 read-only check: current ~= 8 client backends (astronomy_db 5 + postgres 3),
 # usage ratio ~= 0.08, so max_connections ~= 100 (default; reserved 3 -> limit 97).
 # The demo check is avg over 15m with degraded > 0.8 and failed > 0.9:
 #   count=75 -> (8 + 75) / 100 = 0.83  degraded
 #   count=85 -> (8 + 85) / 100 = 0.93  failed
+# The script's own "current" counts every pg_stat_activity row, including
+# background workers (autovacuum, walwriter, ...), so it reads higher than the
+# client count and the refusal is a little stricter than max_connections needs.
 # Hold for at least 1800 s so the 15-minute average crosses. Re-measure with
 # --dry-run first (it prints max_connections and current) and record the live
 # values in docs/DEMO.md.
@@ -122,7 +125,10 @@ while [ "$tries" -lt 10 ]; do
   active=$(strip "$raw")
   [ "$active" = "$count" ] && break
   tries=$((tries + 1))
-  sleep 1
+  # Background sleep + wait, so an INT/TERM aimed at this script's PID runs the
+  # trap at once instead of being held until a foreground sleep finishes.
+  sleep 1 &
+  wait $!
 done
 if [ "$active" != "$count" ]; then
   printf 'error: only %s of %s sessions are open (check PGUSER, PGDATABASE, PGPASSWORD)\n' "$active" "$count" >&2
