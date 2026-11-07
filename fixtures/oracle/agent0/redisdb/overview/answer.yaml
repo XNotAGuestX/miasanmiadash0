@@ -1,0 +1,254 @@
+# Agent0 answer, verbatim. Asked 2026-11-07 ~17:45 local (dash0 MCP runTask, default model Advanced/High), thread: https://app.dash0.com/goto/agent0?thread_id=9fb34f78-2637-45dd-aa0a-2d8ac8bf7ff3&dataset=default&org=701d5eb3-98fe-4205-b6cc-f3a7f9104e43, prompt: prompt.md.
+# Provenance only, never test input.
+- source_path: 'widgets[1].definition.widgets[0].definition.requests[0]'
+  outcome: translated
+  promql:
+    - '(avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])))) * 100'
+  otel_metrics: [redis.keyspace.hits, redis.keyspace.misses]
+  labels: {host: host_name}
+  live_check: "yes, 1 series (14:05-15:21 UTC)"
+  notes: "The Datadog check submits keyspace_hits and keyspace_misses with self.rate (per second). The OTel metrics are monotonic cumulative sums, so rate() matches that. The result is NaN when there are no lookups, the same as in Datadog. The query_value reducer has to be set on the Perses stat panel."
+
+- source_path: 'widgets[1].definition.widgets[1].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="redis.clients.blocked", otel_metric_type="sum"})'
+  otel_metrics: [redis.clients.blocked]
+  labels: {host: host_name}
+  live_check: "yes, 1 series"
+  notes: "In Datadog this is a gauge. In OTel it is a non-monotonic sum (UpDownCounter), so it is read without rate(). The value was 0 throughout the window."
+
+- source_path: 'widgets[1].definition.widgets[2].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="redis.db.keys", otel_metric_type="gauge"})'
+  otel_metrics: [redis.db.keys]
+  labels: {host: host_name}
+  live_check: "yes, 1 series"
+  notes: "Datadog redis.keys is a gauge per keyspace db, tagged redis_db (value db0). OTel redis.db.keys is a gauge per db, with label db (value 0). Both are summed across dbs. Only db 0 exists."
+
+- source_path: 'widgets[1].definition.widgets[3].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="redis.rdb.changes_since_last_save", otel_metric_type="sum"})'
+  otel_metrics: [redis.rdb.changes_since_last_save]
+  labels: {host: host_name}
+  live_check: "yes, 1 series"
+  notes: "In Datadog this is a gauge of rdb_changes_since_last_save. In OTel it is a non-monotonic sum, so it is read raw without rate()."
+
+- source_path: 'widgets[1].definition.widgets[4].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset. The redis receiver emits no master_link_down_since_seconds metric."
+  otel_metrics: []
+  labels: {}
+  live_check: "no, 0 series (none of the 29 redis.* metrics in the catalog match)"
+  notes: "redis.slaves.connected is 0 and there is no replica-side link metric."
+
+- source_path: 'widgets[2].definition.widgets[0].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset. redis.info.latency_ms is how long the Datadog agent's INFO call took, and the OTel receiver emits nothing like it."
+  otel_metrics: []
+  labels: {}
+  live_check: "no, 0 series"
+  notes: "redis.commands is an ops/s gauge, not a latency, so it is not a substitute."
+
+- source_path: 'widgets[2].definition.widgets[2].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset. The OTel redis receiver collects no slowlog metrics."
+  otel_metrics: []
+  labels: {}
+  live_check: "no, 0 series"
+  notes: "The top(..., 10, 'mean', 'desc') formula could be written with topk, but the source metric does not exist."
+
+- source_path: 'widgets[2].definition.widgets[3].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset. The OTel redis receiver collects no slowlog metrics."
+  otel_metrics: []
+  labels: {}
+  live_check: "no, 0 series"
+  notes: "The command and name tags have no counterpart labels."
+
+- source_path: 'widgets[2].definition.widgets[4].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset. The Datadog check computes redis.replication.delay as master offset minus each replica's offset. Only this instance's redis.replication.offset exists here, with no per-replica offsets."
+  otel_metrics: []
+  labels: {}
+  live_check: "no, 0 series"
+  notes: "redis.replication.offset (gauge, By) exists, but it is the server's own offset, not a delay."
+
+- source_path: 'widgets[2].definition.widgets[5].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg(rate({otel_metric_name="redis.cpu.time", otel_metric_type="sum", state="sys"}[$__rate_interval]))'
+    - 'avg(rate({otel_metric_name="redis.cpu.time", otel_metric_type="sum", state="user"}[$__rate_interval]))'
+  otel_metrics: [redis.cpu.time]
+  labels: {host: host_name}
+  live_check: "yes, 1 series per formula (2 total)"
+  notes: "The Datadog check submits used_cpu_sys and used_cpu_user with self.rate (CPU seconds per second). OTel redis.cpu.time is a cumulative sum in seconds, with label state. The query selects state=sys and state=user and leaves out the other values (sys_children, sys_main_thread, user_children, user_main_thread), which are separate Datadog metrics."
+
+- source_path: 'widgets[2].definition.widgets[6].definition.requests[0]'
+  outcome: translated
+  promql:
+    - '(avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])))) * 100'
+  otel_metrics: [redis.keyspace.hits, redis.keyspace.misses]
+  labels: {host: host_name}
+  live_check: "yes, 1 series"
+  notes: "Same as widgets[1].definition.widgets[0]. The query_value reducer has to be set on the Perses stat panel."
+
+- source_path: 'widgets[2].definition.widgets[7].definition.requests[0]'
+  outcome: translated
+  promql:
+    - '(avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])))) * 100'
+  otel_metrics: [redis.keyspace.hits, redis.keyspace.misses]
+  labels: {host: host_name}
+  live_check: "yes, 1 series"
+  notes: "Same expression, shown as a time series."
+
+- source_path: 'widgets[3].definition.widgets[0].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset for redis.mem.maxmemory. The receiver emits no maxmemory metric."
+  otel_metrics: []
+  labels: {}
+  live_check: "no, 0 series for the denominator"
+  notes: "The numerator could map to redis.memory.used (gauge, By), but the request is all-or-nothing."
+
+- source_path: 'widgets[3].definition.widgets[2].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum by (host_name) (rate({otel_metric_name="redis.keys.evicted", otel_metric_type="sum"}[$__rate_interval])) * 60'
+  otel_metrics: [redis.keys.evicted]
+  labels: {host: host_name}
+  live_check: "yes, 1 series (host_name=docker-desktop)"
+  notes: "In Datadog, redis.keys.evicted is a cumulative gauge, and per_minute() is its rate of change per minute. That equals the counter rate times 60. PromQL rate() handles counter resets (Redis restarts), while Datadog would show a negative dip. The value was 0 throughout the window."
+
+- source_path: 'widgets[3].definition.widgets[3].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="redis.memory.rss", otel_metric_type="gauge"})'
+  otel_metrics: [redis.memory.rss]
+  labels: {host: host_name}
+  live_check: "yes, 1 series"
+  notes: "Both are gauges in bytes."
+
+- source_path: 'widgets[3].definition.widgets[4].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg({otel_metric_name="redis.memory.fragmentation_ratio", otel_metric_type="gauge"})'
+  otel_metrics: [redis.memory.fragmentation_ratio]
+  labels: {host: host_name}
+  live_check: "yes, 1 series"
+  notes: "Both are gauges with unit 1 (fraction). The query_value reducer has to be set on the Perses stat panel."
+
+- source_path: 'widgets[3].definition.widgets[5].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg({otel_metric_name="redis.memory.fragmentation_ratio", otel_metric_type="gauge"})'
+  otel_metrics: [redis.memory.fragmentation_ratio]
+  labels: {host: host_name}
+  live_check: "yes, 1 series"
+  notes: "Same as the query_value widget, shown as a time series."
+
+- source_path: 'widgets[4].definition.widgets[0].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="redis.clients.connected", otel_metric_type="sum"})'
+  otel_metrics: [redis.clients.connected]
+  labels: {host: host_name}
+  live_check: "yes, 1 series"
+  notes: "Datadog redis.net.clients is a gauge of connected_clients, which excludes replicas. OTel redis.clients.connected is a non-monotonic sum of the same INFO field, read raw."
+
+- source_path: 'widgets[4].definition.widgets[2].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="redis.clients.blocked", otel_metric_type="sum"})'
+  otel_metrics: [redis.clients.blocked]
+  labels: {host: host_name}
+  live_check: "yes, 1 series"
+  notes: "Non-monotonic sum, read raw. The value was 0 throughout the window."
+
+- source_path: 'widgets[4].definition.widgets[3].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="redis.slaves.connected", otel_metric_type="sum"})'
+  otel_metrics: [redis.slaves.connected]
+  labels: {host: host_name}
+  live_check: "yes, 1 series"
+  notes: "Both read connected_slaves. In OTel it is a non-monotonic sum, read raw. The value was 0 throughout the window."
+
+- source_path: 'widgets[4].definition.widgets[4].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum(increase({otel_metric_name="redis.connections.rejected", otel_metric_type="sum"}[$__interval]))'
+  otel_metrics: [redis.connections.rejected]
+  labels: {host: host_name}
+  live_check: "yes, 1 series"
+  notes: "In Datadog, redis.net.rejected is a cumulative gauge, and diff() takes the delta per interval on each series before space aggregation. increase() over $__interval inside sum() keeps that order. increase() extrapolates and treats a counter reset as continuation, where diff() would go negative. $__interval must be at least 20s, since the scrape interval is 10s. The value was 0 throughout the window."
+
+- source_path: 'widgets[4].definition.widgets[5].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum(rate({otel_metric_name="redis.commands.processed", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [redis.commands.processed]
+  labels: {host: host_name}
+  live_check: "yes, 1 series"
+  notes: "The Datadog check submits total_commands_processed with self.rate. The query uses that same counter's rate. It does not use redis.commands, which is instantaneous_ops_per_sec, a different Datadog metric (redis.net.instantaneous_ops_per_sec)."
+
+- source_path: 'widgets[5].definition.widgets[0].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="redis.db.keys", otel_metric_type="gauge"})'
+  otel_metrics: [redis.db.keys]
+  labels: {host: host_name}
+  live_check: "yes, 1 series"
+  notes: "Gauge summed across dbs, as for widgets[1].definition.widgets[2]."
+
+- source_path: 'widgets[5].definition.widgets[1].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="redis.db.keys", otel_metric_type="gauge"})'
+  otel_metrics: [redis.db.keys]
+  labels: {host: host_name}
+  live_check: "yes, 1 series"
+  notes: "Same expression. The query_value reducer has to be set on the Perses stat panel."
+
+- source_path: 'widgets[5].definition.widgets[3].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="redis.keys.expired", otel_metric_type="sum"})'
+  otel_metrics: [redis.keys.expired]
+  labels: {host: host_name}
+  live_check: "yes, 1 series"
+  notes: "In Datadog, redis.keys.expired is a cumulative gauge (total expired since start) shown with no rate function. The exact equivalent is the raw cumulative OTel sum, so rate() is deliberately not used here, against the general convention. The value resets when Redis restarts. The value was 0 throughout the window."
+
+- source_path: 'widgets[5].definition.widgets[4].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="redis.db.expires", otel_metric_type="gauge"})'
+  otel_metrics: [redis.db.expires]
+  labels: {host: host_name}
+  live_check: "yes, 1 series"
+  notes: "Datadog redis.expires is a gauge per db. OTel redis.db.expires is a gauge with label db, summed across dbs."
+
+- source_path: 'widgets[5].definition.widgets[5].definition.requests[0]'
+  outcome: blocked
+  reason: "No equivalent metric in this dataset. redis.key.length comes from the Datadog check's configured keys option, and the OTel receiver emits no per-key length metric."
+  otel_metrics: []
+  labels: {}
+  live_check: "no, 0 series"
+  notes: "The key tag and the $key template variable have no counterpart label."
+
+- source_path: 'widgets[6].definition.widgets[0].definition.requests[0]'
+  outcome: blocked
+  reason: "Not a metrics request. This is a list_stream log widget with no metric queries."
+  otel_metrics: []
+  labels: {}
+  live_check: "no, not applicable"
+  notes: "Needs a log panel. It is out of scope for a PromQL translation."
+
+- source_path: 'widgets[6].definition.widgets[1].definition.requests[0]'
+  outcome: blocked
+  reason: "Not a metrics request. This is a list_stream log widget with no metric queries."
+  otel_metrics: []
+  labels: {}
+  live_check: "no, not applicable"
+  notes: "Needs a log panel. It is out of scope for a PromQL translation."

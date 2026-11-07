@@ -1,0 +1,74 @@
+# Agent0 answer, verbatim. Asked 2026-11-07 ~17:23 local (Dash0 UI chat, Advanced/High), prompt: prompt.md.
+# Provenance only, never test input.
+- source_path: 'widgets[0].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum(rate({otel_metric_name="nginx.connections_accepted", otel_metric_type="sum"}[$__rate_interval])) - sum(rate({otel_metric_name="nginx.connections_handled", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [nginx.connections_accepted, nginx.connections_handled]
+  labels: {}
+  live_check: 'no, 0 series in the last 1h (until 2026-11-07T16:23Z). The same query with [5m] returned 1 series (value 0) between 14:24 and 15:24 UTC today.'
+  notes: >-
+    The Datadog agent computes nginx.net.conn_dropped_per_s as the rate of (stub_status accepts - handled),
+    which equals rate(accepted) - rate(handled). The OTel nginxreceiver has no dropped-connections metric of its own,
+    so this value is derived. Both counters come from the same host (docker-desktop). If more hosts start reporting,
+    the difference of sums stays equal to the sum of per-host differences only when every host reports both counters.
+    $scope (default *) is dropped. The scope label for host would be host_name.
+- source_path: 'widgets[1].definition.requests[0]'
+  outcome: blocked
+  reason: >-
+    No equivalent metric in this dataset. nginx.server_zone.responses.5xx is an NGINX Plus server-zone status-code counter.
+    The only NGINX metrics in dataset default (over 30 days) are nginx.requests, nginx.connections_accepted,
+    nginx.connections_handled and nginx.connections_current, all from the open-source stub_status nginxreceiver.
+    None of them has an HTTP status or server-zone dimension.
+  otel_metrics: []
+  labels: {}
+  live_check: 'no, 0 series (no candidate metric exists)'
+  notes: >-
+    A 5xx rate could only come from another source, such as span-derived metrics with an http status label.
+    That would not be the same NGINX Plus server-zone counter, so it is not substituted here.
+- source_path: 'widgets[2].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum(rate({otel_metric_name="nginx.requests", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [nginx.requests]
+  labels: {}
+  live_check: 'no, 0 series in the last 1h (until 2026-11-07T16:23Z). The same query with [5m] returned 1 series (about 1.7-4.2 req/s) between 14:24 and 15:24 UTC today.'
+  notes: >-
+    nginx.net.request_per_s is the Datadog rate of the stub_status requests counter. nginx.requests is the same cumulative
+    counter, so rate() gives requests per second. $scope dropped.
+- source_path: 'widgets[3].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="active"})'
+  otel_metrics: [nginx.connections_current]
+  labels: {}
+  live_check: 'no, 0 series in the last 1h (until 2026-11-07T16:23Z). Returned 1 series (51-119) between 14:24 and 15:24 UTC today.'
+  notes: >-
+    nginx.net.connections is the stub_status "Active connections" gauge, which maps to nginx.connections_current with state="active".
+    nginx.connections_current is a non-monotonic sum (current value), so it is not wrapped in rate().
+    The widget title says "per second", but the source metric is a point-in-time count, not a rate.
+    Verified state values: active, reading, waiting, writing. $scope dropped.
+- source_path: 'widgets[4].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="reading"})'
+  otel_metrics: [nginx.connections_current]
+  labels: {}
+  live_check: 'no, 0 series in the last 1h (until 2026-11-07T16:23Z). Returned 1 series between 14:24 and 15:24 UTC today.'
+  notes: 'nginx.net.reading maps to the stub_status Reading count, nginx.connections_current with state="reading". Gauge semantics, no rate(). $scope dropped.'
+- source_path: 'widgets[4].definition.requests[1]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="writing"})'
+  otel_metrics: [nginx.connections_current]
+  labels: {}
+  live_check: 'no, 0 series in the last 1h (until 2026-11-07T16:23Z). Returned 1 series between 14:24 and 15:24 UTC today.'
+  notes: 'nginx.net.writing maps to the stub_status Writing count, nginx.connections_current with state="writing". Gauge semantics, no rate(). $scope dropped.'
+- source_path: 'widgets[4].definition.requests[2]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting"})'
+  otel_metrics: [nginx.connections_current]
+  labels: {}
+  live_check: 'no, 0 series in the last 1h (until 2026-11-07T16:23Z). Returned 1 series between 14:24 and 15:24 UTC today.'
+  notes: 'nginx.net.waiting maps to the stub_status Waiting count, nginx.connections_current with state="waiting". Gauge semantics, no rate(). $scope dropped. NGINX data in this dataset comes from one host (docker-desktop) and arrived only from about 14:05 to 15:20 UTC on 2026-11-07, so live checks run now return nothing.'
