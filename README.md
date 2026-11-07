@@ -4,7 +4,7 @@
 
 Hackathon project: a deterministic CLI that migrates Datadog dashboards and metric monitors to Dash0 using Perses, PromQL, and explicit telemetry mappings.
 
-**Current state: the offline `convert` command works for Datadog dashboards (Track A: query parser, mapping, PromQL, Perses dashboards). Monitors are still reported as blocked, and `publish` and `fetch` don't exist yet.** See [STATUS.md](docs/STATUS.md).
+**Current state: the offline `convert` command works for Datadog dashboards (Track A: query parser, mapping, PromQL, Perses dashboards) and metric monitors (Track B, plan 06). A supported monitor becomes `rules/<slug>.prometheus.{json,yaml}` (warning and critical rules) and `check-rules/<slug>.json` (a disabled, create-only Dash0 check-rule body), both rendered from one condition `<agg>_over_time((<query>)[<window>:1m])`; anything outside the reviewed allowlist is blocked with a diagnostic. `publish` and `fetch` don't exist yet.** See [STATUS.md](docs/STATUS.md).
 
 ## Install, test, convert
 

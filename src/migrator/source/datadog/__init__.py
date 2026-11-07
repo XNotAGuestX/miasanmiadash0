@@ -9,7 +9,8 @@ from migrator.source.asset import CompileOptions, ProviderLoadResult, SourceAsse
 from migrator.source.datadog.assets import recognize_assets
 from migrator.source.datadog.dashboard import compile_dashboard
 from migrator.source.datadog.mapping import parse_mapping
-from migrator.target import CompileResult, DashboardArtifact, Diagnostic, ItemResult
+from migrator.source.datadog.monitor import compile_monitor
+from migrator.target import CompileResult, DashboardArtifact
 from migrator.write import assign_slugs
 
 
@@ -37,19 +38,14 @@ class DatadogProvider:
             result.diagnostics.extend(comp.diagnostics)
             if comp.dashboard is not None:
                 result.dashboards.append(DashboardArtifact(slug, asset.source_id, comp.dashboard))
-        # Monitors stay on the plan 01 skeleton until plan 06 (Track B) lands compileMonitor.
-        for asset in sorted((a for a in assets if a.kind == "monitor"), key=lambda a: a.source_id):
-            result.items.append(ItemResult(asset.source_id, "", "monitor", asset.title, "blocked"))
-            result.diagnostics.append(
-                Diagnostic(
-                    code="UNSUPPORTED_MONITOR_TYPE",
-                    severity="error",
-                    source_id=asset.source_id,
-                    source_path="",
-                    message="Monitor conversion is not supported yet.",
-                    suggested_action="Wait for monitor support (plan 06) or migrate manually.",
-                )
-            )
+        monitors = sorted((a for a in assets if a.kind == "monitor"), key=lambda a: a.source_id)
+        monitor_slugs = assign_slugs([a.title for a in monitors])
+        for asset, slug in zip(monitors, monitor_slugs, strict=True):
+            mon = compile_monitor(asset, slug, parsed.mapping)
+            result.items.append(mon.item)
+            result.diagnostics.extend(mon.diagnostics)
+            if mon.rule is not None:
+                result.rules.append(mon.rule)
         return result
 
 

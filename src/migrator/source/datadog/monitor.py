@@ -36,6 +36,7 @@ from migrator.target import (
     RuleArtifact,
     Severity,
 )
+from migrator.validation import validate_check_rule, validate_prometheus_rule_group
 
 _PREFIX = re.compile(r"^(avg|max|min|sum)\(last_(\d+)(m|h|d)\):")
 _SUFFIX = re.compile(r" (>=|<=|>|<) (-?\d+(?:\.\d+)?)$")
@@ -494,6 +495,19 @@ def compile_monitor(asset: SourceAsset, slug: str, mapping: DatadogMapping) -> M
         "labels": {},
         "annotations": dict(annotations),
     }
+
+    problems = [f"check rule {p}" for p in validate_check_rule(check_rule)] + [
+        f"prometheus rule {p}" for p in validate_prometheus_rule_group(group)
+    ]
+    if problems:
+        add(
+            "TARGET_VALIDATION_FAILED",
+            "error",
+            "",
+            "Emitted monitor artifacts failed validation: " + "; ".join(problems),
+            "This is a converter bug; report it with the source asset.",
+        )
+        return blocked()
 
     item = ItemResult(sid, "", "monitor", asset.title, "translated")
     return MonitorCompilation(

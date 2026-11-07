@@ -164,3 +164,83 @@ def check_promql_syntax(expr: str) -> str | None:
     except Exception as err:  # the parser raises ValueError subclasses
         return f"syntax error: {err}"
     return None
+
+
+# --- Alert artifacts (plan 06 Task 5) -------------------------------------------
+
+_Duration = Annotated[str, Field(pattern=r"^\d+[smhd]$")]
+_Finite = Annotated[float, Field(allow_inf_nan=False)]
+
+
+class _CheckRuleThresholds(_Strict):
+    failed: _Finite
+    degraded: _Finite | None = None
+
+
+class _Annotations(_Strict):
+    summary: Annotated[str, Field(max_length=255)]
+    description: Annotated[str, Field(max_length=2048)]
+
+
+class _CheckRule(_Strict):
+    # No `id` field: extra="forbid" rejects it, which keeps publishing create-only.
+    name: Annotated[str, Field(min_length=1)]
+    expression: Annotated[str, Field(min_length=1, pattern=r"\$__threshold$")]
+    thresholds: _CheckRuleThresholds
+    interval: _Duration
+    for_: _Duration = Field(alias="for")
+    enabled: Literal[False]
+    labels: dict[str, str]
+    annotations: _Annotations
+
+
+class _PromRule(_Strict):
+    alert: Annotated[str, Field(min_length=1)]
+    expr: Annotated[str, Field(min_length=1)]
+    labels: dict[str, str]
+    annotations: _Annotations
+
+
+class _PromGroup(_Strict):
+    name: Annotated[str, Field(min_length=1)]
+    interval: _Duration
+    rules: Annotated[list[_PromRule], Field(min_length=1)]
+
+
+class _PromRuleFile(_Strict):
+    groups: Annotated[list[_PromGroup], Field(min_length=1)]
+
+
+def _errors(err: ValidationError) -> list[str]:
+    return [f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}" for e in err.errors()]
+
+
+def validate_check_rule(r: Any) -> list[str]:
+    """Strict schema of the Dash0 check-rule body, plus PromQL syntax of its expression."""
+    try:
+        model = _CheckRule.model_validate(r)
+    except ValidationError as err:
+        return _errors(err)
+    problems: list[str] = []
+    if model.thresholds.degraded is None and isinstance(r, dict):
+        if "degraded" in r.get("thresholds", {}):
+            problems.append("thresholds.degraded: must be omitted, not null")
+    syntax = check_promql_syntax(model.expression)
+    if syntax is not None:
+        problems.append(f"expression: {syntax}")
+    return problems
+
+
+def validate_prometheus_rule_group(g: Any) -> list[str]:
+    """Strict schema of the Prometheus rule file, plus PromQL syntax of every expr."""
+    try:
+        model = _PromRuleFile.model_validate(g)
+    except ValidationError as err:
+        return _errors(err)
+    problems: list[str] = []
+    for gi, group in enumerate(model.groups):
+        for ri, rule in enumerate(group.rules):
+            syntax = check_promql_syntax(rule.expr)
+            if syntax is not None:
+                problems.append(f"groups[{gi}].rules[{ri}].expr: {syntax}")
+    return problems
