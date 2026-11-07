@@ -102,7 +102,7 @@ Nothing is silently dropped. A widget is all or nothing.
 
 ### 4. Publish
 
-Demo resources carry a `demo-` prefix (AGENTS.md, plan 09), so every publish in this runbook passes `--name-prefix demo-`. The prefix is added to each dashboard's `metadata.name` and display name and to the check rule's name at send time; the files in `/tmp/pg-demo`, their sha256 and the manifest stay as `convert` wrote them.
+Demo resources carry a `demo-` prefix (AGENTS.md), so every publish in this runbook passes `--name-prefix demo-`. The prefix is added to each dashboard's `metadata.name` and display name and to the check rule's name at send time; the files in `/tmp/pg-demo`, their sha256 and the manifest stay as `convert` wrote them.
 
 ```bash
 uv run migrator publish --from /tmp/pg-demo --dry-run --allow-partial --name-prefix demo-

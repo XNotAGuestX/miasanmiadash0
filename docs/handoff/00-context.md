@@ -29,13 +29,13 @@ Build a **deterministic converter from Datadog dashboards to Perses**, the open-
 | D4 | Output is JSON, YAML, or a direct publish to Dash0. The default format is Perses. | User decision |
 | D5 | Order the services by the data that exists in Dash0: Postgres → host → Kafka → Redis → nginx → Docker. | Derived from [DASH0_INVENTORY.md](../DASH0_INVENTORY.md#service-order) |
 | D6 | The core target is the dashboard converter; alerts are secondary. | User confirmation, 2026-11-07 |
-| A1 | Target vocabulary: metric names and labels **exactly as found in Dash0** (postgresqlreceiver 0.160.0 labels). Each pair is cited from Datadog's [metrics_mapping](https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/) table and reviewed by a human. | **Assumed default**, waiting for the user |
+| A1 | Target vocabulary: metric names and labels **exactly as found in Dash0** (postgresqlreceiver 0.160.0 labels). Each pair is cited from Datadog's [metrics_mapping](https://docs.datadoghq.com/opentelemetry/mapping/metrics_mapping.md) table (pinned rows: `fixtures/datadog/otel-mapping.yaml`, #105) and reviewed by a human. | **Assumed default**, waiting for the user |
 | A2 | Alert output: a Prometheus rule group file **and** a Dash0 check-rule body, both rendered from one internal condition. | **Assumed default**, waiting for the user |
 | A3 | Monitor strictness: approximate with a warning for a reviewed allowlist of options; block everything else. | **Assumed default**, waiting for the user |
 | A4 | CLI verbs: `convert` (offline) and `publish` (writes to Dash0). They replace `compile` and `import` in the older docs. | From the planning handoff |
-| B1 | A Dash0 API token scoped to dataset `default` (or a manual UI export of one dashboard, for the reference only) | **Open blocker** for plan 07 and the plan 05 gates |
-| B2 | An owner for the local OTel Demo telemetry, and approval for the connection-holder script | **Open blocker** for plan 09 |
-| B3 | A Datadog EU account and keys | **Open blocker** for plan 10 only |
+| B1 | A Dash0 API token scoped to dataset `default` | Resolved 2026-11-07 (kept in the gitignored `.env`) |
+| B2 | An owner for the local OTel Demo telemetry, and approval for the connection-holder script | **Open blocker** for the demo (#4) |
+| B3 | A Datadog EU account and keys | Horizon: live `fetch` round trip and spot checks only (#122) |
 
 ## 4. Repository layout (agreed module boundaries)
 
@@ -88,7 +88,6 @@ tests/scripts/                    # pytest: dev-time scripts (build_expected rul
   - `uv run migrator convert --source datadog --input <path>... --mapping <file> --out <dir>`
   - `uv run migrator test [pytest args]`, for example `uv run migrator test tests/datadog -k parse`.
   - `uv run migrator typecheck` (mypy --strict), `uv run migrator lint` (ruff), `uv run migrator check` (lint + typecheck + test).
-- **Reading the plans.** Some interface and test snippets in plans 01–10 are still written as TypeScript. They specify behaviour and names, not syntax: implement them in Python with snake_case names (`runConvert` → `run_convert`), dataclasses or pydantic models for interfaces, `Literal` unions for string-literal types, and pytest tests. Zod maps to pydantic, Lezer PromQL to `promql-parser`, `node:crypto` to `hashlib`, `fetch` to `urllib.request`.
 
 ## 6. Source facts (Datadog)
 
@@ -152,7 +151,7 @@ tests/scripts/                    # pytest: dev-time scripts (build_expected rul
 - Host: `cpu_mode`, `system_memory_state`, `system_network_direction`, `system_device`.
 - Kafka JMX: `type`, `service_instance_id`.
 
-**Check rule (Dash0 API body, unverified until plan 07):**
+**Check rule (Dash0 API body, verified live 2026-11-07; see `docs/STATUS.md`):**
 
 ```json
 {"name": "...", "expression": "... > $__threshold", "thresholds": {"degraded": 0.8, "failed": 0.9}, "interval": "1m", "for": "0s", "enabled": false, "labels": {}, "annotations": {"summary": "...", "description": "..."}}

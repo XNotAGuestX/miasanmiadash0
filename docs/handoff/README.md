@@ -1,30 +1,108 @@
-# Open work
+# Orchestrator handoff: engine alignment
 
 **Target:** a deterministic CLI that converts Datadog dashboards (and metric monitors) into Perses dashboards (and Prometheus/Dash0 check rules), with a per-item report. **No LLM takes part in any conversion step** (`AGENTS.md`).
 
-Plans 01–07 and 10 are implemented and merged; their plan files were removed (git history and the `main-pre-rip` branch keep them). The code and its tests are the source of truth. [00-context.md](00-context.md) is the shared spec (decisions, diagnostic codes, outcome model). Only plans with open tasks remain: [08](08-more-services.md) and [09](09-demo-and-submission.md).
+**State:** plans 01–10 are implemented and merged, and their plan files are removed (see git history or `main-pre-rip`). The code and tests are the source of truth. [00-context.md](00-context.md) is the shared spec: rules, decisions, diagnostic codes, outcome model.
 
-## Next, in order
+**This file** is the only open plan. An orchestrator runs it with one agent per issue, many in parallel. The user asked for parallel execution of this handoff on 2026-11-07. Epic: [#104](https://github.com/XNotAGuestX/thinchackdash/issues/104).
 
-| # | Work | Where | Done when | Blocked by |
+**Goal:** make every translation demonstrably right, cheapest evidence first:
+1. Datadog's own OTel mapping table;
+2. Datadog metric types;
+3. documented semantics;
+4. a read-only Dash0 smoke check;
+5. last, an advisory Agent0 opinion.
+
+## Waves
+
+Every issue is self-contained: summary, context, files, acceptance criteria, verify commands, stop conditions and the shared Definition of Done. Start a wave-2 issue once its "Depends on" issues are merged.
+
+| Wave | Issue | Work | Owns (files) | Merge |
 |---|---|---|---|---|
-| 1 | **Mapping review.** Every entry in `mappings/datadog/*.json` is `reviewed: null`. Check each against Datadog's own OTel table ([metrics_mapping](https://docs.datadoghq.com/opentelemetry/mapping/metrics_mapping.md): `otel`, `datadog`, `filter`, `transform` columns; covers most Postgres, Redis and Kafka metrics, little nginx, none of the legacy `docker.*` names) and the metric definitions; Redis/nginx notes in `mappings/datadog/REVIEW-redis-nginx.md`. | #27, #52–#55 | entries set `reviewed`; `UNREVIEWED_MAPPING` gone from goldens | a human |
-| 2 | **Default aggregator** (05.T1): a query without `agg:` uses `avg`. Implemented on branch `default-avg-aggregator`, not merged. | #33 | PR merged, goldens regenerated | — |
-| 3 | **Panel heights** are copied unscaled, so panels render squashed in Dash0 (`_GridBuilder.place`). | #89 | reviewed height scale, golden regenerated | approval |
-| 4 | **Sparse metrics**: `rate(...[$__rate_interval])` is empty for `system.network.io`. Reviewed per-entry rate window in the mapping. | #90 | entry-level window, test | — |
-| 5 | **Converter vs `expected.yaml` disagreements** (6 causes). Settle each by a converter fix or an `overrides.yaml` correction. | #96 | `uv run pytest --include-unreviewed` failures explained or fixed | — |
-| 6 | **Service goldens**, Kafka → Redis → nginx → Docker, after their mapping review. | [plan 08](08-more-services.md), #52–#55 | one reviewed golden per service | 1 |
-| 7 | **Datadog functions** (no plan yet; all blocked today). Frequency in the pinned dashboards: `.weighted()` 36, `top()` 10, `.as_count()` 9, `.as_rate()` 8, `abs()` 6, `.rollup()` 5, `.fill()` 5. One issue per function, with the documented PromQL equivalent and an exact test; unclear semantics stay blocked. | new issues | function translated or documented as blocked | — |
-| 8 | **Demo**: durable telemetry, enabled check and threshold crossing (`scripts/hold-pg-connections.sh`), fork and PR. | [plan 09](09-demo-and-submission.md) T1, T5; #56, #60, #2 | rehearsed demo; PR only on the user's request | B2; user |
-| 9 | **Live fetch round trip** (code merged, offline-tested). | #62 | fetched folder converts byte-identically | B3 |
+| 1 | [#105](https://github.com/XNotAGuestX/thinchackdash/issues/105) | **Vendor table**: pin Datadog's OTel mapping rows, check mappings, report gaps | new script, fixture, test | any time |
+| 1 | [#106](https://github.com/XNotAGuestX/thinchackdash/issues/106) | **Metric types**: pin `metadata.csv`, check mapping `kind` | pin script, new fixtures, test | any time |
+| 1 | [#107](https://github.com/XNotAGuestX/thinchackdash/issues/107) | **Default aggregator**: `avg` + `DEFAULT_AGGREGATOR_APPLIED` | `compile_query.py`, goldens | hotspot, 1st |
+| 1 | [#108](https://github.com/XNotAGuestX/thinchackdash/issues/108) | **Template-variable promotion** per mapped query (#96 R1) | `dashboard.py` `_promote_variables`, goldens | hotspot, 2nd |
+| 1 | [#109](https://github.com/XNotAGuestX/thinchackdash/issues/109) | **Panel heights**: documented layout scale | `dashboard.py` `_GridBuilder`, goldens | hotspot, 3rd |
+| 1 | [#110](https://github.com/XNotAGuestX/thinchackdash/issues/110) | **Smoke check**: read-only Dash0 query per panel → `smoke.json` | new script, test | any time |
+| 2 | [#111](https://github.com/XNotAGuestX/thinchackdash/issues/111)–[#115](https://github.com/XNotAGuestX/thinchackdash/issues/115) | **Mapping evidence per service** (postgres, kafka, redis, nginx, docker): vendor row or deviation, type match, both sources in `ref`, gaps, golden | `mappings/datadog/<svc>.json`, own golden | any time; postgres is a hotspot |
+| 2 | [#116](https://github.com/XNotAGuestX/thinchackdash/issues/116)–[#120](https://github.com/XNotAGuestX/thinchackdash/issues/120) | **Datadog functions**: `.weighted()`, `top()`, `.as_count()`/`.as_rate()`, `abs()`, `.rollup()`/`.fill()`; exact translation or documented block | `compile_query.py`/`formula.py`, goldens | hotspot, one at a time |
+| 3 | [#121](https://github.com/XNotAGuestX/thinchackdash/issues/121) | **Agent0 review** (advisory): per-panel `same / different / unsure` → `agent0-check.json`, flagged separately; `status: error` if the call fails | new script, test | last |
 
-Testing loop: [USAGE.md](../../USAGE.md). Agent0 may propose `expected.yaml` cases at development time; they count only after a human sets `reviewed: true`.
+Dependencies:
+- #111–#115 need #105 and #106.
+- #116–#120 need #107; #118 also needs #106.
+- #121 needs #110.
+
+## Merge order (hotspot:converter)
+
+Issues labelled `hotspot:converter` change the converter and regenerate `fixtures/expected/postgres-p1/` and `expected.yaml`. Agents may work on them in parallel, but they merge **one at a time**:
+
+1. #107
+2. #108
+3. #109
+4. #111 (Postgres golden refresh)
+5. the function issues, in any order
+
+Before each merge, the agent:
+1. rebases on `main`;
+2. regenerates the goldens (`uv run migrator convert …` as in the golden test, and `uv run scripts/build_expected.py <svc>/<id>`);
+3. reruns `uv run migrator check`.
+
+All other issues own disjoint files and merge whenever they are green.
+
+## Agent protocol
+
+1. **Read** `AGENTS.md`, this file, [00-context.md](00-context.md) and the issue, including its comments.
+2. **Claim:** assign the issue to XNotAGuestX and comment the branch name. Work in your own worktree, on branch `<issue>-<slug>`, from current `main`.
+3. **Stay in scope:** change only the files listed under **Files**. Any other need is a comment on the issue, not an edit.
+4. **Stop and ask** (comment, then wait) on the issue's stop conditions:
+   - semantics the docs leave open;
+   - any approximation;
+   - live writes;
+   - new dependencies.
+5. **Finish:**
+   - the PR says `Closes #<n>`;
+   - it carries the evidence for every acceptance criterion (commands and real output);
+   - `uv run migrator check` passes;
+   - set the board status to `In review`.
+6. **Merge:** XNotAGuestX reviews. Felix, or an agent acting for him with his go-ahead, merges, following the merge order above.
+7. **Report:** at handoff, comment on the issue (template in `docs/STATUS.md`). Update this table only when an issue closes or the plan changes.
+
+Mapping rules for #111–#115 are written out in each issue. The agent never sets `reviewed`; a human does that in the PR review.
+
+## Human-only items (no agent issue)
+
+- **Mapping sign-off:** set `reviewed` in the #111–#115 PRs.
+- **Expectation decisions:** #96 R2, R5 and R6 go into `fixtures/expected/<svc>/<id>/overrides.yaml`.
+- **Assumed defaults:** confirm A1–A3 (`00-context.md` §3).
+- **Durable demo telemetry** (B2, #4):
+  - record in `docs/DEMO.md` how the local OTel Demo with the Dash0 exporter starts (repo, version, compose command, env var names);
+  - check before each rehearsal that `max by (postgresql_database_name) (postgresql.backends)` has data for the last 30 minutes.
+- **Threshold crossing for the demo:** `scripts/hold-pg-connections.sh <count> <seconds>`. At current ≈ 8 and max = 100:
+  - `N = 75` gives ≈ 0.83, past the 0.8 warning;
+  - `N = 85` gives ≈ 0.93, past the 0.9 critical.
+
+  Hold each step longer than 15 minutes, with the demo check enabled; that is a live write and needs Felix's go-ahead.
+- **Submission (#2), only on Felix's request:**
+  1. fork `vimouzin/dash0-dashboard-migrator`, push a feature branch (no forced unrelated history);
+  2. secret gate: `git grep -nE "auth_[A-Za-z0-9]{8,}|DD_API_KEY=.+|DASH0_AUTH_TOKEN=.+"` must print nothing;
+  3. open the PR with offline, mocked and live evidence kept separate.
+
+## Horizon: live Datadog ([#122](https://github.com/XNotAGuestX/thinchackdash/issues/122))
+
+Tracked, not scheduled; it needs a Datadog account (B3):
+- the live `fetch` round trip (code merged, offline-tested);
+- targeted numeric spot checks for function semantics the docs leave open.
+
+No permanent comparison lab.
 
 ## Open decisions and blockers
 
-- **A1** target vocabulary = names and labels as found in Dash0; **A2** alert output = Prometheus rule group + Dash0 check rule; **A3** monitor strictness = approximate and warn on a reviewed allowlist, block the rest. All *assumed defaults* (#1).
-- **B1** Dash0 token: resolved. **B2** demo telemetry owner (#4). **B3** Datadog account (#5). Starter/fork relationship (#2).
-
-## Housekeeping
-
-Open issues whose work is merged or moot: #16–#21, #23–#25, #29–#32, #57–#59 and epics #6, #7, #9, #11, #12. Close them once confirmed, e.g. `gh issue close 16 -c "Done on main"`.
+- **A1** target vocabulary = names and labels as found in Dash0. *Assumed default.*
+- **A2** alert output = Prometheus rule group + Dash0 check rule. *Assumed default.*
+- **A3** monitor strictness = approximate and warn on a reviewed allowlist, block the rest. *Assumed default.*
+- **B1** Dash0 token: resolved.
+- **B2** demo telemetry owner: open (#4).
+- **B3** Datadog account: horizon (#122).
+- **Starter/fork relationship:** open (#2).
