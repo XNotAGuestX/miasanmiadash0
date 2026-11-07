@@ -100,6 +100,30 @@ Findings:
 - **Panel kinds** seen in existing UI dashboards: `Markdown`, `PieChart`, `StatChart`, `TimeSeriesChart` (Grid layout, `PrometheusTimeSeriesQuery`), so `StatChart` and `Markdown` from plan 05 are known kinds. Not yet checked visually: that the imported panels render with data, and `ListVariable`.
 - **Cleanup (user-approved, 2026-11-07 20:08 UTC):** `DELETE /api/dashboards/{id}` and `DELETE /api/alerting/check-rules/{id}` (with `?dataset=default`) both returned 200. Deletion is soft: a GET by id still returns 200 with the annotation `dash0.com/deleted-at`, but both list endpoints leave the assets out (dashboards back to the two `telemetry-inventory-*`, check rules back to 0). So the before/after listing in `publish_dashboard` doesn't see deleted dashboards.
 
+## Live publish (plan 07 Task 5, 2026-11-07 ~20:10 UTC)
+
+Run by Claude with the user's go-ahead ("Yes, publish all 3"), from a fresh `convert` of the pinned Postgres fixtures:
+
+```bash
+uv run migrator publish --from <run> --allow-partial --name-prefix demo-
+```
+
+Output (exit 2, because `replication_delay` stays blocked in convert):
+
+```text
+SKIP monitor postgres/monitors/replication_delay.json  (blocked in convert)
+IMPORTED check-rules/postgres-number-of-connections-is-approaching-connection-limit-o.json  id=e9092eac-9faf-422f-8092-64996413ef51
+IMPORTED dashboards/postgres-metrics.json  id=73d981c4-15e7-4ca9-b3d1-fa43534490e3
+IMPORTED dashboards/postgres-overview.json  id=8a2ac1bb-7bee-4bc3-8323-4bbe34224baa
+```
+
+- **Receipts:** `import-results.json` has all three as `imported`, HTTP 200, `namePrefix: demo-`, with the ids above (the dashboard ids found by the before/after listing).
+- **Read-back:** both dashboards (`demo-Postgres - Metrics`, 4 panels; `demo-Postgres - Overview`, 8 panels) return a `spec` equal to what was sent, project `datadog-migration`. The check rule reads back `enabled: false`, thresholds 0.8 / 0.9; only the known normalizations differ (`interval` `1m0s`, `keep_firing_for`, `dataset`, `metadata`).
+- **Rerun:** the same command again reports all three `UNCHANGED (already imported)` and sends nothing.
+- **Live data:** the Connections panel's query returned `astronomy_db` = 5, `postgres` = 3 at 20:11 UTC (Dash0 MCP, read-only).
+- **Not yet done:** UI screenshots of the dashboards; enabling the check and the threshold crossing (blocker B2, `scripts/hold-pg-connections.sh`); whether `{{host.name}}` renders in the check name.
+- **Cleanup:** the three assets stay for the demo. Deleting them is a separate, explicit action (ids above).
+
 ## Handoff entry template
 
 Post this as a comment on the issue at a meaningful handoff. Update the current-state table above only when the overall state changes, rather than leaving contradictory entries.

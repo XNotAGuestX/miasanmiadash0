@@ -6,7 +6,8 @@ A deterministic CLI that migrates Datadog dashboards and metric monitors to Dash
 
 **State (2026-11-07):**
 - `convert` works offline and is covered by golden tests.
-- `publish` and `fetch` are implemented but have only been tested against fake HTTP transports. The live runs wait on a Dash0 token (B1) and a Datadog account (B3).
+- `publish` has run live against Dash0: the Postgres check rule and both dashboards were imported and read back (plan 07 Task 5).
+- `fetch` is implemented but has only been tested against a fake API; the live run waits on a Datadog account (B3).
 
 See [STATUS.md](docs/STATUS.md) for details and [DEMO.md](docs/DEMO.md) for the demo runbook.
 
@@ -66,7 +67,7 @@ uv run migrator publish --from /tmp/pg-out --allow-partial     # import, includi
 uv run migrator publish --from /tmp/pg-out --dry-run --name-prefix demo-   # demo names: demo-Postgres - Metrics, …
 ```
 
-> **`publish` itself not yet run live.** The dry run has been run. The import API it calls was checked live with one demo dashboard and one disabled check rule (plan 07 Task 1); the full live `publish` (plan 07 Task 5) waits on the user's go-ahead.
+> **Run live on 2026-11-07** (plan 07 Task 5): the Postgres check rule and both dashboards imported into `default` with `--name-prefix demo-`, read back equal, and a rerun reported `UNCHANGED`. See [STATUS.md](docs/STATUS.md#live-publish-plan-07-task-5-2026-11-07-2010-utc).
 
 `publish` reads JSON output only: a run converted with `--format yaml` fails with "not valid JSON".
 
