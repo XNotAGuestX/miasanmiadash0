@@ -531,9 +531,20 @@ def _source_layout(widget: Any) -> dict[str, int] | None:
     return {k: layout[k] for k in keys}
 
 
+def _fits_source_grid(widget: Any) -> bool:
+    """Datadog's ordered layout is a 12-column grid; anything outside it is not mappable."""
+    layout = _source_layout(widget)
+    return (
+        layout is not None
+        and layout["x"] >= 0
+        and layout["width"] > 0
+        and layout["x"] + layout["width"] <= 12
+    )
+
+
 class _GridBuilder:
-    def __init__(self, widgets: list[Any], title: str | None) -> None:
-        self.use_source = bool(widgets) and all(_source_layout(w) is not None for w in widgets)
+    def __init__(self, widgets: list[Any], title: str | None, ordered: bool) -> None:
+        self.use_source = ordered and bool(widgets) and all(_fits_source_grid(w) for w in widgets)
         self.title = title
         self.items: list[PersesGridItem] = []
 
@@ -561,14 +572,15 @@ class _GridBuilder:
 
 
 class _Builder:
-    def __init__(self, ctx: _Ctx, c: _Collector, widgets: list[Any]) -> None:
+    def __init__(self, ctx: _Ctx, c: _Collector, widgets: list[Any], ordered: bool) -> None:
+        self.ordered = ordered
         self.ctx = ctx
         self.c = c
         self.widgets = widgets
         self.panels: dict[str, PersesPanel] = {}
         self.layouts: list[PersesGrid] = []
         self.items: list[ItemResult] = []
-        self.top = _GridBuilder(widgets, None)
+        self.top = _GridBuilder(widgets, None, ordered)
 
     def flush_top(self) -> None:
         grid = self.top.grid()
@@ -576,7 +588,7 @@ class _Builder:
             self.layouts.append(grid)
         # A new untitled chunk keeps the dashboard-wide layout decision.
         use_source = self.top.use_source
-        self.top = _GridBuilder(self.widgets, None)
+        self.top = _GridBuilder(self.widgets, None, self.ordered)
         self.top.use_source = use_source
 
     def record(self, key: str, path: str, widget: Any, grid: _GridBuilder) -> None:
@@ -605,7 +617,7 @@ class _Builder:
         self.c.items.extend(d for d in keys.items if d.severity != "error")
         blocking = [d for d in keys.items if d.severity == "error"]
         title = _str(definition.get("title"))
-        grid = _GridBuilder(children, title)
+        grid = _GridBuilder(children, title, self.ordered)
         for j, child in enumerate(children):
             cpath = f"{dpath}.widgets[{j}]"
             cdef = child.get("definition") if isinstance(child, dict) else None
@@ -652,7 +664,7 @@ def compile_dashboard(
 
     raw_widgets = body.get("widgets")
     widgets: list[Any] = raw_widgets if isinstance(raw_widgets, list) else []
-    b = _Builder(ctx, c, widgets)
+    b = _Builder(ctx, c, widgets, body.get("layout_type") == "ordered")
     for i, widget in enumerate(widgets):
         path = f"widgets[{i}]"
         definition = widget.get("definition") if isinstance(widget, dict) else None

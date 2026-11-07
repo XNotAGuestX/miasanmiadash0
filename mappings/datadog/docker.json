@@ -33,6 +33,12 @@
       "targetUnit": "ns"
     },
     "docker.io.read_bytes": {
+      "grain": {
+        "aggregation": "sum",
+        "labels": [
+          "container_name"
+        ]
+      },
       "kind": "rate",
       "labels": {
         "container_name": "container_name",
@@ -41,7 +47,7 @@
       "matchers": {
         "operation": "read"
       },
-      "ref": "docker_daemon/metadata.csv @a9b9e42 row docker.io.read_bytes (gauge, byte per second, bytes read from disk by container processes); target is a cumulative By sum split by operation, fixed to operation=read. Reasoning only. Labels: container_image_name values have the form <image>:<tag> (e.g. postgres:18.6), same form as Datadog's docker_image tag per Datadog Docker docs; not verified against live Datadog values. Dash0 check 2026-11-07 on dataset default: count by (otel_metric_name, otel_metric_type) (last_over_time({otel_metric_name=~\"container\\\\..*\"}[3h])); count by (otel_metric_name, container_name, container_image_name, container_id, interface, operation) (last_over_time({otel_metric_name=~\"container\\\\.(blockio.*|cpu.usage.(usermode|kernelmode)|memory.file|network.io.usage.(rx|tx)_bytes)\"}[3h])); getMetricDetails for unit/type (dockerstatsreceiver 0.160.0)",
+      "ref": "docker_daemon/metadata.csv @a9b9e42 row docker.io.read_bytes (gauge, byte per second, bytes read from disk by container processes); target is a cumulative By sum split by operation, fixed to operation=read. Reasoning only. Labels: container_image_name values have the form <image>:<tag> (e.g. postgres:18.6), same form as Datadog's docker_image tag per Datadog Docker docs; not verified against live Datadog values. Dash0 check 2026-11-07 on dataset default: count by (otel_metric_name, otel_metric_type) (last_over_time({otel_metric_name=~\"container\\\\..*\"}[3h])); count by (otel_metric_name, container_name, container_image_name, container_id, interface, operation) (last_over_time({otel_metric_name=~\"container\\\\.(blockio.*|cpu.usage.(usermode|kernelmode)|memory.file|network.io.usage.(rx|tx)_bytes)\"}[3h])); getMetricDetails for unit/type (dockerstatsreceiver 0.160.0) Grain sum by container_name: Dash0 series also carry device_major/device_minor, while Datadog reports a per-container total, so per-series rates are summed per container before the outer aggregation (Dash0 label check: count by (otel_metric_name, container_name, container_image_name, container_id, interface, operation) ...; getMetricDetails attribute keys). cpu.usage.* and memory.file series carry no labels beyond container identity, so those entries need no grain.",
       "reviewed": null,
       "scale": 1,
       "sourceUnit": "byte/second",
@@ -52,6 +58,12 @@
       "targetUnit": "By"
     },
     "docker.io.write_bytes": {
+      "grain": {
+        "aggregation": "sum",
+        "labels": [
+          "container_name"
+        ]
+      },
       "kind": "rate",
       "labels": {
         "container_name": "container_name",
@@ -60,7 +72,7 @@
       "matchers": {
         "operation": "write"
       },
-      "ref": "docker_daemon/metadata.csv @a9b9e42 row docker.io.write_bytes (gauge, byte per second, bytes written to disk by container processes); target is a cumulative By sum split by operation, fixed to operation=write. Reasoning only. Labels: container_image_name values have the form <image>:<tag> (e.g. postgres:18.6), same form as Datadog's docker_image tag per Datadog Docker docs; not verified against live Datadog values. Dash0 check 2026-11-07 on dataset default: count by (otel_metric_name, otel_metric_type) (last_over_time({otel_metric_name=~\"container\\\\..*\"}[3h])); count by (otel_metric_name, container_name, container_image_name, container_id, interface, operation) (last_over_time({otel_metric_name=~\"container\\\\.(blockio.*|cpu.usage.(usermode|kernelmode)|memory.file|network.io.usage.(rx|tx)_bytes)\"}[3h])); getMetricDetails for unit/type (dockerstatsreceiver 0.160.0)",
+      "ref": "docker_daemon/metadata.csv @a9b9e42 row docker.io.write_bytes (gauge, byte per second, bytes written to disk by container processes); target is a cumulative By sum split by operation, fixed to operation=write. Reasoning only. Labels: container_image_name values have the form <image>:<tag> (e.g. postgres:18.6), same form as Datadog's docker_image tag per Datadog Docker docs; not verified against live Datadog values. Dash0 check 2026-11-07 on dataset default: count by (otel_metric_name, otel_metric_type) (last_over_time({otel_metric_name=~\"container\\\\..*\"}[3h])); count by (otel_metric_name, container_name, container_image_name, container_id, interface, operation) (last_over_time({otel_metric_name=~\"container\\\\.(blockio.*|cpu.usage.(usermode|kernelmode)|memory.file|network.io.usage.(rx|tx)_bytes)\"}[3h])); getMetricDetails for unit/type (dockerstatsreceiver 0.160.0) Grain sum by container_name: Dash0 series also carry device_major/device_minor, while Datadog reports a per-container total, so per-series rates are summed per container before the outer aggregation (Dash0 label check: count by (otel_metric_name, container_name, container_image_name, container_id, interface, operation) ...; getMetricDetails attribute keys). cpu.usage.* and memory.file series carry no labels beyond container identity, so those entries need no grain.",
       "reviewed": null,
       "scale": 1,
       "sourceUnit": "byte/second",
@@ -87,12 +99,18 @@
       "targetUnit": "By"
     },
     "docker.net.bytes_rcvd": {
+      "grain": {
+        "aggregation": "sum",
+        "labels": [
+          "container_name"
+        ]
+      },
       "kind": "rate",
       "labels": {
         "container_name": "container_name",
         "docker_image": "container_image_name"
       },
-      "ref": "docker_daemon/metadata.csv @a9b9e42 row docker.net.bytes_rcvd (gauge, byte per second, 'Bytes received per second from the network'); target is a cumulative By sum, so rate() gives By/s. Reasoning only: no Datadog metrics_mapping row for docker.*. Labels: container_image_name values have the form <image>:<tag> (e.g. postgres:18.6), same form as Datadog's docker_image tag per Datadog Docker docs; not verified against live Datadog values. Dash0 check 2026-11-07 on dataset default: count by (otel_metric_name, otel_metric_type) (last_over_time({otel_metric_name=~\"container\\\\..*\"}[3h])); count by (otel_metric_name, container_name, container_image_name, container_id, interface, operation) (last_over_time({otel_metric_name=~\"container\\\\.(blockio.*|cpu.usage.(usermode|kernelmode)|memory.file|network.io.usage.(rx|tx)_bytes)\"}[3h])); getMetricDetails for unit/type (dockerstatsreceiver 0.160.0)",
+      "ref": "docker_daemon/metadata.csv @a9b9e42 row docker.net.bytes_rcvd (gauge, byte per second, 'Bytes received per second from the network'); target is a cumulative By sum, so rate() gives By/s. Reasoning only: no Datadog metrics_mapping row for docker.*. Labels: container_image_name values have the form <image>:<tag> (e.g. postgres:18.6), same form as Datadog's docker_image tag per Datadog Docker docs; not verified against live Datadog values. Dash0 check 2026-11-07 on dataset default: count by (otel_metric_name, otel_metric_type) (last_over_time({otel_metric_name=~\"container\\\\..*\"}[3h])); count by (otel_metric_name, container_name, container_image_name, container_id, interface, operation) (last_over_time({otel_metric_name=~\"container\\\\.(blockio.*|cpu.usage.(usermode|kernelmode)|memory.file|network.io.usage.(rx|tx)_bytes)\"}[3h])); getMetricDetails for unit/type (dockerstatsreceiver 0.160.0) Grain sum by container_name: Dash0 series also carry interface (eth0), while Datadog reports a per-container total, so per-series rates are summed per container before the outer aggregation (Dash0 label check: count by (otel_metric_name, container_name, container_image_name, container_id, interface, operation) ...; getMetricDetails attribute keys). cpu.usage.* and memory.file series carry no labels beyond container identity, so those entries need no grain.",
       "reviewed": null,
       "scale": 1,
       "sourceUnit": "byte/second",
@@ -103,12 +121,18 @@
       "targetUnit": "By"
     },
     "docker.net.bytes_sent": {
+      "grain": {
+        "aggregation": "sum",
+        "labels": [
+          "container_name"
+        ]
+      },
       "kind": "rate",
       "labels": {
         "container_name": "container_name",
         "docker_image": "container_image_name"
       },
-      "ref": "docker_daemon/metadata.csv @a9b9e42 row docker.net.bytes_sent (gauge, byte per second, 'Bytes sent per second to the network'); target is a cumulative By sum, so rate() gives By/s. Reasoning only: no Datadog metrics_mapping row for docker.*. Labels: container_image_name values have the form <image>:<tag> (e.g. postgres:18.6), same form as Datadog's docker_image tag per Datadog Docker docs; not verified against live Datadog values. Dash0 check 2026-11-07 on dataset default: count by (otel_metric_name, otel_metric_type) (last_over_time({otel_metric_name=~\"container\\\\..*\"}[3h])); count by (otel_metric_name, container_name, container_image_name, container_id, interface, operation) (last_over_time({otel_metric_name=~\"container\\\\.(blockio.*|cpu.usage.(usermode|kernelmode)|memory.file|network.io.usage.(rx|tx)_bytes)\"}[3h])); getMetricDetails for unit/type (dockerstatsreceiver 0.160.0)",
+      "ref": "docker_daemon/metadata.csv @a9b9e42 row docker.net.bytes_sent (gauge, byte per second, 'Bytes sent per second to the network'); target is a cumulative By sum, so rate() gives By/s. Reasoning only: no Datadog metrics_mapping row for docker.*. Labels: container_image_name values have the form <image>:<tag> (e.g. postgres:18.6), same form as Datadog's docker_image tag per Datadog Docker docs; not verified against live Datadog values. Dash0 check 2026-11-07 on dataset default: count by (otel_metric_name, otel_metric_type) (last_over_time({otel_metric_name=~\"container\\\\..*\"}[3h])); count by (otel_metric_name, container_name, container_image_name, container_id, interface, operation) (last_over_time({otel_metric_name=~\"container\\\\.(blockio.*|cpu.usage.(usermode|kernelmode)|memory.file|network.io.usage.(rx|tx)_bytes)\"}[3h])); getMetricDetails for unit/type (dockerstatsreceiver 0.160.0) Grain sum by container_name: Dash0 series also carry interface (eth0), while Datadog reports a per-container total, so per-series rates are summed per container before the outer aggregation (Dash0 label check: count by (otel_metric_name, container_name, container_image_name, container_id, interface, operation) ...; getMetricDetails attribute keys). cpu.usage.* and memory.file series carry no labels beyond container identity, so those entries need no grain.",
       "reviewed": null,
       "scale": 1,
       "sourceUnit": "byte/second",

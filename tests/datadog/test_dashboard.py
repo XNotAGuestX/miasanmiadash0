@@ -187,6 +187,35 @@ def test_uses_source_layout_when_every_widget_has_one() -> None:
     assert c.items[-1].source_path == "widgets[2].definition.widgets[0]"
 
 
+def _laid_out(x: int, width: int, layout_type: str) -> dict[str, Any]:
+    w = ts({"q": "avg:postgresql.connections{*}"})
+    w["layout"] = {"x": x, "y": 0, "width": width, "height": 2}
+    return {
+        **body(w, ts({"q": "avg:postgresql.connections{*}"}) | {"layout": w["layout"]}),
+        "layout_type": layout_type,
+    }
+
+
+def _positions(c: DashboardCompilation) -> list[tuple[int, int, int, int]]:
+    assert c.dashboard is not None
+    return [
+        (i["x"], i["y"], i["width"], i["height"])
+        for i in c.dashboard["spec"]["layouts"][0]["spec"]["items"]
+    ]
+
+
+def test_free_layout_dashboard_uses_auto_layout() -> None:
+    c = compile_body(_laid_out(0, 50, "free"))
+    assert c.items[0].outcome == "translated"
+    assert _positions(c) == [(0, 0, 12, 8), (12, 0, 12, 8)]
+
+
+def test_ordered_layout_overflowing_twelve_columns_uses_auto_layout() -> None:
+    c = compile_body(_laid_out(8, 8, "ordered"))
+    assert c.items[0].outcome == "translated"
+    assert _positions(c) == [(0, 0, 12, 8), (12, 0, 12, 8)]
+
+
 def test_reads_template_variable_defaults() -> None:
     assert read_template_variables(
         {"template_variables": [{"name": "db", "prefix": "db", "defaults": ["*"]}]}
