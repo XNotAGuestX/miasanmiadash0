@@ -1,0 +1,211 @@
+from __future__ import annotations
+
+import copy
+import json
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from migrator.source.asset import SourceAsset
+from migrator.source.datadog.mapping import DatadogMapping, MappingOk, parse_mapping
+from migrator.source.datadog.monitor import (
+    MonitorCompilation,
+    compile_monitor,
+    escape_template_braces,
+)
+from migrator.write import slugify
+
+MONITORS = Path("fixtures/datadog/integrations-core/postgres/monitors")
+SLUG = "postgres-number-of-connections-is-approaching-connection-limit-o"
+# Plan 06 Task 3's expected PromQL for avg:postgresql.percent_usage_connections{*}.
+C = (
+    "avg (sum by (service_instance_id) (max by (service_instance_id, postgresql_database_name) "
+    '({otel_metric_name="postgresql.backends", otel_metric_type="sum"})) '
+    "/ on (service_instance_id) "
+    'max by (service_instance_id) ({otel_metric_name="postgresql.connection.max", '
+    'otel_metric_type="gauge"}))'
+)
+CONDITION = f"avg_over_time(({C})[15m:1m])"
+
+
+def mapping() -> DatadogMapping:
+    r = parse_mapping(json.loads(Path("mappings/datadog/postgres.json").read_text()))
+    assert isinstance(r, MappingOk)
+    return r.mapping
+
+
+def pinned(name: str) -> dict[str, Any]:
+    body = json.loads((MONITORS / name).read_text())["definition"]
+    assert isinstance(body, dict)
+    return body
+
+
+def asset(body: dict[str, Any], source_id: str = "monitors/m.json") -> SourceAsset:
+    return SourceAsset(source_id, "monitor", str(body.get("name", "")), body, body)
+
+
+def golden_body() -> dict[str, Any]:
+    return copy.deepcopy(pinned("percent_usage_connections.json"))
+
+
+def run(body: dict[str, Any]) -> MonitorCompilation:
+    return compile_monitor(asset(body), SLUG, mapping())
+
+
+def codes(r: MonitorCompilation, severity: str = "error") -> list[str]:
+    return [d.code for d in r.diagnostics if d.severity == severity]
+
+
+def test_golden_monitor_renders_both_artifacts() -> None:
+    body = golden_body()
+    assert slugify(body["name"]) == SLUG
+    r = run(body)
+    assert r.item.outcome == "translated"
+    assert r.rule is not None
+    check = r.rule.check_rule
+    assert check["expression"] == f"{CONDITION} > $__threshold"
+    assert check["thresholds"] == {"degraded": 0.8, "failed": 0.9}
+    assert check["enabled"] is False
+    assert (check["interval"], check["for"], check["labels"]) == ("1m", "0s", {})
+    assert "id" not in check
+
+    (group,) = r.rule.prometheus_rule_group["groups"]
+    assert (group["name"], group["interval"]) == (SLUG, "1m")
+    assert [rule["expr"] for rule in group["rules"]] == [f"{CONDITION} > 0.8", f"{CONDITION} > 0.9"]
+    assert [rule["labels"]["severity"] for rule in group["rules"]] == ["warning", "critical"]
+    assert all(rule["alert"] == SLUG for rule in group["rules"])
+    assert all(rule["annotations"] == check["annotations"] for rule in group["rules"])
+    assert codes(r) == []
+
+
+def test_annotations_escape_datadog_templates() -> None:
+    r = run(golden_body())
+    assert r.rule is not None
+    ann = r.rule.check_rule["annotations"]
+    assert ann["summary"].endswith('on {{ "{{" }}host.name{{ "}}" }}')
+    assert ann["description"].startswith('{{ "{{" }}#is_alert{{ "}}" }}')
+
+
+def test_escapes_template_braces_in_one_pass() -> None:
+    assert escape_template_braces("a {{host.name}} b") == 'a {{ "{{" }}host.name{{ "}}" }} b'
+    # One pass: the escape output itself is not escaped again.
+    assert escape_template_braces("{{{") == '{{ "{{" }}{'
+
+
+def test_blocks_threshold_mismatch() -> None:
+    body = golden_body()
+    body["query"] = body["query"].replace("> 0.9", "> 0.95")
+    r = run(body)
+    assert (r.rule, r.item.outcome) == (None, "blocked")
+    assert codes(r) == ["THRESHOLD_MISMATCH"]
+
+
+def test_blocks_inverted_warning() -> None:
+    body = golden_body()
+    body["options"]["thresholds"]["warning"] = 0.95
+    r = run(body)
+    assert r.rule is None
+    assert codes(r) == ["THRESHOLD_MISMATCH"]
+    assert [d.source_path for d in r.diagnostics if d.severity == "error"] == [
+        "options.thresholds.warning"
+    ]
+
+
+@pytest.mark.parametrize(("cmp", "warning", "ok"), [("<", 0.95, True), ("<", 0.8, False)])
+def test_warning_side_follows_comparator(cmp: str, warning: float, ok: bool) -> None:
+    body = golden_body()
+    body["query"] = body["query"].replace("> 0.9", f"{cmp} 0.9")
+    body["options"]["thresholds"]["warning"] = warning
+    assert (run(body).rule is not None) is ok
+
+
+def test_blocks_windows_over_7d() -> None:
+    body = golden_body()
+    body["query"] = body["query"].replace("last_15m", "last_8d")
+    r = run(body)
+    assert r.rule is None
+    assert codes(r) == ["UNSUPPORTED_MONITOR_OPTION"]
+
+
+def test_accepts_window_of_exactly_7d() -> None:
+    body = golden_body()
+    body["query"] = body["query"].replace("last_15m", "last_7d")
+    r = run(body)
+    assert r.rule is not None
+    assert "[7d:1m]" in r.rule.check_rule["expression"]
+
+
+def test_truncates_long_descriptions() -> None:
+    body = golden_body()
+    body["message"] = "x" * 3000
+    r = run(body)
+    assert r.rule is not None
+    description = r.rule.check_rule["annotations"]["description"]
+    assert len(description) <= 2048
+    assert description.endswith("…")
+    assert ("TEXT_TRUNCATED", "message") in [
+        (d.code, d.source_path) for d in r.diagnostics if d.severity == "warning"
+    ]
+
+
+def test_truncation_never_splits_an_escape_token() -> None:
+    body = golden_body()
+    body["message"] = "{{x}}" * 1000
+    r = run(body)
+    assert r.rule is not None
+    description = r.rule.check_rule["annotations"]["description"]
+    assert len(description) <= 2048
+    body_part = description[:-1]
+    assert body_part.endswith(('{{ "}}" }}', '{{ "{{" }}', "x"))
+
+
+def test_replication_delay_is_blocked() -> None:
+    r = compile_monitor(asset(pinned("replication_delay.json")), "replication", mapping())
+    assert r.rule is None
+    assert r.item.outcome == "blocked"
+    assert [d.code for d in r.diagnostics] == ["UNSUPPORTED_QUERY_FUNCTION"]
+
+
+def test_blocks_unsupported_monitor_type() -> None:
+    body = golden_body()
+    body["type"] = "service check"
+    r = run(body)
+    assert codes(r) == ["UNSUPPORTED_MONITOR_TYPE"]
+
+
+def test_blocks_unmapped_metric() -> None:
+    body = golden_body()
+    body["query"] = body["query"].replace("postgresql.percent_usage_connections", "nope.metric")
+    r = run(body)
+    assert r.rule is None
+    assert codes(r) == ["MISSING_METRIC_MAPPING"]
+
+
+def test_notification_handles_and_ignored_fields() -> None:
+    body = golden_body()
+    body["message"] = "Disk full @pagerduty-db @slack-ops mail me at a@b.c"
+    body["priority"] = 2
+    r = run(body)
+    assert r.rule is not None
+    notes = [d for d in r.diagnostics if d.code == "NOTIFICATION_NOT_MIGRATED"]
+    assert len(notes) == 1
+    assert "@pagerduty-db, @slack-ops" in notes[0].message
+    assert "a@b.c" not in notes[0].message
+    ignored = [d.source_path for d in r.diagnostics if d.code == "OPTION_IGNORED"]
+    assert {"priority", "tags"} <= set(ignored)
+
+
+def test_diagnostics_are_sorted_by_path() -> None:
+    paths = [d.source_path for d in run(golden_body()).diagnostics]
+    assert paths == sorted(paths)
+
+
+def test_integer_thresholds_render_without_decimals() -> None:
+    body = golden_body()
+    body["query"] = body["query"].replace("> 0.9", "> 90")
+    body["options"]["thresholds"] = {"critical": 90, "warning": 80}
+    r = run(body)
+    assert r.rule is not None
+    exprs = [rule["expr"] for rule in r.rule.prometheus_rule_group["groups"][0]["rules"]]
+    assert [e.rsplit(" ", 1)[1] for e in exprs] == ["80", "90"]

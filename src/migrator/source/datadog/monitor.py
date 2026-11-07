@@ -12,6 +12,9 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Literal, cast
 
+from migrator.source.asset import SourceAsset
+from migrator.source.datadog.compile_query import CompiledOk, QueryContext, compile_metric_query
+from migrator.source.datadog.mapping import DatadogMapping
 from migrator.source.datadog.model import (
     Comparator,
     MonitorParseOk,
@@ -24,7 +27,15 @@ from migrator.source.datadog.model import (
     WindowUnit,
 )
 from migrator.source.datadog.parse_query import parse_metric_query
-from migrator.target import Diagnostic, DiagnosticCode, Severity
+from migrator.target import (
+    Diagnostic,
+    DiagnosticCode,
+    ItemResult,
+    PrometheusRule,
+    PrometheusRuleGroup,
+    RuleArtifact,
+    Severity,
+)
 
 _PREFIX = re.compile(r"^(avg|max|min|sum)\(last_(\d+)(m|h|d)\):")
 _SUFFIX = re.compile(r" (>=|<=|>|<) (-?\d+(?:\.\d+)?)$")
@@ -217,3 +228,274 @@ def evaluate_monitor_options(options: Mapping[str, Any], *, source_id: str) -> O
     if critical is None or any(d.severity == "error" for d in diags):
         return OptionsBlocked(diagnostics=diags)
     return OptionsOk(thresholds=MonitorThresholds(critical, warning), diagnostics=diags)
+
+
+# --- compile_monitor and both renderers (plan 06 Task 4) ------------------------
+
+SUPPORTED_MONITOR_TYPES = ("query alert", "metric alert")
+CHECK_INTERVAL = "1m"
+SUMMARY_MAX = 255
+DESCRIPTION_MAX = 2048
+MAX_WINDOW_MINUTES = 7 * 24 * 60
+_UNIT_MINUTES: dict[str, int] = {"m": 1, "h": 60, "d": 24 * 60}
+_TIME_FUNCTIONS: dict[str, str] = {
+    "avg": "avg_over_time",
+    "max": "max_over_time",
+    "min": "min_over_time",
+    "sum": "sum_over_time",
+}
+_OPEN_ESC = '{{ "{{" }}'
+_CLOSE_ESC = '{{ "}}" }}'
+_HANDLE = re.compile(r"(?:^|(?<=\s))@[A-Za-z0-9_][A-Za-z0-9_.\-]*")
+
+
+@dataclass(frozen=True)
+class MonitorCompilation:
+    rule: RuleArtifact | None
+    item: ItemResult
+    diagnostics: list[Diagnostic]
+
+
+def _escape_tokens(text: str) -> list[str]:
+    """Split into atomic output tokens: each template brace pair becomes one escape token."""
+    tokens: list[str] = []
+    i = 0
+    while i < len(text):
+        pair = text[i : i + 2]
+        if pair == "{{":
+            tokens.append(_OPEN_ESC)
+            i += 2
+        elif pair == "}}":
+            tokens.append(_CLOSE_ESC)
+            i += 2
+        else:
+            tokens.append(text[i])
+            i += 1
+    return tokens
+
+
+def escape_template_braces(text: str) -> str:
+    """One pass: '{{' -> '{{ "{{" }}' and '}}' -> '{{ "}}" }}', so Go templates print them."""
+    return "".join(_escape_tokens(text))
+
+
+def _escaped_within(text: str, limit: int) -> tuple[str, bool]:
+    """Escape, then cut to `limit` characters only between tokens, appending '…'."""
+    tokens = _escape_tokens(text)
+    full = "".join(tokens)
+    if len(full) <= limit:
+        return full, False
+    out: list[str] = []
+    used = 0
+    for tok in tokens:
+        if used + len(tok) > limit - 1:
+            break
+        out.append(tok)
+        used += len(tok)
+    return "".join(out) + "…", True
+
+
+def _by_path(diags: list[Diagnostic]) -> list[Diagnostic]:
+    # 00-context §8: by source path, then emission order (sorted() is stable).
+    return sorted(diags, key=lambda d: d.source_path)
+
+
+def _format_threshold(value: float) -> str:
+    return str(int(value)) if value.is_integer() else repr(value)
+
+
+def _warning_on_correct_side(comparator: str, warning: float, critical: float) -> bool:
+    if comparator in (">", ">="):
+        return warning < critical
+    return warning > critical
+
+
+def compile_monitor(asset: SourceAsset, slug: str, mapping: DatadogMapping) -> MonitorCompilation:
+    body = asset.body
+    sid = asset.source_id
+    diags: list[Diagnostic] = []
+
+    def add(
+        code: DiagnosticCode,
+        severity: Severity,
+        path: str,
+        message: str,
+        action: str,
+        text: str | None = None,
+    ) -> None:
+        diags.append(Diagnostic(code, severity, sid, path, message, action, text))
+
+    def blocked() -> MonitorCompilation:
+        item = ItemResult(sid, "", "monitor", asset.title, "blocked")
+        return MonitorCompilation(rule=None, item=item, diagnostics=_by_path(diags))
+
+    # 1. Monitor type.
+    mtype = body.get("type")
+    if mtype not in SUPPORTED_MONITOR_TYPES:
+        add(
+            "UNSUPPORTED_MONITOR_TYPE",
+            "error",
+            "type",
+            f"Monitor type {mtype!r} is not supported; only metric monitors are.",
+            "Migrate this monitor manually.",
+        )
+        return blocked()
+
+    # 2. Query.
+    query_text = body.get("query")
+    if not isinstance(query_text, str):
+        add("UNSUPPORTED_QUERY_SYNTAX", "error", "query", "Monitor has no query.", "Add a query.")
+        return blocked()
+    parsed = parse_monitor_query(query_text)
+    if not isinstance(parsed, MonitorParseOk):
+        add(
+            parsed.code,
+            "error",
+            "query",
+            parsed.message,
+            "Rewrite the query within the supported subset or migrate it manually.",
+            query_text,
+        )
+        return blocked()
+    monitor = parsed.monitor
+
+    # 3. Options.
+    raw_options = body.get("options")
+    options_result = evaluate_monitor_options(
+        raw_options if isinstance(raw_options, Mapping) else {}, source_id=sid
+    )
+    diags.extend(options_result.diagnostics)
+    if not isinstance(options_result, OptionsOk):
+        return blocked()
+    thresholds = options_result.thresholds
+
+    # 4. Inline threshold must equal the critical threshold.
+    if monitor.threshold != thresholds.critical:
+        add(
+            "THRESHOLD_MISMATCH",
+            "error",
+            "query",
+            f"Query threshold {_format_threshold(monitor.threshold)} differs from "
+            f"options.thresholds.critical {_format_threshold(thresholds.critical)}.",
+            "Make the query threshold and the critical threshold equal in Datadog.",
+            query_text,
+        )
+        return blocked()
+
+    # 5. Warning on the correct side of critical.
+    if thresholds.warning is not None and not _warning_on_correct_side(
+        monitor.comparator, thresholds.warning, thresholds.critical
+    ):
+        add(
+            "THRESHOLD_MISMATCH",
+            "error",
+            "options.thresholds.warning",
+            f"Warning threshold {_format_threshold(thresholds.warning)} is on the wrong side of "
+            f"critical {_format_threshold(thresholds.critical)} for '{monitor.comparator}'.",
+            "Fix the warning threshold in Datadog.",
+        )
+        return blocked()
+
+    # 6. Window within Dash0's limit.
+    minutes = monitor.window.amount * _UNIT_MINUTES[monitor.window.unit]
+    if minutes > MAX_WINDOW_MINUTES:
+        add(
+            "UNSUPPORTED_MONITOR_OPTION",
+            "error",
+            "query",
+            f"Window last_{monitor.window.amount}{monitor.window.unit} is longer than 7 days.",
+            "Shorten the window to 7 days or less, or migrate manually.",
+            query_text,
+        )
+        return blocked()
+
+    # 7. Inner metric query.
+    compiled = compile_metric_query(
+        monitor.query, mapping, QueryContext(sid, "query", query_text, [])
+    )
+    diags.extend(compiled.diagnostics)
+    if not isinstance(compiled, CompiledOk) or any(d.severity == "error" for d in diags):
+        return blocked()
+
+    # 8. Notification handles are not migrated.
+    message = body.get("message")
+    message_text = message if isinstance(message, str) else ""
+    handles = sorted(set(_HANDLE.findall(message_text)))
+    if handles:
+        add(
+            "NOTIFICATION_NOT_MIGRATED",
+            "warning",
+            "message",
+            f"Notification targets are not migrated: {', '.join(handles)}.",
+            "Configure Dash0 notification channels for this check rule.",
+        )
+
+    # 9. Ignored metadata.
+    for key in ("priority", "tags"):
+        value = body.get(key)
+        if value is not None and value != []:
+            add(
+                "OPTION_IGNORED",
+                "info",
+                key,
+                f"Monitor field '{key}' is ignored.",
+                "No action needed unless routing depends on it.",
+            )
+
+    name = body.get("name")
+    name_text = name if isinstance(name, str) else asset.title
+    summary, cut_summary = _escaped_within(name_text, SUMMARY_MAX)
+    description, cut_description = _escaped_within(message_text, DESCRIPTION_MAX)
+    for cut, path, limit in (
+        (cut_summary, "name", SUMMARY_MAX),
+        (cut_description, "message", DESCRIPTION_MAX),
+    ):
+        if cut:
+            add(
+                "TEXT_TRUNCATED",
+                "warning",
+                path,
+                f"Text was cut to {limit} characters after escaping.",
+                "Shorten the text in Datadog if the cut part matters.",
+            )
+
+    window = f"{monitor.window.amount}{monitor.window.unit}"
+    over_time = _TIME_FUNCTIONS[monitor.time_aggregator]
+    condition = f"{over_time}(({compiled.promql})[{window}:{CHECK_INTERVAL}])"
+    annotations = {"summary": summary, "description": description}
+
+    levels: list[tuple[str, float]] = []
+    if thresholds.warning is not None:
+        levels.append(("warning", thresholds.warning))
+    levels.append(("critical", thresholds.critical))
+    rules: list[PrometheusRule] = [
+        {
+            "alert": slug,
+            "expr": f"{condition} {monitor.comparator} {_format_threshold(value)}",
+            "labels": {"severity": severity},
+            "annotations": dict(annotations),
+        }
+        for severity, value in levels
+    ]
+    group: PrometheusRuleGroup = {
+        "groups": [{"name": slug, "interval": CHECK_INTERVAL, "rules": rules}]
+    }
+
+    check_thresholds: dict[str, float] = {"failed": thresholds.critical}
+    if thresholds.warning is not None:
+        check_thresholds["degraded"] = thresholds.warning
+    check_rule: dict[str, Any] = {
+        "name": name_text,
+        "expression": f"{condition} {monitor.comparator} $__threshold",
+        "thresholds": check_thresholds,
+        "interval": CHECK_INTERVAL,
+        "for": "0s",
+        "enabled": False,
+        "labels": {},
+        "annotations": dict(annotations),
+    }
+
+    item = ItemResult(sid, "", "monitor", asset.title, "translated")
+    return MonitorCompilation(
+        rule=RuleArtifact(slug, sid, group, check_rule), item=item, diagnostics=_by_path(diags)
+    )
