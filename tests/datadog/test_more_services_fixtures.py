@@ -25,11 +25,17 @@ def test_recognizes_redis_dashboard_and_monitor() -> None:
     )
 
 
-def test_recognizes_nginx_dashboard_and_seven_monitors() -> None:
+def test_recognizes_nginx_dashboards_and_seven_monitors() -> None:
+    # NGINX - Metrics is this plan's fixture; the Overview and Plus dashboards came
+    # with the oracle suite (#86) into the same pinned folder.
     assets, diagnostics = recognize_assets(collect_input_files([f"{ROOT}/nginx"]))
     assert diagnostics == []
-    assert [a.kind for a in assets] == ["dashboard"] + ["monitor"] * 7
-    assert assets[0].title == "NGINX - Metrics"
+    assert [a.kind for a in assets] == ["dashboard"] * 3 + ["monitor"] * 7
+    assert [a.title for a in assets if a.kind == "dashboard"] == [
+        "NGINX - Metrics",
+        "NGINX - Overview",
+        "NGINX Plus - Overview",
+    ]
 
 
 def _convert(tmp_path: Path, fixture: str, mapping: str) -> Path:
