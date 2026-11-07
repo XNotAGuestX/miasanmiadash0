@@ -1,7 +1,7 @@
 # Redis and nginx mapping drafts: review notes (plan 08 Tasks 2–3)
 
 Drafted by Track B on 2026-11-07 (Python stack, mapping schema with `rate` and `matchers`). **Nothing here is reviewed.** Only a human sets `reviewed`
-(WORK_SPLIT rule 4: Track A's person reviews these entries).
+(the other person reviews these entries).
 
 ## Evidence used
 

@@ -174,9 +174,9 @@ Entries can also carry fixed label matchers, unit scale, label renames and a ded
 ## For contributors
 
 1. Read [AGENTS.md](AGENTS.md), the shared working rules for humans, Codex and Claude. [CLAUDE.md](CLAUDE.md) points Claude to the same rules.
-2. Read [the implementation plan overview](docs/handoff/README.md). Each numbered file in `docs/handoff/` is a self-contained, test-first plan.
+2. Read [the open work list](docs/handoff/README.md) and [the shared spec](docs/handoff/00-context.md).
 3. Work is tracked in [GitHub issues](https://github.com/XNotAGuestX/thinchackdash/issues): one branch per issue, and every PR is reviewed by XNotAGuestX.
-4. Background: [the project handoff](docs/PROJECT_HANDOFF.md), [the execution plan](docs/EXECUTION_PLAN.md), and the challenge requirements in [SOURCES.md](docs/SOURCES.md).
+4. Background: the challenge requirements in [SOURCES.md](docs/SOURCES.md) and the Dash0 data in [DASH0_INVENTORY.md](docs/DASH0_INVENTORY.md).
 
 **Stack:**
 - Python ≥ 3.13 with uv, one package (`src/migrator`) and one console script (`migrator`).

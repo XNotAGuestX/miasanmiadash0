@@ -13,9 +13,8 @@ These rules apply to all contributors and coding agents, including **Codex and C
 ## Read first
 
 1. This file.
-2. `docs/handoff/README.md`, the implementation plan: which handoff holds what, the order, and the open decisions. Then `docs/handoff/00-context.md` (the shared spec) and the plan you're taking.
+2. `docs/handoff/README.md`, the open work list and decisions. Then `docs/handoff/00-context.md` (the shared spec) and the plan you're taking, if any.
 3. The GitHub issue you're working on, including its comments, then `docs/STATUS.md` for the overall state.
-4. `docs/PROJECT_HANDOFF.md` and `docs/EXECUTION_PLAN.md` for background. Where they conflict with `docs/handoff/`, the handoff directory wins.
 
 Read existing code before changing it. The handoff describes planned behavior; source code, executable checks, and recorded live evidence establish what works today.
 
@@ -32,7 +31,7 @@ Read existing code before changing it. The handoff describes planned behavior; s
 - Use neutral names such as `source`, `parser`, `compiler`, `mapping`, `destination`, and `report`. Avoid agent-specific modules or permanently assigning a subsystem to a tool.
 - Prefer one package, pure translation functions, explicit data types, and a small number of modules.
 - Manage the Python runtime and all requirements with uv only: `uv sync` (interpreter from `.python-version`, uv-managed only; dependencies from `uv.lock`), `uv run <cmd>`, `uv add [--group dev] <pkg>`. Don't use pip, `python -m venv`, requirements files, or a system Python. Commit `uv.lock` and `.python-version` together with `pyproject.toml` changes.
-- Select the source vendor through the single `SourceProvider` interface and static provider table (`--source datadog`); see the handoff's source provider interface section. Each provider owns its source-specific parsing, mapping, and translation; a vendor-neutral intermediate model is not required. Keep shared CLI, report, manifest, validation, and destination code free of source-specific logic. The static table is not a plugin framework: no dynamic loading, discovery, or config-driven registration.
+- Select the source vendor through the single `SourceProvider` interface and static provider table (`--source datadog`); see `src/migrator/source/provider.py` and decision D1 in `docs/handoff/00-context.md`. Each provider owns its source-specific parsing, mapping, and translation; a vendor-neutral intermediate model is not required. Keep shared CLI, report, manifest, validation, and destination code free of source-specific logic. The static table is not a plugin framework: no dynamic loading, discovery, or config-driven registration.
 - Keep network I/O out of the parser/compiler. Offline compilation must work without credentials.
 - Parse the documented query subset completely. Never translate a recognized prefix and ignore trailing syntax. Regex may tokenize a bounded grammar; chained string replacements are not a semantic parser.
 - Unknown metric types, units, label mappings, options, or functions require a diagnostic. Do not infer telemetry equivalence from similar names or replace dots with underscores as a migration strategy.
@@ -45,7 +44,7 @@ Read existing code before changing it. The handoff describes planned behavior; s
 ## Working together
 
 - Both Codex and Claude may work in this repository. Before editing, inspect the worktree, the issue's assignee and comments, and open PRs.
-- Use task-based ownership through issues (below). Avoid simultaneous edits to shared contracts, package manifests, lockfiles, and the same source files; file ownership per track is in `docs/handoff/WORK_SPLIT.md#file-ownership`.
+- Use task-based ownership through issues (below). Avoid simultaneous edits to shared contracts, package manifests, lockfiles, and the same source files.
 - Do not overwrite, discard, stash, reset, or clean another contributor's changes. Coordinate in the issue when ownership overlaps.
 - Agree on interface changes in the issue before making dependent edits. Update the handoff and consumers together when a contract changes.
 - Parallel agent work is optional and only used when explicitly requested. This handoff does not itself authorize spawning agents.
@@ -70,7 +69,7 @@ From now on, every task is tracked as a GitHub issue in `XNotAGuestX/thinchackda
 - Conversion stays deterministic and LLM-free; no timestamps, absolute paths or environment data in artifacts.
 - Changed expected trees are regenerated in the same commit and reviewed by the other track.
 - No secrets, raw live responses or run artifacts committed.
-- Docs touched by the change are updated (README, plan status in `docs/handoff/README.md`, `docs/STATUS.md` when a plan finishes).
+- Docs touched by the change are updated (README, the open work list in `docs/handoff/README.md`, `docs/STATUS.md` when the overall state changes).
 - Work is on its own branch; the PR says `Closes #<this issue>`; follow-ups are filed as new issues.
 - Reviewed by XNotAGuestX (a PR approval, or Felix's explicit go-ahead when the PR comes from his own account).
 - Merged into `main` by Felix or an agent acting for him.

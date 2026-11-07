@@ -1,71 +1,30 @@
-# Handoff overview: Datadog → Perses converter
+# Open work
 
-**Target:** a deterministic CLI that converts Datadog dashboards into **Perses** dashboards (the open-source standard), with a per-item migration report.
+**Target:** a deterministic CLI that converts Datadog dashboards (and metric monitors) into Perses dashboards (and Prometheus/Dash0 check rules), with a per-item report. **No LLM takes part in any conversion step** (`AGENTS.md`).
 
-- Dash0 is where results are checked against real telemetry, and the optional publish target.
-- Monitors → Prometheus rules and Dash0 check rules are secondary.
-- **No LLM takes part in any conversion step** (`AGENTS.md`).
+Plans 01–07 and 10 are implemented and merged; their plan files were removed (git history and the `main-pre-rip` branch keep them). The code and its tests are the source of truth. [00-context.md](00-context.md) is the shared spec (decisions, diagnostic codes, outcome model). Only plans with open tasks remain: [08](08-more-services.md) and [09](09-demo-and-submission.md).
 
-This directory is the implementation plan, split into independent handoffs. Each numbered file is a self-contained plan that ends in working, tested software. Read `00-context.md` first; it's the shared spec every plan argues from.
+## Next, in order
 
-## Which handoff holds what
+| # | Work | Where | Done when | Blocked by |
+|---|---|---|---|---|
+| 1 | **Mapping review.** Every entry in `mappings/datadog/*.json` is `reviewed: null`. Check each against Datadog's own OTel table ([metrics_mapping](https://docs.datadoghq.com/opentelemetry/mapping/metrics_mapping.md): `otel`, `datadog`, `filter`, `transform` columns; covers most Postgres, Redis and Kafka metrics, little nginx, none of the legacy `docker.*` names) and the metric definitions; Redis/nginx notes in `mappings/datadog/REVIEW-redis-nginx.md`. | #27, #52–#55 | entries set `reviewed`; `UNREVIEWED_MAPPING` gone from goldens | a human |
+| 2 | **Default aggregator** (05.T1): a query without `agg:` uses `avg`. Implemented on branch `default-avg-aggregator`, not merged. | #33 | PR merged, goldens regenerated | — |
+| 3 | **Panel heights** are copied unscaled, so panels render squashed in Dash0 (`_GridBuilder.place`). | #89 | reviewed height scale, golden regenerated | approval |
+| 4 | **Sparse metrics**: `rate(...[$__rate_interval])` is empty for `system.network.io`. Reviewed per-entry rate window in the mapping. | #90 | entry-level window, test | — |
+| 5 | **Converter vs `expected.yaml` disagreements** (6 causes). Settle each by a converter fix or an `overrides.yaml` correction. | #96 | `uv run pytest --include-unreviewed` failures explained or fixed | — |
+| 6 | **Service goldens**, Kafka → Redis → nginx → Docker, after their mapping review. | [plan 08](08-more-services.md), #52–#55 | one reviewed golden per service | 1 |
+| 7 | **Datadog functions** (no plan yet; all blocked today). Frequency in the pinned dashboards: `.weighted()` 36, `top()` 10, `.as_count()` 9, `.as_rate()` 8, `abs()` 6, `.rollup()` 5, `.fill()` 5. One issue per function, with the documented PromQL equivalent and an exact test; unclear semantics stay blocked. | new issues | function translated or documented as blocked | — |
+| 8 | **Demo**: durable telemetry, enabled check and threshold crossing (`scripts/hold-pg-connections.sh`), fork and PR. | [plan 09](09-demo-and-submission.md) T1, T5; #56, #60, #2 | rehearsed demo; PR only on the user's request | B2; user |
+| 9 | **Live fetch round trip** (code merged, offline-tested). | #62 | fetched folder converts byte-identically | B3 |
 
-| File | Holds | Deliverable | Depends on | Blocked by | Status |
-|---|---|---|---|---|---|
-| [00-context.md](00-context.md) | **Shared spec:** goal, rules, decisions (D1–D6, A1–A4), open blockers (B1–B3), module layout, stack, Datadog and Perses/Dash0 facts, golden widget table, outcome model, diagnostic code registry, exit codes | — (reference) | — | — | Current |
-| [01-bootstrap-cli.md](01-bootstrap-cli.md) | Package, `convert` CLI, file and folder input, `SourceProvider` table, asset recognition, pinned Postgres fixtures, writers, report and manifest, determinism | `convert` runs offline and accounts for every widget and monitor (all still `blocked`) | — | — | Not started |
-| [02-query-parser.md](02-query-parser.md) | Bounded Datadog metric query grammar and parser, with full input consumption | `parseMetricQuery` with the golden corpus passing | 01 | — | Done (Python); 02.T2 corpus check run manually, test left to the oracle owner |
-| [03-mapping-promql.md](03-mapping-promql.md) | Mapping file contract (pydantic), PromQL selector rendering and escaping, `compileMetricQuery` check order, Postgres golden mapping | Golden query → `avg by (postgresql_database_name) ({otel_metric_name="postgresql.backends", …})` | 01, 02 | A human review of the mapping entries | T1–T3 done; T4 mapping drafted (`reviewed: null`) |
-| [04-perses-dashboard.md](04-perses-dashboard.md) | **The core converter:** timeseries widgets → Perses panels and grid layout, per-widget outcomes, output validation (pydantic + promql-parser), golden "Postgres - Metrics" run | `dashboards/postgres-metrics.json` (1/9 panels) and an exact report. **The MVP converter is done here.** | 01–03 | — | T1–T3 done; T4 superseded by the P1 golden (plan 05 T9, PR for #41): the compiler already includes plan 05, so the 1/9 P0 tree can't be reproduced |
-| [05-dashboard-coverage.md](05-dashboard-coverage.md) | Coverage ladder: default aggregator, `rate` kind and fixed matchers, scale, series grain (dedup), arithmetic formulas, template variables, `note`/`query_value`/`group`, legends, golden P1 | "Postgres - Metrics" at 6/9 panels; "Overview" partial | 04 | 07 Task 1 (Dash0 render check of `Markdown`, `StatChart`, `ListVariable`) | T2–T8 done; T1 skipped (no documented default aggregator); T9 golden in review (`fixtures/expected/postgres-p1/`, Metrics 4/9, Overview 8/30); T0 moot (no P0 golden to freeze) |
-| [06-monitors.md](06-monitors.md) | Monitor query parser, options allowlist, `expression` mapping kind (deduplicated connection ratio), Prometheus rule group and Dash0 check-rule renderers, monitor golden | `percent_usage_connections` translated; `replication_delay` blocked | 01–03 | A3 confirmation | Done, in review: T1 #77, T2 #78, T4 #79, T5 #80 (Track B); T3 done (Track A) |
-| [07-dash0-publish.md](07-dash0-publish.md) | Live contract check, Dash0 client, receipts, `publish` (dry-run, create-only, no blind retry), live evidence | Dashboard and check rule imported, read back and visible in Dash0 | 04, 06 | **B1** token; user approval for live writes | T2 client #72, T3 receipts #73, T4 `publish` #81 in review; T1 live contract check done and T5 live publish done (2026-11-07, see STATUS.md) |
-| [08-more-services.md](08-more-services.md) | Kafka (2 translatable monitors), Redis, nginx, Docker: pinned assets, mapping files, goldens | One reviewed golden per service | 04, 05 (06 for monitors) | Human mapping review | T1 Kafka and T4 Docker mappings drafted; T2 Redis and T3 nginx fixtures and mappings in review (#76); goldens open |
-| [09-demo-and-submission.md](09-demo-and-submission.md) | **Not converter work:** durable demo telemetry, connection-holder script for the threshold crossing, DEMO and README rewrite, fork and PR | A rehearsed demo and the submitted PR | 07 | **B2** demo owner; user request for the PR | T2 holder script in review (#75); T3 runbook and T4 README in review (docs PR); T1 blocked on B2; T5 only on the user's request |
-| [10-datadog-api-fetch.md](10-datadog-api-fetch.md) | `fetch` by dashboard and monitor ID, feeding the same `convert` path | Fetched folder converts byte-identically to the file input | 01 (04 and 05 Task 0 for the round-trip test) | **B3** Datadog account | T1 fetch client #74 and T2 CLI + round trip #83 in review (offline); T2 live step blocked on B3 |
-
-**Background material**, not plans: [../DASH0_INVENTORY.md](../DASH0_INVENTORY.md) (what data exists in Dash0, and the service order) and [../PLANNING_HANDOFF.md](../PLANNING_HANDOFF.md) (research notes from the planning sessions).
-
-## Order of work
-
-```text
-01 → 02 → 03 → 04  ← MVP converter (offline, no credentials needed)
-                 ├─→ 05 → 08
-                 ├─→ 06 ─┐
-                 │       ├─→ 07 (needs B1) → 09 (needs B2)
-                 └───────┘
-01 → 10 (needs B3; independent)
-```
-
-- Two people? Use [WORK_SPLIT.md](WORK_SPLIT.md): two parallel tracks, sync points and file ownership.
-- Plans 02 and 03 are sequential, because 03 consumes the parser's model.
-- Plans 05 and 06 can run in parallel after 04; they touch different files apart from `mapping.py` and `compile_query.py`, so coordinate those two.
-- 07 Task 1 (the live contract check) is worth doing as soon as **B1** arrives, because it unblocks the plan 05 gates.
+Testing loop: [USAGE.md](../../USAGE.md). Agent0 may propose `expected.yaml` cases at development time; they count only after a human sets `reviewed: true`.
 
 ## Open decisions and blockers
 
-These are also in `00-context.md` §3. Answer them in free text.
+- **A1** target vocabulary = names and labels as found in Dash0; **A2** alert output = Prometheus rule group + Dash0 check rule; **A3** monitor strictness = approximate and warn on a reviewed allowlist, block the rest. All *assumed defaults* (#1).
+- **B1** Dash0 token: resolved. **B2** demo telemetry owner (#4). **B3** Datadog account (#5). Starter/fork relationship (#2).
 
-- **A1** Target vocabulary = names and labels exactly as found in Dash0. *Assumed default.*
-- **A2** Alert output = Prometheus rule group + Dash0 check-rule body. *Assumed default.*
-- **A3** Monitor strictness = approximate and warn on a reviewed allowlist; block the rest. *Assumed default.*
-- **B1** A Dash0 API token, or a UI dashboard export. **B2** A demo telemetry owner. **B3** A Datadog account (plan 10 only).
+## Housekeeping
 
-## Where the older docs conflict, this directory wins
-
-| Older doc says | This directory says |
-|---|---|
-| `PROJECT_HANDOFF.md`: first example is `demo.temperature` | The first example is integrations-core Postgres ("Postgres - Metrics" + `percent_usage_connections`) |
-| Commands `compile` and `import` | `convert` and `publish` (A4) |
-| Folder input is P1; YAML is P2 | Both are part of plan 01 and plan 04 (user decisions D3 and D4) |
-| `EXECUTION_PLAN.md` phases 0–5 | Plans 01–10 above; repo setup and the fork are in plan 09 Task 5 |
-| `PLANNING_HANDOFF.md` §6 used `db_namespace` | The real label is `postgresql_database_name` (corrected; see `00-context.md` §7) |
-
-## How to take a handoff
-
-1. Read `AGENTS.md`, this file, `00-context.md`, then the plan.
-2. Claim the task's [GitHub issue](https://github.com/XNotAGuestX/thinchackdash/issues) (assign it, comment the branch name). Each plan task has one issue; each plan has an epic.
-3. Work task by task on your own branch. Steps are checkboxes, and each task ends with a commit and a PR that closes its issue; XNotAGuestX reviews it, and Felix or his agent merges it.
-4. At handoff, comment on the issue with the exact check results; when a plan finishes, update this table's Status column and `docs/STATUS.md`.
-
-Recommended execution: run plans 01–04 with **subagent-driven development**. Their tasks have tight interfaces (shared types, codes, exact PromQL strings), so a reviewer per task catches drift early. The later plans can run natively.
+Open issues whose work is merged or moot: #16–#21, #23–#25, #29–#32, #57–#59 and epics #6, #7, #9, #11, #12. Close them once confirmed, e.g. `gh issue close 16 -c "Done on main"`.
