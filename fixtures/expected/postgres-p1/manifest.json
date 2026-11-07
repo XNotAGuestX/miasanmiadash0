@@ -6,7 +6,7 @@
       "kind": "dashboard",
       "outcome": "partial",
       "path": "dashboards/postgres-metrics.json",
-      "sha256": "4d45de00d4120a14ab8e13052d9f705b9e83f656d9f3b156f90a45937a5d832d",
+      "sha256": "c6a3b66dc898d90265c2e2fb9d685d9a0930389767ca57a9046e467a91d49b47",
       "sourceId": "dashboards/postgresql_dashboard.json"
     },
     {

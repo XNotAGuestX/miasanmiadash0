@@ -74,11 +74,11 @@ uv run migrator convert --source datadog \
 Real output:
 
 ```text
-PARTIAL    postgres-metrics 4/9 widgets
+PARTIAL    postgres-metrics 6/9 widgets
 PARTIAL    postgres-overview 8/30 widgets
 TRANSLATED postgres/monitors/percent_usage_connections.json monitor
 BLOCKED    postgres/monitors/replication_delay.json monitor
-total: dashboards 0 translated/2 partial/0 blocked, widgets 12 translated/0 partial/27 blocked, monitors 1 translated/0 partial/1 blocked, skipped files 0
+total: dashboards 0 translated/2 partial/0 blocked, widgets 14 translated/0 partial/25 blocked, monitors 1 translated/0 partial/1 blocked, skipped files 0
 ```
 
 Exit code `2`, because something is partial or blocked. Show:
@@ -95,7 +95,7 @@ Running it twice produces identical bytes; `tests/test_golden_dashboards.py` che
 Open `report.json`. Every widget and monitor has an outcome and, if blocked, a diagnostic with a source path and a suggested action:
 
 - `replication_delay` is blocked with `UNSUPPORTED_QUERY_FUNCTION`: `Function 'anomalies' is not supported.`
-- In "Postgres - Metrics" (zero-based paths, as in `report.json`), `widgets[2]`, `widgets[4]` and `widgets[5]` are blocked with `MISSING_AGGREGATOR` (Datadog documents no default space aggregator), and `widgets[3]` and `widgets[7]` with `MISSING_METRIC_MAPPING` (`system.io.util`, `system.mem.*`).
+- In "Postgres - Metrics" (zero-based paths, as in `report.json`), `widgets[3]`, `widgets[5]` and `widgets[7]` are blocked with `MISSING_METRIC_MAPPING` (`system.io.util`, `system.cpu.guest`, `system.mem.*`). `widgets[2]` and `widgets[4]` translate with the default `avg` and warn `DEFAULT_AGGREGATOR_APPLIED`.
 - "Postgres - Overview" blocks 22 of 30 widgets: `toplist`, `query_table` and `log_stream` widgets (`UNSUPPORTED_WIDGET`); unmapped metrics such as `postgresql.dead_rows` (`MISSING_METRIC_MAPPING`); formulas such as `week_before(...)` (`UNSUPPORTED_FORMULA`); and the query functions `.as_count()` and `.rollup()` (`UNSUPPORTED_QUERY_FUNCTION`).
 
 Nothing is silently dropped. A widget is all or nothing.
