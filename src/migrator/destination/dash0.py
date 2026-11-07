@@ -1,7 +1,8 @@
 """Dash0 HTTP client: import and read-back only. No translation logic here.
 
 Create-only: never sends metadata.dash0Extensions or a check-rule id. No retries.
-An ambiguous result is "unknown", which the receipts (07.T3) refuse to republish.
+An ambiguous result (transport error, any 5xx, a 2xx without an id) is "unknown",
+which the receipts (07.T3) refuse to republish.
 """
 
 from __future__ import annotations
@@ -29,8 +30,10 @@ CHECK_RULE_ID_PATH: tuple[str, ...] = ("id",)
 
 REQUEST_TIMEOUT_S = 30.0
 MESSAGE_MAX = 500
-# Bad Gateway / Gateway Timeout: a gateway gave up, but Dash0 may have created the asset.
-AMBIGUOUS_GATEWAY_STATUSES = frozenset({502, 504})
+# A 5xx means the request reached a server (Dash0 or a proxy in front of it) that
+# then failed; Dash0 may already have created the asset. Only a 4xx is a definite
+# rejection that created nothing, so only a 4xx may be republished.
+AMBIGUOUS_STATUS_MIN = 500
 _ENV_NAMES = ("DASH0_API_URL", "DASH0_AUTH_TOKEN", "DASH0_DATASET")
 
 ImportKind = Literal["dashboard", "check-rule"]
@@ -135,10 +138,10 @@ def _post_import(
         return Unknown(_clip(f"{err}; the {kind} may or may not exist in Dash0", cfg.token))
 
     text = _decode(response.body)
-    if response.status in AMBIGUOUS_GATEWAY_STATUSES:
+    if response.status >= AMBIGUOUS_STATUS_MIN:
         return Unknown(
             _clip(
-                f"HTTP {response.status} from a gateway; the {kind} may or may not exist "
+                f"HTTP {response.status} (server error); the {kind} may or may not exist "
                 f"in Dash0: {text}",
                 cfg.token,
             )
