@@ -50,6 +50,7 @@ Read existing code before changing it. The handoff describes planned behavior; s
 - Parallel agent work is optional and only used when explicitly requested. This handoff does not itself authorize spawning agents.
 - At handoff, update `docs/STATUS.md` with completed work, exact checks and results, remaining blockers, and the next concrete task. Record facts, not assumed completion.
 - Do not commit directly to `main`. Follow the challenge's fork → feature branch → upstream PR workflow. Do not push or open a PR merely because this document describes submission.
+- Exception: an agent may merge a feature branch into `main` (and push `main`) only when the user explicitly asks for that specific merge. The request covers only the named branch at that time; it is not standing permission. Never force-push or rewrite `main`'s history, and stop to report conflicts or failing checks instead of resolving them by discarding changes.
 
 ## Credentials and live operations
 
