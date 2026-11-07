@@ -140,13 +140,31 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "MISSING_AGGREGATOR",
-      "message": "Query has no space aggregator.",
-      "severity": "error",
+      "code": "DEFAULT_AGGREGATOR_APPLIED",
+      "message": "Query has no space aggregator; applied Datadog's default 'avg' (https://docs.datadoghq.com/dashboards/querying/#aggregation-method).",
+      "severity": "warning",
       "sourceId": "dashboards/postgresql_dashboard.json",
       "sourcePath": "widgets[2].definition.requests[0].queries[0].query",
       "sourceText": "postgresql.rows_inserted{$scope}",
-      "suggestedAction": "Add an explicit space aggregator (avg, sum, min or max) to the source query."
+      "suggestedAction": "Add an explicit space aggregator to the source query if 'avg' is not intended."
+    },
+    {
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'postgresql.rows_inserted' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[2].definition.requests[0].queries[0].query",
+      "sourceText": "postgresql.rows_inserted{$scope}",
+      "suggestedAction": "Review the 'postgresql.rows_inserted' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$scope' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[2].definition.requests[0].queries[0].query",
+      "sourceText": "postgresql.rows_inserted{$scope}",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
     },
     {
       "code": "OPTION_IGNORED",
@@ -157,13 +175,31 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "MISSING_AGGREGATOR",
-      "message": "Query has no space aggregator.",
-      "severity": "error",
+      "code": "DEFAULT_AGGREGATOR_APPLIED",
+      "message": "Query has no space aggregator; applied Datadog's default 'avg' (https://docs.datadoghq.com/dashboards/querying/#aggregation-method).",
+      "severity": "warning",
       "sourceId": "dashboards/postgresql_dashboard.json",
       "sourcePath": "widgets[2].definition.requests[0].queries[1].query",
       "sourceText": "postgresql.rows_deleted{$scope}",
-      "suggestedAction": "Add an explicit space aggregator (avg, sum, min or max) to the source query."
+      "suggestedAction": "Add an explicit space aggregator to the source query if 'avg' is not intended."
+    },
+    {
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'postgresql.rows_deleted' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[2].definition.requests[0].queries[1].query",
+      "sourceText": "postgresql.rows_deleted{$scope}",
+      "suggestedAction": "Review the 'postgresql.rows_deleted' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$scope' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[2].definition.requests[0].queries[1].query",
+      "sourceText": "postgresql.rows_deleted{$scope}",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
     },
     {
       "code": "OPTION_IGNORED",
@@ -174,13 +210,31 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "MISSING_AGGREGATOR",
-      "message": "Query has no space aggregator.",
-      "severity": "error",
+      "code": "DEFAULT_AGGREGATOR_APPLIED",
+      "message": "Query has no space aggregator; applied Datadog's default 'avg' (https://docs.datadoghq.com/dashboards/querying/#aggregation-method).",
+      "severity": "warning",
       "sourceId": "dashboards/postgresql_dashboard.json",
       "sourcePath": "widgets[2].definition.requests[0].queries[2].query",
       "sourceText": "postgresql.rows_updated{$scope}",
-      "suggestedAction": "Add an explicit space aggregator (avg, sum, min or max) to the source query."
+      "suggestedAction": "Add an explicit space aggregator to the source query if 'avg' is not intended."
+    },
+    {
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'postgresql.rows_updated' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[2].definition.requests[0].queries[2].query",
+      "sourceText": "postgresql.rows_updated{$scope}",
+      "suggestedAction": "Review the 'postgresql.rows_updated' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$scope' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[2].definition.requests[0].queries[2].query",
+      "sourceText": "postgresql.rows_updated{$scope}",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
     },
     {
       "code": "OPTION_IGNORED",
@@ -200,85 +254,238 @@
       "suggestedAction": "Add a reviewed entry for 'system.io.util' to the mapping file."
     },
     {
-      "code": "MISSING_AGGREGATOR",
-      "message": "Query has no space aggregator.",
-      "severity": "error",
+      "code": "DEFAULT_AGGREGATOR_APPLIED",
+      "message": "Query has no space aggregator; applied Datadog's default 'avg' (https://docs.datadoghq.com/dashboards/querying/#aggregation-method).",
+      "severity": "warning",
       "sourceId": "dashboards/postgresql_dashboard.json",
       "sourcePath": "widgets[4].definition.requests[0].queries[0].query",
       "sourceText": "system.load.1{$scope}",
-      "suggestedAction": "Add an explicit space aggregator (avg, sum, min or max) to the source query."
+      "suggestedAction": "Add an explicit space aggregator to the source query if 'avg' is not intended."
     },
     {
-      "code": "MISSING_AGGREGATOR",
-      "message": "Query has no space aggregator.",
-      "severity": "error",
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'system.load.1' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[4].definition.requests[0].queries[0].query",
+      "sourceText": "system.load.1{$scope}",
+      "suggestedAction": "Review the 'system.load.1' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$scope' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[4].definition.requests[0].queries[0].query",
+      "sourceText": "system.load.1{$scope}",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
+    },
+    {
+      "code": "DEFAULT_AGGREGATOR_APPLIED",
+      "message": "Query has no space aggregator; applied Datadog's default 'avg' (https://docs.datadoghq.com/dashboards/querying/#aggregation-method).",
+      "severity": "warning",
       "sourceId": "dashboards/postgresql_dashboard.json",
       "sourcePath": "widgets[4].definition.requests[1].queries[0].query",
       "sourceText": "system.load.5{$scope}",
-      "suggestedAction": "Add an explicit space aggregator (avg, sum, min or max) to the source query."
+      "suggestedAction": "Add an explicit space aggregator to the source query if 'avg' is not intended."
     },
     {
-      "code": "MISSING_AGGREGATOR",
-      "message": "Query has no space aggregator.",
-      "severity": "error",
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'system.load.5' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[4].definition.requests[1].queries[0].query",
+      "sourceText": "system.load.5{$scope}",
+      "suggestedAction": "Review the 'system.load.5' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$scope' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[4].definition.requests[1].queries[0].query",
+      "sourceText": "system.load.5{$scope}",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
+    },
+    {
+      "code": "DEFAULT_AGGREGATOR_APPLIED",
+      "message": "Query has no space aggregator; applied Datadog's default 'avg' (https://docs.datadoghq.com/dashboards/querying/#aggregation-method).",
+      "severity": "warning",
       "sourceId": "dashboards/postgresql_dashboard.json",
       "sourcePath": "widgets[4].definition.requests[2].queries[0].query",
       "sourceText": "system.load.15{$scope}",
-      "suggestedAction": "Add an explicit space aggregator (avg, sum, min or max) to the source query."
+      "suggestedAction": "Add an explicit space aggregator to the source query if 'avg' is not intended."
     },
     {
-      "code": "MISSING_AGGREGATOR",
-      "message": "Query has no space aggregator.",
-      "severity": "error",
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'system.load.15' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[4].definition.requests[2].queries[0].query",
+      "sourceText": "system.load.15{$scope}",
+      "suggestedAction": "Review the 'system.load.15' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$scope' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[4].definition.requests[2].queries[0].query",
+      "sourceText": "system.load.15{$scope}",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
+    },
+    {
+      "code": "DEFAULT_AGGREGATOR_APPLIED",
+      "message": "Query has no space aggregator; applied Datadog's default 'avg' (https://docs.datadoghq.com/dashboards/querying/#aggregation-method).",
+      "severity": "warning",
       "sourceId": "dashboards/postgresql_dashboard.json",
       "sourcePath": "widgets[5].definition.requests[0].queries[0].query",
       "sourceText": "system.cpu.idle{$scope}",
-      "suggestedAction": "Add an explicit space aggregator (avg, sum, min or max) to the source query."
+      "suggestedAction": "Add an explicit space aggregator to the source query if 'avg' is not intended."
     },
     {
-      "code": "MISSING_AGGREGATOR",
-      "message": "Query has no space aggregator.",
-      "severity": "error",
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'system.cpu.idle' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[5].definition.requests[0].queries[0].query",
+      "sourceText": "system.cpu.idle{$scope}",
+      "suggestedAction": "Review the 'system.cpu.idle' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$scope' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[5].definition.requests[0].queries[0].query",
+      "sourceText": "system.cpu.idle{$scope}",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
+    },
+    {
+      "code": "DEFAULT_AGGREGATOR_APPLIED",
+      "message": "Query has no space aggregator; applied Datadog's default 'avg' (https://docs.datadoghq.com/dashboards/querying/#aggregation-method).",
+      "severity": "warning",
       "sourceId": "dashboards/postgresql_dashboard.json",
       "sourcePath": "widgets[5].definition.requests[0].queries[1].query",
       "sourceText": "system.cpu.system{$scope}",
-      "suggestedAction": "Add an explicit space aggregator (avg, sum, min or max) to the source query."
+      "suggestedAction": "Add an explicit space aggregator to the source query if 'avg' is not intended."
     },
     {
-      "code": "MISSING_AGGREGATOR",
-      "message": "Query has no space aggregator.",
-      "severity": "error",
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'system.cpu.system' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[5].definition.requests[0].queries[1].query",
+      "sourceText": "system.cpu.system{$scope}",
+      "suggestedAction": "Review the 'system.cpu.system' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$scope' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[5].definition.requests[0].queries[1].query",
+      "sourceText": "system.cpu.system{$scope}",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
+    },
+    {
+      "code": "DEFAULT_AGGREGATOR_APPLIED",
+      "message": "Query has no space aggregator; applied Datadog's default 'avg' (https://docs.datadoghq.com/dashboards/querying/#aggregation-method).",
+      "severity": "warning",
       "sourceId": "dashboards/postgresql_dashboard.json",
       "sourcePath": "widgets[5].definition.requests[0].queries[2].query",
       "sourceText": "system.cpu.iowait{$scope}",
-      "suggestedAction": "Add an explicit space aggregator (avg, sum, min or max) to the source query."
+      "suggestedAction": "Add an explicit space aggregator to the source query if 'avg' is not intended."
     },
     {
-      "code": "MISSING_AGGREGATOR",
-      "message": "Query has no space aggregator.",
-      "severity": "error",
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'system.cpu.iowait' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[5].definition.requests[0].queries[2].query",
+      "sourceText": "system.cpu.iowait{$scope}",
+      "suggestedAction": "Review the 'system.cpu.iowait' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$scope' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[5].definition.requests[0].queries[2].query",
+      "sourceText": "system.cpu.iowait{$scope}",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
+    },
+    {
+      "code": "DEFAULT_AGGREGATOR_APPLIED",
+      "message": "Query has no space aggregator; applied Datadog's default 'avg' (https://docs.datadoghq.com/dashboards/querying/#aggregation-method).",
+      "severity": "warning",
       "sourceId": "dashboards/postgresql_dashboard.json",
       "sourcePath": "widgets[5].definition.requests[0].queries[3].query",
       "sourceText": "system.cpu.user{$scope}",
-      "suggestedAction": "Add an explicit space aggregator (avg, sum, min or max) to the source query."
+      "suggestedAction": "Add an explicit space aggregator to the source query if 'avg' is not intended."
     },
     {
-      "code": "MISSING_AGGREGATOR",
-      "message": "Query has no space aggregator.",
-      "severity": "error",
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'system.cpu.user' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[5].definition.requests[0].queries[3].query",
+      "sourceText": "system.cpu.user{$scope}",
+      "suggestedAction": "Review the 'system.cpu.user' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$scope' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[5].definition.requests[0].queries[3].query",
+      "sourceText": "system.cpu.user{$scope}",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
+    },
+    {
+      "code": "DEFAULT_AGGREGATOR_APPLIED",
+      "message": "Query has no space aggregator; applied Datadog's default 'avg' (https://docs.datadoghq.com/dashboards/querying/#aggregation-method).",
+      "severity": "warning",
       "sourceId": "dashboards/postgresql_dashboard.json",
       "sourcePath": "widgets[5].definition.requests[0].queries[4].query",
       "sourceText": "system.cpu.stolen{$scope}",
-      "suggestedAction": "Add an explicit space aggregator (avg, sum, min or max) to the source query."
+      "suggestedAction": "Add an explicit space aggregator to the source query if 'avg' is not intended."
     },
     {
-      "code": "MISSING_AGGREGATOR",
-      "message": "Query has no space aggregator.",
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'system.cpu.stolen' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[5].definition.requests[0].queries[4].query",
+      "sourceText": "system.cpu.stolen{$scope}",
+      "suggestedAction": "Review the 'system.cpu.stolen' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$scope' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[5].definition.requests[0].queries[4].query",
+      "sourceText": "system.cpu.stolen{$scope}",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
+    },
+    {
+      "code": "DEFAULT_AGGREGATOR_APPLIED",
+      "message": "Query has no space aggregator; applied Datadog's default 'avg' (https://docs.datadoghq.com/dashboards/querying/#aggregation-method).",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_dashboard.json",
+      "sourcePath": "widgets[5].definition.requests[0].queries[5].query",
+      "sourceText": "system.cpu.guest{$scope}",
+      "suggestedAction": "Add an explicit space aggregator to the source query if 'avg' is not intended."
+    },
+    {
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'system.cpu.guest'.",
       "severity": "error",
       "sourceId": "dashboards/postgresql_dashboard.json",
       "sourcePath": "widgets[5].definition.requests[0].queries[5].query",
       "sourceText": "system.cpu.guest{$scope}",
-      "suggestedAction": "Add an explicit space aggregator (avg, sum, min or max) to the source query."
+      "suggestedAction": "Add a reviewed entry for 'system.cpu.guest' to the mapping file."
     },
     {
       "code": "UNREVIEWED_MAPPING",
@@ -2581,7 +2788,7 @@
     },
     {
       "kind": "widget",
-      "outcome": "blocked",
+      "outcome": "translated",
       "sourceId": "dashboards/postgresql_dashboard.json",
       "sourcePath": "widgets[2]",
       "title": "Inserts / updates / deletes (per sec)"
@@ -2595,7 +2802,7 @@
     },
     {
       "kind": "widget",
-      "outcome": "blocked",
+      "outcome": "translated",
       "sourceId": "dashboards/postgresql_dashboard.json",
       "sourcePath": "widgets[4]",
       "title": "System load"
@@ -2865,9 +3072,9 @@
     },
     "skippedFiles": 0,
     "widgets": {
-      "blocked": 27,
+      "blocked": 25,
       "partial": 0,
-      "translated": 12
+      "translated": 14
     }
   },
   "validation": {

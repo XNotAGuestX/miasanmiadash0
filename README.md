@@ -34,11 +34,11 @@ uv run migrator convert --source datadog \
 Output of that command:
 
 ```text
-PARTIAL    postgres-metrics 4/9 widgets
+PARTIAL    postgres-metrics 6/9 widgets
 PARTIAL    postgres-overview 8/30 widgets
 TRANSLATED postgres/monitors/percent_usage_connections.json monitor
 BLOCKED    postgres/monitors/replication_delay.json monitor
-total: dashboards 0 translated/2 partial/0 blocked, widgets 12 translated/0 partial/27 blocked, monitors 1 translated/0 partial/1 blocked, skipped files 0
+total: dashboards 0 translated/2 partial/0 blocked, widgets 14 translated/0 partial/25 blocked, monitors 1 translated/0 partial/1 blocked, skipped files 0
 ```
 
 `--input` takes files or folders, which are read recursively. `--out` must be empty. It receives:
@@ -143,7 +143,7 @@ A missing variable gives `error: missing env: <NAMES>` and exit 1, without print
 - Supported form: `<avg|sum|min|max>:<metric>{<tag filters, $template vars>} by {<tags>}`.
 - Formulas are limited to `+ - * /` over query names and numbers.
 - Any query function (`anomalies`, `week_before`, `top`, …) blocks the query with `UNSUPPORTED_QUERY_FUNCTION`.
-- A query without a space aggregator is blocked with `MISSING_AGGREGATOR`, because Datadog documents no default.
+- A query without a space aggregator uses Datadog's default, `avg`, and warns `DEFAULT_AGGREGATOR_APPLIED` ([docs](https://docs.datadoghq.com/dashboards/querying/#aggregation-method)).
 
 **Mappings** (`mappings/datadog/*.json`): each entry maps a Datadog metric to a Dash0 OTel metric. There are three kinds:
 - `gauge`: a direct value;
@@ -160,7 +160,7 @@ Entries can also carry fixed label matchers, unit scale, label renames and a ded
 
 ## Known limits
 
-- **Partial coverage by design.** The Postgres goldens translate 4/9 "Metrics" widgets and 8/30 "Overview" widgets. `report.json` names the reason for every block.
+- **Partial coverage by design.** The Postgres goldens translate 6/9 "Metrics" widgets and 8/30 "Overview" widgets. `report.json` names the reason for every block.
 - **Monitor behaviour that isn't migrated:**
   - notifications and `@handles` (`NOTIFICATION_NOT_MIGRATED`);
   - no-data alerts, auto-resolve, renotify, escalation and recovery thresholds (all block the monitor);
