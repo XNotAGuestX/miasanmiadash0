@@ -9,7 +9,7 @@ Highest-priority requirement: deterministic conversion before all other objectiv
 | Area | State | Evidence |
 | --- | --- | --- |
 | CLI/runtime/package | `convert` (offline), `publish` (run live 2026-11-07), `fetch` (offline-tested; live is horizon #122) | Python ≥ 3.13 + uv; `uv run migrator {convert,publish,fetch,test,typecheck,lint,check}` |
-| Dashboards | Plans 02–05 merged, except the default aggregator (#107, port of branch `default-avg-aggregator`) | Golden `fixtures/expected/postgres-p1/` (byte-equal and determinism tests) |
+| Dashboards | Plans 02–05 merged | Golden `fixtures/expected/postgres-p1/` (byte-equal and determinism tests) |
 | Monitors | Plan 06 merged: `percent_usage_connections` translated, `replication_delay` blocked | Golden `fixtures/expected/postgres-monitors/` |
 | Mappings | `postgres`, `kafka`, `docker`, `redis`, `nginx`; every entry `reviewed: null` | `mappings/datadog/`; Redis/nginx notes in `REVIEW-redis-nginx.md` |
 | Oracle cases | 9 integrations-core dashboards, 207 requests; Agent0 proposals plus the deterministic rules in `scripts/build_expected.py`; none human-reviewed, so they skip by default | `fixtures/expected/*/*/expected.yaml`; `uv run pytest --include-unreviewed` |
