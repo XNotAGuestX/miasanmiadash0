@@ -1,0 +1,194 @@
+{
+  "metrics": {
+    "kafka.consumer_lag": {
+      "kind": "gauge",
+      "labels": {
+        "consumer_group": "group",
+        "partition": "partition",
+        "topic": "topic"
+      },
+      "ref": "Reasoning, no metrics_mapping row found: per-partition consumer lag from kafkametrics receiver; Dash0 kafka.consumer_group.lag (gauge) has labels group, topic, partition (and host_name, no service_name/service_instance_id). Datadog tags consumer_group, topic, partition. Dash0 check 2026-11-07 (dataset default): count by (otel_metric_name, otel_metric_type, type, operation, direction, group, topic) (last_over_time({otel_metric_name=~\"kafka.isr.operation.count|kafka.network.io|kafka.purgatory.size|kafka.request.time.99p|kafka.partition.offline|kafka.partition.underReplicated|kafka.leaderElection.unclean.count|kafka.consumer_group.lag\"}[3h])); extra Dash0 check 2026-11-07: count by (otel_metric_name, partition, topic, group, host_name, service_name) (last_over_time({otel_metric_name=~\"kafka.consumer_group.lag|kafka.partition.offline|kafka.request.time.99p\"}[3h]))",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "message",
+      "target": {
+        "name": "kafka.consumer_group.lag",
+        "type": "gauge"
+      },
+      "targetUnit": "{message}"
+    },
+    "kafka.net.bytes_in.rate": {
+      "kind": "rate",
+      "labels": {
+        "instance": "service_instance_id"
+      },
+      "matchers": {
+        "direction": "in"
+      },
+      "ref": "Reasoning, no metrics_mapping row found: JMX BytesInPerSec maps to kafka.network.io with label direction=in (values: in, out; type sum, unit By). Datadog *.rate is a per-second rate of a cumulative counter, so rate() over the Dash0 sum target. Dash0 check 2026-11-07 (dataset default): count by (otel_metric_name, otel_metric_type, type, operation, direction, group, topic) (last_over_time({otel_metric_name=~\"kafka.isr.operation.count|kafka.network.io|kafka.purgatory.size|kafka.request.time.99p|kafka.partition.offline|kafka.partition.underReplicated|kafka.leaderElection.unclean.count|kafka.consumer_group.lag\"}[3h]))",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "byte/second",
+      "target": {
+        "name": "kafka.network.io",
+        "type": "sum"
+      },
+      "targetUnit": "By"
+    },
+    "kafka.net.bytes_out.rate": {
+      "kind": "rate",
+      "labels": {
+        "instance": "service_instance_id"
+      },
+      "matchers": {
+        "direction": "out"
+      },
+      "ref": "Reasoning, no metrics_mapping row found: JMX BytesOutPerSec maps to kafka.network.io with label direction=out (values: in, out; type sum, unit By). Datadog *.rate is a per-second rate of a cumulative counter, so rate() over the Dash0 sum target. Dash0 check 2026-11-07 (dataset default): count by (otel_metric_name, otel_metric_type, type, operation, direction, group, topic) (last_over_time({otel_metric_name=~\"kafka.isr.operation.count|kafka.network.io|kafka.purgatory.size|kafka.request.time.99p|kafka.partition.offline|kafka.partition.underReplicated|kafka.leaderElection.unclean.count|kafka.consumer_group.lag\"}[3h]))",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "byte/second",
+      "target": {
+        "name": "kafka.network.io",
+        "type": "sum"
+      },
+      "targetUnit": "By"
+    },
+    "kafka.replication.isr_expands.rate": {
+      "kind": "rate",
+      "labels": {
+        "instance": "service_instance_id"
+      },
+      "matchers": {
+        "operation": "expand"
+      },
+      "ref": "Reasoning, no metrics_mapping row found: JMX IsrExpandsPerSec maps to kafka.isr.operation.count with label operation=expand (values: expand, shrink; type sum). Datadog *.rate is a per-second rate of a cumulative counter, so rate() over the Dash0 sum target. Dash0 check 2026-11-07 (dataset default): count by (otel_metric_name, otel_metric_type, type, operation, direction, group, topic) (last_over_time({otel_metric_name=~\"kafka.isr.operation.count|kafka.network.io|kafka.purgatory.size|kafka.request.time.99p|kafka.partition.offline|kafka.partition.underReplicated|kafka.leaderElection.unclean.count|kafka.consumer_group.lag\"}[3h]))",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "operation/second",
+      "target": {
+        "name": "kafka.isr.operation.count",
+        "type": "sum"
+      },
+      "targetUnit": "{operation}"
+    },
+    "kafka.replication.isr_shrinks.rate": {
+      "kind": "rate",
+      "labels": {
+        "instance": "service_instance_id"
+      },
+      "matchers": {
+        "operation": "shrink"
+      },
+      "ref": "Reasoning, no metrics_mapping row found: JMX IsrShrinksPerSec maps to kafka.isr.operation.count with label operation=shrink (values: expand, shrink; type sum). Datadog *.rate is a per-second rate of a cumulative counter, so rate() over the Dash0 sum target. Dash0 check 2026-11-07 (dataset default): count by (otel_metric_name, otel_metric_type, type, operation, direction, group, topic) (last_over_time({otel_metric_name=~\"kafka.isr.operation.count|kafka.network.io|kafka.purgatory.size|kafka.request.time.99p|kafka.partition.offline|kafka.partition.underReplicated|kafka.leaderElection.unclean.count|kafka.consumer_group.lag\"}[3h]))",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "operation/second",
+      "target": {
+        "name": "kafka.isr.operation.count",
+        "type": "sum"
+      },
+      "targetUnit": "{operation}"
+    },
+    "kafka.replication.offline_partitions_count": {
+      "kind": "gauge",
+      "labels": {
+        "instance": "service_instance_id"
+      },
+      "ref": "Reasoning, no metrics_mapping row found: JMX OfflinePartitionsCount gauge reported by Dash0 as kafka.partition.offline (type sum, no extra labels, value 0 observed). service_instance_id is the per-broker-start UUID (docs/DASH0_INVENTORY.md). Dash0 check 2026-11-07 (dataset default): count by (otel_metric_name, otel_metric_type, type, operation, direction, group, topic) (last_over_time({otel_metric_name=~\"kafka.isr.operation.count|kafka.network.io|kafka.purgatory.size|kafka.request.time.99p|kafka.partition.offline|kafka.partition.underReplicated|kafka.leaderElection.unclean.count|kafka.consumer_group.lag\"}[3h]))",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "partition",
+      "target": {
+        "name": "kafka.partition.offline",
+        "type": "sum"
+      },
+      "targetUnit": "{partition}"
+    },
+    "kafka.replication.unclean_leader_elections.rate": {
+      "kind": "rate",
+      "labels": {
+        "instance": "service_instance_id"
+      },
+      "ref": "Reasoning, no metrics_mapping row found: JMX UncleanLeaderElectionsPerSec maps to Dash0 kafka.leaderElection.unclean.count (type sum, no extra labels). Datadog *.rate is a per-second rate of a cumulative counter, so rate() over the Dash0 sum target. Dash0 check 2026-11-07 (dataset default): count by (otel_metric_name, otel_metric_type, type, operation, direction, group, topic) (last_over_time({otel_metric_name=~\"kafka.isr.operation.count|kafka.network.io|kafka.purgatory.size|kafka.request.time.99p|kafka.partition.offline|kafka.partition.underReplicated|kafka.leaderElection.unclean.count|kafka.consumer_group.lag\"}[3h]))",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "election/second",
+      "target": {
+        "name": "kafka.leaderElection.unclean.count",
+        "type": "sum"
+      },
+      "targetUnit": "{election}"
+    },
+    "kafka.replication.under_replicated_partitions": {
+      "kind": "gauge",
+      "labels": {
+        "instance": "service_instance_id"
+      },
+      "ref": "Reasoning, no metrics_mapping row found: JMX UnderReplicatedPartitions gauge reported by Dash0 as kafka.partition.underReplicated (type sum, no extra labels). Dash0 check 2026-11-07 (dataset default): count by (otel_metric_name, otel_metric_type, type, operation, direction, group, topic) (last_over_time({otel_metric_name=~\"kafka.isr.operation.count|kafka.network.io|kafka.purgatory.size|kafka.request.time.99p|kafka.partition.offline|kafka.partition.underReplicated|kafka.leaderElection.unclean.count|kafka.consumer_group.lag\"}[3h]))",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "partition",
+      "target": {
+        "name": "kafka.partition.underReplicated",
+        "type": "sum"
+      },
+      "targetUnit": "{partition}"
+    },
+    "kafka.request.fetch_request_purgatory.size": {
+      "kind": "gauge",
+      "labels": {
+        "instance": "service_instance_id"
+      },
+      "matchers": {
+        "type": "Fetch"
+      },
+      "ref": "Reasoning, no metrics_mapping row found: JMX Fetch purgatory size maps to kafka.purgatory.size with label type=Fetch (values: Fetch, Produce; type sum). Dash0 check 2026-11-07 (dataset default): count by (otel_metric_name, otel_metric_type, type, operation, direction, group, topic) (last_over_time({otel_metric_name=~\"kafka.isr.operation.count|kafka.network.io|kafka.purgatory.size|kafka.request.time.99p|kafka.partition.offline|kafka.partition.underReplicated|kafka.leaderElection.unclean.count|kafka.consumer_group.lag\"}[3h]))",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "request",
+      "target": {
+        "name": "kafka.purgatory.size",
+        "type": "sum"
+      },
+      "targetUnit": "{request}"
+    },
+    "kafka.request.produce.time.99percentile": {
+      "kind": "gauge",
+      "labels": {
+        "instance": "service_instance_id"
+      },
+      "matchers": {
+        "type": "Produce"
+      },
+      "ref": "Reasoning, no metrics_mapping row found: Datadog produce 99th-percentile request time is in ms; Dash0 kafka.request.time.99p is a gauge in ms (OTel Kafka JMX semantics, ~14 ms observed for Produce) so scale 1. Matcher type=\"Produce\" selects the Produce request type (values: FetchConsumer, FetchFollower, Produce). Dash0 check 2026-11-07 (dataset default): count by (otel_metric_name, otel_metric_type, type, operation, direction, group, topic) (last_over_time({otel_metric_name=~\"kafka.isr.operation.count|kafka.network.io|kafka.purgatory.size|kafka.request.time.99p|kafka.partition.offline|kafka.partition.underReplicated|kafka.leaderElection.unclean.count|kafka.consumer_group.lag\"}[3h]))",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "millisecond",
+      "target": {
+        "name": "kafka.request.time.99p",
+        "type": "gauge"
+      },
+      "targetUnit": "ms"
+    },
+    "kafka.request.producer_request_purgatory.size": {
+      "kind": "gauge",
+      "labels": {
+        "instance": "service_instance_id"
+      },
+      "matchers": {
+        "type": "Produce"
+      },
+      "ref": "Reasoning, no metrics_mapping row found: JMX Produce purgatory size maps to kafka.purgatory.size with label type=Produce (values: Fetch, Produce; type sum). Dash0 check 2026-11-07 (dataset default): count by (otel_metric_name, otel_metric_type, type, operation, direction, group, topic) (last_over_time({otel_metric_name=~\"kafka.isr.operation.count|kafka.network.io|kafka.purgatory.size|kafka.request.time.99p|kafka.partition.offline|kafka.partition.underReplicated|kafka.leaderElection.unclean.count|kafka.consumer_group.lag\"}[3h]))",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "request",
+      "target": {
+        "name": "kafka.purgatory.size",
+        "type": "sum"
+      },
+      "targetUnit": "{request}"
+    }
+  },
+  "source": "datadog",
+  "version": 1
+}
