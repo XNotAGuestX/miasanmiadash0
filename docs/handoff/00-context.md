@@ -66,8 +66,15 @@ src/migrator/
 mappings/datadog/<service>.json   # reviewed mapping files
 fixtures/datadog/integrations-core/<service>/...   # pinned source assets
 fixtures/datadog/synthetic/...    # small hand-written edge cases
-fixtures/expected/<case>/...      # reviewed expected outputs
-tests/...                          # pytest (test_*.py)
+fixtures/synthetic/queries.yaml   # hand-written parser spec cases (oracle suite)
+fixtures/otel/                    # pinned OTel metric definitions + catalog.yaml (oracle suite)
+fixtures/cases/<service>/<dashboard>.yaml          # deterministic case inventory (scripts/extract_cases.py)
+fixtures/oracle/agent0/<service>/<dashboard>/      # dev-time oracle prompt + frozen Agent0 answer (provenance only)
+fixtures/expected/<service>/<dashboard>/           # expected.yaml (generated) + overrides.yaml (human review)
+scripts/                          # dev-time fixture tooling; never imported by the converter
+tests/...                         # pytest (test_*.py); converter unit tests
+tests/unit/requests/, tests/unit/dashboards/       # oracle suite via the public API (tests/README.md)
+tests/scripts/                    # pytest: dev-time scripts (build_expected rules, oracle runner)
 ```
 
 ## 5. Stack

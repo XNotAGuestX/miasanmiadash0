@@ -1,0 +1,126 @@
+# Agent0 answer, verbatim. Asked 2026-11-07 ~17:19 local (Dash0 UI chat, Advanced/High), prompt: prompt.md.
+# Provenance only, never test input.
+# Live-check window: last 1h = 2026-11-07T15:21:17Z..16:21:17Z (16:21–17:21 local).
+# None of the postgresql.* / system.* metrics below has a sample after ~15:21 UTC, so every last-hour check returns 0 series.
+# The "earlier window" counts in each notes field come from running the same PromQL over 14:00–15:25 UTC,
+# with $__rate_interval replaced by [10m] because the samples are sparse.
+- source_path: "widgets[0].definition.requests[0]"
+  outcome: translated
+  promql:
+    - 'avg(rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [postgresql.tup_fetched]
+  labels: {}
+  live_check: "no, 0 series in last 1h (1 series in the earlier window)"
+  notes: "Both metrics come from pg_stat_database.tup_fetched: Datadog rows_fetched is that counter as a per-second rate, and the OTel postgresqlreceiver 0.160.0 metric is a monotonic sum, so rate() gives rows/s. avg() across databases and hosts matches Datadog's default space aggregation."
+- source_path: "widgets[0].definition.requests[1]"
+  outcome: translated
+  promql:
+    - 'avg(rate({otel_metric_name="postgresql.tup_returned", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [postgresql.tup_returned]
+  labels: {}
+  live_check: "no, 0 series in last 1h (1 series in the earlier window)"
+  notes: "Source column is pg_stat_database.tup_returned; result is rows/s, averaged across all databases."
+- source_path: "widgets[0].definition.requests[2]"
+  outcome: translated
+  promql:
+    - 'avg(rate({otel_metric_name="postgresql.tup_inserted", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [postgresql.tup_inserted]
+  labels: {}
+  live_check: "no, 0 series in last 1h (1 series in the earlier window)"
+  notes: "Source column is pg_stat_database.tup_inserted; result is rows/s. Do not use postgresql.operations{operation=ins}: that is a per-table metric from pg_stat_user_tables, so it is a different population."
+- source_path: "widgets[0].definition.requests[3]"
+  outcome: translated
+  promql:
+    - 'avg(rate({otel_metric_name="postgresql.tup_updated", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [postgresql.tup_updated]
+  labels: {}
+  live_check: "no, 0 series in last 1h (1 series in the earlier window)"
+  notes: "Source column is pg_stat_database.tup_updated; result is rows/s."
+- source_path: "widgets[1].definition.requests[0]"
+  outcome: translated
+  promql:
+    - 'avg by (postgresql_database_name) ({otel_metric_name="postgresql.backends", otel_metric_type="sum"})'
+  otel_metrics: [postgresql.backends]
+  labels: {db: postgresql_database_name}
+  live_check: "no, 0 series in last 1h (2 series in the earlier window: astronomy_db, postgres)"
+  notes: "Datadog postgresql.connections is pg_stat_database.numbackends. postgresql.backends is a non-monotonic sum (a gauge-like value), so no rate() is applied. Its description says it counts all backend types, including autovacuum and parallel workers; numbackends counts those too."
+- source_path: "widgets[2].definition.requests[0]"
+  outcome: translated
+  promql:
+    - 'avg(rate({otel_metric_name="postgresql.tup_inserted", otel_metric_type="sum"}[$__rate_interval]))'
+    - 'avg(rate({otel_metric_name="postgresql.tup_deleted", otel_metric_type="sum"}[$__rate_interval]))'
+    - 'avg(rate({otel_metric_name="postgresql.tup_updated", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [postgresql.tup_inserted, postgresql.tup_deleted, postgresql.tup_updated]
+  labels: {}
+  live_check: "no, 0 series in last 1h (3 series in the earlier window, 1 per formula)"
+  notes: "The queries have no explicit aggregator, which Datadog treats as avg, hence avg(). Formula order is inserted, deleted, updated, as in the source."
+- source_path: "widgets[3].definition.requests[0]"
+  outcome: translated
+  promql:
+    - '100 * avg(rate({otel_metric_name="system.disk.io_time", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [system.disk.io_time]
+  labels: {}
+  live_check: "no, 0 series in last 1h (1 series in the earlier window)"
+  notes: "system.io.util is iostat %util, which is the change in busy time divided by elapsed time. rate(system.disk.io_time in seconds) * 100 gives the same per-device percentage, averaged across all devices. OTel reports every system.device and none are filtered out, so the device set (loop devices, partitions) can differ from the Datadog agent's."
+- source_path: "widgets[4].definition.requests[0]"
+  outcome: translated
+  promql:
+    - 'avg({otel_metric_name="system.cpu.load_average.1m", otel_metric_type="gauge"})'
+  otel_metrics: [system.cpu.load_average.1m]
+  labels: {}
+  live_check: "no, 0 series in last 1h (1 series in the earlier window)"
+  notes: "Both are the raw, non-normalized 1-minute load average; avg() is Datadog's default space aggregation."
+- source_path: "widgets[4].definition.requests[1]"
+  outcome: translated
+  promql:
+    - 'avg({otel_metric_name="system.cpu.load_average.5m", otel_metric_type="gauge"})'
+  otel_metrics: [system.cpu.load_average.5m]
+  labels: {}
+  live_check: "no, 0 series in last 1h (1 series in the earlier window)"
+  notes: "Raw 5-minute load average, not normalized."
+- source_path: "widgets[4].definition.requests[2]"
+  outcome: translated
+  promql:
+    - 'avg({otel_metric_name="system.cpu.load_average.15m", otel_metric_type="gauge"})'
+  otel_metrics: [system.cpu.load_average.15m]
+  labels: {}
+  live_check: "no, 0 series in last 1h (1 series in the earlier window)"
+  notes: "Raw 15-minute load average, not normalized."
+- source_path: "widgets[5].definition.requests[0]"
+  outcome: blocked
+  reason: "No equivalent metric for query6 (system.cpu.guest). system.cpu.time and system.cpu.utilization only carry cpu_mode values idle, interrupt, irq, nice, softirq, steal, system, user and wait. No mode or metric reports guest time, and the request is all-or-nothing."
+  otel_metrics: [system.cpu.time]
+  labels: {}
+  live_check: "not run as a translation; system.cpu.time also has 0 series in last 1h"
+  notes: "The other five formulas could map to 100 * avg(rate(system.cpu.time{cpu_mode=idle|system|wait|user|steal})), but guest has no counterpart. system.cpu.time also has a second source, Python opentelemetry.instrumentation.system_metrics on the load-generator resources, alongside the collector hostmetrics on docker-desktop."
+- source_path: "widgets[6].definition.requests[0]"
+  outcome: translated
+  promql:
+    - '100 * max(avg by (host_name) (rate({otel_metric_name="system.cpu.time", otel_metric_type="sum", cpu_mode="wait"}[$__rate_interval])))'
+  otel_metrics: [system.cpu.time]
+  labels: {host: host_name}
+  live_check: "no, 0 series in last 1h (1 series in the earlier window, host docker-desktop)"
+  notes: "Datadog system.cpu.iowait is a per-host percentage averaged across cores. Here that is avg over cpu_logical_number of the per-core rate of wait seconds, computed per host, then max across hosts for the max: aggregator. host_name is only an internal grouping key, and the output is a single series. The OTel mode 'wait' corresponds to /proc/stat iowait."
+- source_path: "widgets[7].definition.requests[0]"
+  outcome: blocked
+  reason: "No equivalent metric for query1 (system.mem.usable, which is MemAvailable). The dataset has system.memory.usage with system_memory_state values buffered, cached, free, slab_reclaimable, slab_unreclaimable and used, plus system.memory.limit and system.memory.utilization. It has no 'available' state and no system.linux.memory.available. Summing free+buffered+cached(+slab_reclaimable) only approximates MemAvailable, so query1 and 'query2 - query1' cannot be expressed exactly."
+  otel_metrics: [system.memory.usage, system.memory.limit]
+  labels: {}
+  live_check: "not run as a translation"
+  notes: "query2 (system.mem.total) alone could map to sum(system.memory.limit), but the request is all-or-nothing."
+- source_path: "widgets[8].definition.requests[0]"
+  outcome: translated
+  promql:
+    - 'sum(rate({otel_metric_name="system.network.io", otel_metric_type="sum", system_network_direction="receive"}[$__rate_interval]))'
+  otel_metrics: [system.network.io]
+  labels: {}
+  live_check: "no, 0 series in last 1h (1 series in the earlier window)"
+  notes: "Result is bytes/s summed across all network_interface_name values and hosts. system.network.io comes from both collector hostmetrics (docker-desktop) and Python system_metrics (load-generator), and both are included. Loopback and virtual interfaces are not excluded, so totals can exceed a Datadog agent that skips lo."
+- source_path: "widgets[8].definition.requests[1]"
+  outcome: translated
+  promql:
+    - 'sum(rate({otel_metric_name="system.network.io", otel_metric_type="sum", system_network_direction="transmit"}[$__rate_interval]))'
+  otel_metrics: [system.network.io]
+  labels: {}
+  live_check: "no, 0 series in last 1h (1 series in the earlier window)"
+  notes: "Result is bytes/s sent, summed across all interfaces and hosts. The same interface and source caveats as the receive query apply."
