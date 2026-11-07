@@ -6,7 +6,7 @@
 
 **Architecture:** Every feature extends the existing pieces from plans 02–04 (`MetricMapping` union, `compileMetricQuery`, `compileDashboard`). Each one is a reviewed rule with tests. There's still no general expression engine: formulas use a 4-operator grammar over query names and numbers.
 
-**Tech Stack:** TypeScript, zod, vitest.
+**Tech Stack:** Python 3.13 (uv), pydantic, pytest.
 
 **Spec:** [00-context.md](00-context.md) §6, §7 and §8; the widget ladder in [DASH0_INVENTORY.md](../DASH0_INVENTORY.md#postgres-postgres---metrics-widget-ladder).
 
@@ -35,16 +35,16 @@
 
 **Files:**
 - Create: `fixtures/mappings/postgres-p0.json` (a byte copy of the current `mappings/datadog/postgres.json`)
-- Modify: `tests/golden.test.ts`, so the P0 case uses the frozen copy
+- Modify: `tests/test_golden.py`, so the P0 case uses the frozen copy
 
-- [ ] Copy the file, point the P0 test at it, and run `npm test`. It must PASS.
+- [ ] Copy the file, point the P0 test at it, and run `uv run migrator test`. It must PASS.
 - [ ] Commit: `test: freeze P0 golden mapping`.
 
 ### Task 1: Documented default aggregator
 
 **Files:**
-- Modify: `src/source/datadog/compile-query.ts`
-- Test: `tests/datadog/compile-query.test.ts`
+- Modify: `src/migrator/source/datadog/compile_query.py`
+- Test: `tests/datadog/test_compile_query.py`
 
 **Interfaces:**
 - Produces: the exported constant `DEFAULT_SPACE_AGGREGATOR: SpaceAggregator`, with the doc URL in a comment.
@@ -54,13 +54,13 @@
 - [ ] **Step 2: Write the failing test `applies the documented default aggregator`.**
   - `postgresql.connections{*}` gives `'<default> ({otel_metric_name="postgresql.backends", otel_metric_type="sum"})'`.
   - Diagnostic codes are `["DEFAULT_AGGREGATOR_APPLIED"]`, with severity warning and message `No space aggregator; applied Datadog's documented default '<default>'.`
-- [ ] **Step 3: Implement it.** Replace check 2 (`MISSING_AGGREGATOR`) with the warning. Then **Step 4:** run `npm test`; it must PASS. Commit.
+- [ ] **Step 3: Implement it.** Replace check 2 (`MISSING_AGGREGATOR`) with the warning. Then **Step 4:** run `uv run migrator test`; it must PASS. Commit.
 
 ### Task 2: The `rate` kind and fixed matchers
 
 **Files:**
-- Modify: `src/source/datadog/mapping.ts`, `src/source/datadog/compile-query.ts`, `mappings/datadog/postgres.json`
-- Test: `tests/datadog/mapping.test.ts`, `tests/datadog/compile-query.test.ts`
+- Modify: `src/migrator/source/datadog/mapping.py`, `src/migrator/source/datadog/compile_query.py`, `mappings/datadog/postgres.json`
+- Test: `tests/datadog/test_mapping.py`, `tests/datadog/test_compile_query.py`
 
 **Interfaces:**
 - Produces:
@@ -81,13 +81,13 @@
 | `system.load.1`, `system.load.5`, `system.load.15` | gauge | `system.cpu.load_average.1m`, `.5m`, `.15m` (gauge) | — |
 | `system.net.bytes_rcvd`, `system.net.bytes_sent` | rate | `system.network.io` (sum) | `system_network_direction`: `receive` / `transmit` |
 
-- [ ] **Step 4: Verify.** Run `npm test`; it must PASS. Request a human review of the new entries. Commit.
+- [ ] **Step 4: Verify.** Run `uv run migrator test`; it must PASS. Request a human review of the new entries. Commit.
 
 ### Task 3: Unit scale
 
 **Files:**
-- Modify: `src/source/datadog/compile-query.ts`, `mappings/datadog/postgres.json`
-- Test: `tests/datadog/compile-query.test.ts`
+- Modify: `src/migrator/source/datadog/compile_query.py`, `mappings/datadog/postgres.json`
+- Test: `tests/datadog/test_compile_query.py`
 
 - [ ] **Step 1: Write the failing tests.**
   - `scale wraps aggregation`: `max:system.cpu.iowait{$scope}` with `{kind: "gauge", target: {name: "system.cpu.utilization", type: "gauge"}, matchers: {cpu_mode: "wait"}, scale: 100}` gives `'(max ({otel_metric_name="system.cpu.utilization", otel_metric_type="gauge", cpu_mode="wait"})) * 100'`.
@@ -95,15 +95,15 @@
 - [ ] **Step 2: Implement it.** Remove check 4 for finite scales greater than 0.
 - [ ] **Step 3: Add mapping entries** for `system.cpu.{idle,system,iowait,user,stolen}`. Each is a gauge on `system.cpu.utilization`, with `cpu_mode` set to `idle`, `system`, `wait`, `user` or `steal`, and scale 100.
   - Add **no** entry for `system.cpu.guest`.
-- [ ] **Step 4: Verify.** Run `npm test`; it must PASS. Request a human review. Commit.
+- [ ] **Step 4: Verify.** Run `uv run migrator test`; it must PASS. Request a human review. Commit.
 
 ### Task 4: Series grain
 
 This collapses target series to the Datadog series grain. It handles both resource-hash duplicates and per-CPU versus per-host differences.
 
 **Files:**
-- Modify: `mapping.ts`, `compile-query.ts`, `mappings/datadog/postgres.json`
-- Test: `tests/datadog/compile-query.test.ts`
+- Modify: `mapping.py`, `compile_query.py`, `mappings/datadog/postgres.json`
+- Test: `tests/datadog/test_compile_query.py`
 
 **Interfaces:**
 - Produces: the optional mapping field `grain: { labels: string[]; aggregation: "avg" | "max" | "min" | "sum" }`.
@@ -117,16 +117,16 @@ This collapses target series to the Datadog series grain. It handles both resour
   - Group labels come first; then grain labels not already in the group, in mapping order.
   - With `rate`, the inner expression is the `rate(...)`.
 - [ ] **Step 3: Set grains in the mapping.**
-  - `postgresql.connections`: `{labels: ["service_instance_id"], aggregation: "max"}`.
+  - `postgresql.connections`: `{labels: ["service_instance_id"], aggregation: "max"}`. Changed in PR #85 (unreviewed assumption) to `["service_instance_id", "postgresql_database_name"]`, and the same grain was added to `postgresql.rows_*`. With `service_instance_id` alone, a query without `by {db}` takes the max over databases instead of their sum or average. With `by {db}`, the output is unchanged.
   - The CPU entries: `{labels: ["host_name"], aggregation: "avg"}`.
-- [ ] **Step 4: Verify.** Run `npm test`; it must PASS. Request a human review. Commit.
+- [ ] **Step 4: Verify.** Run `uv run migrator test`; it must PASS. Request a human review. Commit.
 
 ### Task 5: Arithmetic formulas
 
 **Files:**
-- Create: `src/source/datadog/formula.ts`
-- Modify: `dashboard.ts`
-- Test: `tests/datadog/formula.test.ts`
+- Create: `src/migrator/source/datadog/formula.py`
+- Modify: `dashboard.py`
+- Test: `tests/datadog/test_formula.py`
 
 **Interfaces:**
 - Produces:
@@ -142,25 +142,25 @@ This collapses target series to the Datadog series grain. It handles both resour
 - [ ] **Step 2: Implement it.** In `compileDashboard`, replace the "formula must equal a query name" rule:
   - parse the formula, then compile every referenced query;
   - render the formula, or emit `UNSUPPORTED_FORMULA` with the reason.
-- [ ] **Step 3: Verify.** Run `npm test`. The plan 04 synthetic test for `query1 * 100` now translates; update that expectation deliberately. Commit.
+- [ ] **Step 3: Verify.** Run `uv run migrator test`. The plan 04 synthetic test for `query1 * 100` now translates; update that expectation deliberately. Commit.
 
 ### Task 6: Template variables → Perses `ListVariable`
 
 **Files:**
-- Modify: `dashboard.ts`, `compile-query.ts`
-- Test: `tests/datadog/dashboard.test.ts`
+- Modify: `dashboard.py`, `compile_query.py`
+- Test: `tests/datadog/test_dashboard.py`
 
 **Rule.**
 
 - A variable with a non-null `prefix` whose prefix tag has a label mapping in **every** query that uses it becomes:
   `{kind: "ListVariable", spec: {name, display: {name}, allowAllValue: true, allowMultiple: true, defaultValue: "$__all", plugin: {kind: "PrometheusLabelValuesVariable", spec: {labelName: <label>}}}}`.
-- The query then gets the matcher `<label>=~"$<name>"`.
+- The query then gets the matcher `<label>=~"^($<name>)$"`. The anchors give whole-value (Datadog exact-tag) matching, because Dash0 does not anchor `=~` ([Dash0: bind variables to queries](https://www.dash0.com/docs/dash0/dashboards/bind-variables-to-queries)). Values are not regex-escaped; see the comment in `compile_query.py`.
 - Variables with no prefix (`$scope`) stay dropped with a warning.
 
 - [ ] **Step 1: Write the failing test `maps prefixed variables to ListVariable`.**
   - Input: a synthetic dashboard with `{name: "db", prefix: "db", default: "*"}` and query `avg:postgresql.connections{$db}`.
-  - Expected: `spec.variables[0].spec.plugin.spec.labelName === "postgresql_database_name"`, and the query contains `postgresql_database_name=~"$db"`.
-- [ ] **Step 2: Implement it.** Then **Step 3:** run `npm test`; it must PASS.
+  - Expected: `spec.variables[0].spec.plugin.spec.labelName === "postgresql_database_name"`, and the query contains `postgresql_database_name=~"^($db)$"`.
+- [ ] **Step 2: Implement it.** Then **Step 3:** run `uv run migrator test`; it must PASS.
 - [ ] **Step 4: Gate.** Until plan 07 Task 1 confirms that Dash0 renders `ListVariable`, record it in the report as an info `OPTION_IGNORED` note: "variable rendering unverified in Dash0". Commit.
 
 ### Task 7: More widget types
@@ -168,8 +168,8 @@ This collapses target series to the Datadog series grain. It handles both resour
 The types are `note`, `query_value` and `group`.
 
 **Files:**
-- Modify: `dashboard.ts`
-- Test: `tests/datadog/dashboard.test.ts`
+- Modify: `dashboard.py`
+- Test: `tests/datadog/test_dashboard.py`
 
 **Rules:**
 
@@ -181,19 +181,19 @@ The types are `note`, `query_value` and `group`.
   - `note becomes Markdown`.
   - `query_value maps aggregator to calculation`.
   - `group children become a titled grid`. The child key is `widget-0-1`.
-- [ ] **Step 2: Implement it.** Then **Step 3:** run `npm test`; it must PASS. Group flattening changes the "Overview" item counts, so update any earlier test that asserts them.
+- [ ] **Step 2: Implement it.** Then **Step 3:** run `uv run migrator test`; it must PASS. Group flattening changes the "Overview" item counts, so update any earlier test that asserts them.
 - [ ] **Step 4: Gate.** The plugin kinds `Markdown` and `StatChart` must be confirmed by plan 07 Task 1 before they're marked "renders in Dash0" in `docs/STATUS.md`. Commit.
 
 ### Task 8: Legend names
 
 - [ ] **Step 1: Write the failing test `group-by sets seriesNameFormat`.** The golden connections panel query gets `seriesNameFormat: "{{postgresql_database_name}}"`. With several labels, join them as `"{{a}} / {{b}}"`.
-- [ ] **Step 2: Implement it** in `dashboard.ts`, from `CompiledQuery.groupLabels` (or from the formula's group labels). Then **Step 3:** run `npm test`; it must PASS. Commit.
+- [ ] **Step 2: Implement it** in `dashboard.py`, from `CompiledQuery.groupLabels` (or from the formula's group labels). Then **Step 3:** run `uv run migrator test`; it must PASS. Commit.
 
 ### Task 9: Golden P1
 
 **Files:**
 - Create: `fixtures/expected/postgres-p1/`
-- Test: `tests/golden.test.ts` (new case)
+- Test: `tests/test_golden.py` (new case)
 
 - [ ] **Step 1: Write the failing test `postgres p1 golden`**, using the current `mappings/datadog/postgres.json`.
   - Translated "Metrics" widgets: 0, 1, 2, 4, 6, 8.
@@ -201,5 +201,5 @@ The types are `note`, `query_value` and `group`.
   - Blocked: widget 3 (`MISSING_METRIC_MAPPING`, `system.io.util`), widget 5, and widget 7 (`MISSING_METRIC_MAPPING`, `system.mem.usable`).
   - Add `cpu widget stays blocked on guest`: widget 5's error is exactly one `MISSING_METRIC_MAPPING`, for `system.cpu.guest`.
   - "Overview" is `partial`. Record the exact translated and blocked counts after the first run, review them by hand, and write them into the test.
-- [ ] **Step 2: Generate and review the expected tree, as in plan 04 Task 4.** Run `npm test`; it must PASS.
+- [ ] **Step 2: Generate and review the expected tree, as in plan 04 Task 4.** Run `uv run migrator test`; it must PASS.
 - [ ] **Step 3: Live read-only check** of the widget 0, 4, 6 and 8 queries in Dash0 (dataset `default`). Record the results in `docs/STATUS.md`. Commit.

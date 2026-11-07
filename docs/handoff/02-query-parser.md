@@ -6,7 +6,7 @@
 
 **Architecture:** A hand-written scanner with one character index, over the bounded grammar below. There are no regex replacements and no partial acceptance. Functions such as `.rollup()` are parsed so later stages can reject them precisely. Anything outside the grammar is an error.
 
-**Tech Stack:** TypeScript, vitest.
+**Tech Stack:** Python 3.13 (uv), pytest.
 
 **Spec:** [00-context.md](00-context.md) §2 (rule 3) and §6.
 
@@ -53,14 +53,14 @@ arg         := [A-Za-z0-9_.'-]+
 ### Task 1: Model and parser
 
 **Files:**
-- Create: `src/source/datadog/model.ts`, `src/source/datadog/parse-query.ts`
-- Test: `tests/datadog/parse-query.test.ts`
+- Create: `src/migrator/source/datadog/model.py`, `src/migrator/source/datadog/parse_query.py`
+- Test: `tests/datadog/test_parse_query.py`
 
 **Interfaces:**
 - Produces:
 
 ```ts
-// model.ts
+// model.py
 export type SpaceAggregator = "avg" | "sum" | "min" | "max";
 export type TagFilter = { kind: "tag"; key: string; value: string } | { kind: "variable"; name: string };
 export interface QueryFunction { name: string; args: string[] }
@@ -68,7 +68,7 @@ export interface MetricQuery { aggregator: SpaceAggregator | null; metric: strin
 export type ParseResult =
   | { ok: true; query: MetricQuery }
   | { ok: false; code: "UNSUPPORTED_QUERY_SYNTAX" | "UNSUPPORTED_QUERY_FUNCTION"; offset: number; message: string };
-// parse-query.ts
+// parse_query.py
 export function parseMetricQuery(text: string): ParseResult;
 ```
 
@@ -118,7 +118,7 @@ describe("parseMetricQuery", () => {
 });
 ```
 
-- [ ] **Step 2: Run it.** Run `npx vitest run tests/datadog/parse-query.test.ts`. It must FAIL because the module can't be found.
+- [ ] **Step 2: Run it.** Run `uv run migrator test tests/datadog/test_parse_query.py`. It must FAIL because the module can't be found.
 - [ ] **Step 3: Implement `parseMetricQuery`** as a recursive-descent scanner over the grammar above.
   - Error messages:
     - syntax: `Unexpected '<char>' at offset <n>.`, or `Unexpected end of query at offset <n>.`;
@@ -130,7 +130,7 @@ describe("parseMetricQuery", () => {
 ### Task 2: Golden corpus check
 
 **Files:**
-- Test: `tests/datadog/parse-query.golden.test.ts`
+- Test: `tests/datadog/test_parse_query_golden.py`
 
 **Interfaces:**
 - Consumes: `parseMetricQuery`, and the pinned fixture from plan 01.
@@ -144,5 +144,5 @@ describe("parseMetricQuery", () => {
   - Walk "Postgres - Overview" recursively, including group children, and collect every `queries[*].query` whose `data_source` is `metrics`.
   - Assert the exact number of `ok:false` results, and the list of failing `code`s.
   - First run it once, record the observed numbers in the test, and review them by hand. That turns the corpus into a regression baseline for later grammar changes.
-- [ ] **Step 3: Verify.** Run `npx vitest run tests/datadog`. It must PASS.
+- [ ] **Step 3: Verify.** Run `uv run migrator test tests/datadog`. It must PASS.
 - [ ] **Step 4: Commit.** `git commit -am "test: golden query corpus for the parser"`.
