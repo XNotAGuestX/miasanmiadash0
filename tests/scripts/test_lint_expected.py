@@ -5,9 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import pytest
-
 import lint_expected as le
+import pytest
 import verify_common as vc
 
 KEY = "postgres/postgresql_dashboard"
@@ -227,14 +226,17 @@ def test_warning_drift_is_a_nit() -> None:
 # --------------------------------------------------------------------------- real dashboards and files
 
 
-def test_review_md_known_deviations_are_flagged() -> None:
-    """fixtures/expected/REVIEW.md section A: `100 *` scaling, nested max(avg by ...), `/ 1e7`."""
+def test_review_md_known_deviations_are_fixed_in_the_expectations() -> None:
+    """fixtures/expected/REVIEW.md section A: `100 *` scaling, nested max(avg by ...), `/ 1e7`.
+
+    The expectations regenerated in 2d90844 no longer contain these deviations, so lint
+    passes them now. The rules themselves stay covered by test_invented_constant_blocks
+    and test_nested_aggregation_is_a_nit on synthetic requests."""
     pg = {r["source_path"]: r for r in le.lint_dashboard(KEY)}
-    assert pg["widgets[3].definition.requests[0]"]["verdict"] == "block"
-    w6 = pg["widgets[6].definition.requests[0]"]
-    assert w6["verdict"] == "block" and any("nested aggregation" in r for r in w6["reasons"])
+    assert pg["widgets[3].definition.requests[0]"]["verdict"] == "pass"
+    assert pg["widgets[6].definition.requests[0]"]["verdict"] == "pass"
     docker = {r["source_path"]: r for r in le.lint_dashboard("docker_daemon/docker_dashboard")}
-    assert docker["widgets[6].definition.requests[0]"]["verdict"] == "block"
+    assert docker["widgets[6].definition.requests[0]"]["verdict"] == "pass"
     # A1: no dedup grain on the connections metric (plan 05 Task 4).
     w1 = pg["widgets[1].definition.requests[0]"]
     assert w1["verdict"] == "nit" and any("grain" in r for r in w1["reasons"])

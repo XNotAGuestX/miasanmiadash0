@@ -59,7 +59,7 @@ ignore_missing_imports = true
 module = [
     "build_expected", "render_oracle_prompt", "run_oracle", "build_otel_catalog",
     "verify_common", "lint_expected", "mutate_expected", "crosscheck", "triage",
-    "render_review_dashboard",
+    "render_review_dashboard", "render_judge_prompt",
 ]
 ignore_missing_imports = true
 
@@ -83,3 +83,7 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# Oracle tooling tests (#88): long literal prompts, PromQL and fixture strings.
+"tests/scripts/*" = ["E501"]

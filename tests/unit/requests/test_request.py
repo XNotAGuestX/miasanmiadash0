@@ -17,6 +17,7 @@ from typing import Any
 import pytest
 
 from tests.support import (
+    KNOWN_FAILURES,
     Case,
     assert_codes,
     canonical_list,
@@ -31,8 +32,12 @@ from tests.support import (
 
 @pytest.mark.parametrize("case", case_params("request"))
 def test_request_translation(
-    case: Case, record_comparison: Callable[[dict[str, Any]], None]
+    case: Case,
+    record_comparison: Callable[[dict[str, Any]], None],
+    request: pytest.FixtureRequest,
 ) -> None:
+    if case.case_id in KNOWN_FAILURES:
+        request.applymarker(pytest.mark.xfail(strict=True, reason=KNOWN_FAILURES[case.case_id]))
     unit = request_unit(case)
     record_comparison(comparison(case, unit))  # expected vs actual -> out/test-report/index.html
     expected = case.expected

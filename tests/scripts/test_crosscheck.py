@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import shutil
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
-
-import pytest
-import yaml
+from typing import Any, cast
 
 import crosscheck as cc
+import pytest
 import verify_common as vc
+import yaml
 
 KEY = "postgres/postgresql_dashboard"  # no rule-blocked requests
 RULE_KEY = "nginx/NGINX-Overview_dashboard"  # one request blocked by the rule overlay
@@ -25,10 +25,10 @@ def ok_source(verdict: str = "pass", reasons: list[str] | None = None) -> dict[s
 class FakeJudge:
     """Answers from `reply(system, user, schema)` (or a fixed answer); records every call."""
 
-    def __init__(self, reply: Callable[[str, str, dict], Any] | Any = None, model: str = cc.MODEL):
+    def __init__(self, reply: Callable[[str, str, dict[str, Any]], Any] | Any = None, model: str = cc.MODEL):
         self.model = model
         self.reply = reply if reply is not None else (lambda s, u, schema: ok_source())
-        self.calls: list[tuple[str, str, dict]] = []
+        self.calls: list[tuple[str, str, dict[str, Any]]] = []
 
     async def complete(self, system: str, user: str, schema: dict[str, Any]) -> Any:
         self.calls.append((system, user, schema))
@@ -56,7 +56,7 @@ def tmp_verify(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def verdict_doc(key: str, verifier: str, *, mutations: bool = False) -> dict[str, Any]:
-    return yaml.safe_load(vc.verdict_path(key, verifier, mutations=mutations).read_text())
+    return cast(dict[str, Any], yaml.safe_load(vc.verdict_path(key, verifier, mutations=mutations).read_text()))
 
 
 # --------------------------------------------------------------------------- source

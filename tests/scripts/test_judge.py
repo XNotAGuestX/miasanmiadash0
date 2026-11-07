@@ -6,15 +6,25 @@ from __future__ import annotations
 import asyncio
 import json
 import re
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
-import yaml
-
 import render_judge_prompt as rjp
 import run_oracle as ro
 import verify_common as vc
-from tests.scripts.test_run_oracle import THREAD_A, THREAD_B, FakeAgent0, fenced, good_answer, no_sleep, started
+import yaml
+
+from tests.scripts.test_run_oracle import (
+    THREAD_A,
+    THREAD_B,
+    FakeAgent0,
+    fenced,
+    good_answer,
+    no_sleep,
+    started,
+)
 
 KEY = "postgres/postgresql_dashboard"
 ALL_KEYS = [s.key for s in ro.load_input(ro.DEFAULT_INPUT)]
@@ -24,7 +34,7 @@ def judge_job(key: str = KEY) -> ro.Job:
     return ro.Job(ro.CaseSpec(key, "default", "advanced", "high"), rjp.render(key), None)
 
 
-def good_items(key: str = KEY) -> list[dict]:
+def good_items(key: str = KEY) -> list[dict[str, Any]]:
     items = []
     for i, r in enumerate(ro.load_case(key)["requests"]):
         verdict = ("pass", "nit", "block")[i % 3]
@@ -45,10 +55,11 @@ def good_judge_answer(key: str = KEY) -> str:
     return yaml.safe_dump(good_items(key), sort_keys=False)
 
 
-def requests_block(prompt: str) -> list[dict]:
+def requests_block(prompt: str) -> list[dict[str, Any]]:
     start = re.search(r"^Requests \(\d+\):\n", prompt, re.MULTILINE)
+    assert start is not None
     end = prompt.index("\nOTel metric list (")
-    return yaml.safe_load(prompt[start.end() : end])
+    return cast(list[dict[str, Any]], yaml.safe_load(prompt[start.end() : end]))
 
 
 # --------------------------------------------------------------------------- prompt
@@ -92,6 +103,14 @@ def test_cli_writes_the_prompt_under_the_verify_dir(tmp_path: Path, monkeypatch:
     assert capsys.readouterr().out.startswith("Read-only task")
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "fixtures/oracle/verify/postgres/postgresql_dashboard/judge.prompt.md was recorded "
+        "before the expectations were regenerated in 2d90844 (I/O wait lost its `100 *`); "
+        "re-run the judge to re-record it (#100)"
+    ),
+)
 def test_recorded_judge_prompt_matches_the_renderer() -> None:
     recorded = vc.VERIFY_DIR / KEY / "judge.prompt.md"
     if not recorded.is_file():
@@ -155,7 +174,7 @@ def judge_runner(tmp_path: Path, agent: object, **opts) -> tuple[ro.Runner, ro.S
     state = ro.State(tmp_path / "state.judge.json")
     built: list[str] = []
     runner = ro.Runner(
-        agent,  # type: ignore[arg-type]
+        agent,
         state,
         ro.Options(**{"backoff_s": 0, **opts}),
         mode=ro.get_mode("judge"),
@@ -236,9 +255,9 @@ def write_input(tmp_path: Path, keys: list[str]) -> Path:
 
 
 @pytest.fixture
-def fake_mcp(monkeypatch: pytest.MonkeyPatch) -> dict:
+def fake_mcp(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     """main() with a fake Agent0 and a recorder in place of build_expected."""
-    holder: dict = {"built": []}
+    holder: dict[str, Any] = {"built": []}
     monkeypatch.setenv("DASH0_AUTH_TOKEN", "test-token")
     monkeypatch.setenv("DASH0_MCP_URL", "http://127.0.0.1:9/mcp")
     monkeypatch.setattr(ro.McpAgent0, "over_http", lambda *a, **k: holder["agent"])
@@ -247,8 +266,8 @@ def fake_mcp(monkeypatch: pytest.MonkeyPatch) -> dict:
     return holder
 
 
-def _no_backoff(init):
-    def wrapped(self, *args, **kwargs):
+def _no_backoff(init: Callable[..., None]) -> Callable[..., None]:
+    def wrapped(self: object, *args: Any, **kwargs: Any) -> None:
         kwargs["sleep"] = no_sleep
         kwargs["log"] = lambda _: None
         init(self, *args, **kwargs)
@@ -256,7 +275,7 @@ def _no_backoff(init):
     return wrapped
 
 
-def test_out_dir_writes_there_and_never_builds(tmp_path: Path, fake_mcp: dict, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_out_dir_writes_there_and_never_builds(tmp_path: Path, fake_mcp: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
     key = "nginx/NGINX-Metrics_dashboard"
     sentinel = tmp_path / "agent0-default"
     monkeypatch.setattr(ro, "AGENT0_DIR", sentinel)
@@ -271,7 +290,7 @@ def test_out_dir_writes_there_and_never_builds(tmp_path: Path, fake_mcp: dict, m
     assert fake_mcp["built"] == [] and not sentinel.exists()
 
 
-def test_answer_mode_cli_still_builds(tmp_path: Path, fake_mcp: dict, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_answer_mode_cli_still_builds(tmp_path: Path, fake_mcp: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
     key = "nginx/NGINX-Metrics_dashboard"
     monkeypatch.setattr(ro, "AGENT0_DIR", tmp_path / "agent0")
     monkeypatch.setattr(ro, "DEFAULT_STATE", tmp_path / "agent0" / "state.json")
@@ -280,7 +299,7 @@ def test_answer_mode_cli_still_builds(tmp_path: Path, fake_mcp: dict, monkeypatc
     assert fake_mcp["built"] == [key] and (tmp_path / "agent0" / key / "answer.yaml").is_file()
 
 
-def test_judge_mode_cli_uses_the_verify_dir(tmp_path: Path, fake_mcp: dict, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_judge_mode_cli_uses_the_verify_dir(tmp_path: Path, fake_mcp: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(ro, "VERIFY_DIR", tmp_path / "verify")
     monkeypatch.setattr(ro, "DEFAULT_JUDGE_STATE", tmp_path / "verify" / "state.judge.json")
     fake_mcp["agent"] = FakeAgent0([started(THREAD_A)], [fenced(good_judge_answer(), THREAD_A)])

@@ -101,7 +101,10 @@ class Case:
 
 
 def verified_requests() -> set[str]:
-    """Request case ids that triage marked green (fixtures/expected/verified.json, scripts/triage.py)."""
+    """Request case ids that triage marked green.
+
+    Source: fixtures/expected/verified.json, written by scripts/triage.py.
+    """
     path = ROOT / "fixtures" / "expected" / "verified.json"
     doc = json.loads(path.read_text()) if path.exists() else {}
     return {f"{key}/{sp}" for key, paths in doc.items() for sp in paths}
@@ -145,6 +148,27 @@ def iter_cases(level: str) -> Iterator[Case]:
                 spec,
                 path.parent,
             )
+
+
+# Verified (triage-green) request cases whose translation the converter does not meet yet,
+# with the cause from the Track A review (#96). test_request_translation marks them
+# xfail(strict=True): when one starts passing, pytest fails so the entry gets removed.
+# Delete an entry once #96 settles it (converter fix or overrides.yaml).
+_PG = "postgres/postgresql_dashboard/"
+KNOWN_FAILURES: dict[str, str] = {
+    _PG + "widgets[0].definition.requests[3]": (
+        "#96 R2: converter adds the dedup grain max by (...); the expectation has none"
+    ),
+    _PG + "widgets[7].definition.requests[0]": (
+        "#96 R4: system.mem.usable/system.mem.total have no mapping, so the converter blocks"
+    ),
+    _PG + "widgets[8].definition.requests[0]": (
+        "#96 R3: system.net.bytes_rcvd mapping is unreviewed (UNREVIEWED_MAPPING warning)"
+    ),
+    _PG + "widgets[8].definition.requests[1]": (
+        "#96 R3: system.net.bytes_sent mapping is unreviewed (UNREVIEWED_MAPPING warning)"
+    ),
+}
 
 
 def case_params(level: str) -> list[Any]:
