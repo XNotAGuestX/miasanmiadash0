@@ -119,6 +119,45 @@ def test_appends_fixed_matchers_sorted_after_source_filters() -> None:
     )
 
 
+def test_rate_window_replaces_rate_interval() -> None:
+    m = mapping(
+        system__net__bytes_rcvd=entry(
+            kind="rate",
+            target={"name": "system.network.io", "type": "sum"},
+            matchers={"system_network_direction": "receive"},
+            rateWindow="5m",
+        )
+    )
+    promql = ok("sum:system.net.bytes_rcvd{$scope}", m).promql
+    assert promql == (
+        'sum (rate({otel_metric_name="system.network.io", otel_metric_type="sum", '
+        'system_network_direction="receive"}[5m]))'
+    )
+    assert check_promql_syntax(promql) is None
+
+
+def test_rate_window_is_validated() -> None:
+    base = {
+        "kind": "rate",
+        "target": {"name": "system.network.io", "type": "sum"},
+        "sourceUnit": "byte/second",
+        "targetUnit": "byte/second",
+        "scale": 1.0,
+        "labels": {},
+        "ref": "r",
+        "reviewed": None,
+    }
+    for good in ("5m", "120s", "1h"):
+        raw = {"version": 1, "source": "datadog", "metrics": {"m": {**base, "rateWindow": good}}}
+        assert isinstance(parse_mapping(raw), MappingOk), good
+    for bad in ("", "0m", "5", "5min", "1m30s", "$__rate_interval", 5):
+        raw = {"version": 1, "source": "datadog", "metrics": {"m": {**base, "rateWindow": bad}}}
+        assert not parse_mapping(raw).ok, bad
+    gauge = {**base, "kind": "gauge", "rateWindow": "5m"}
+    raw = {"version": 1, "source": "datadog", "metrics": {"m": gauge}}
+    assert not parse_mapping(raw).ok  # only rate entries take a window
+
+
 IOWAIT = entry(
     target={"name": "system.cpu.utilization", "type": "gauge"},
     labels={"host": "host_name"},
@@ -256,10 +295,12 @@ def test_postgres_mapping_dedups_per_instance_and_database() -> None:
 
 def test_postgres_network_keeps_every_interface_and_has_no_grain() -> None:
     """Datadog's network check excludes no interface by default (excluded_interfaces
-    defaults to []), so loopback stays in, and no grain collapses interfaces."""
+    defaults to []), so loopback stays in, and no grain collapses interfaces. The
+    fixed 5m range is the entry's rateWindow: system.network.io is reported every
+    60 s, too sparse for $__rate_interval (#90)."""
     r = ok("sum:system.net.bytes_rcvd{*}", _postgres_mapping())
     assert r.promql == (
         'sum (rate({otel_metric_name="system.network.io", otel_metric_type="sum", '
-        'system_network_direction="receive"}[$__rate_interval]))'
+        'system_network_direction="receive"}[5m]))'
     )
     assert check_promql_syntax(r.promql) is None

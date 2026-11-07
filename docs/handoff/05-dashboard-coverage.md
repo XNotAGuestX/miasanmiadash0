@@ -17,7 +17,7 @@
 - **Freeze the plan 04 golden first** (Task 0). `fixtures/expected/postgres-p0/` must keep passing, using a frozen mapping copy.
 - New mapping entries need a `ref` (the metrics_mapping row, or a doc URL) and `reviewed: null` until a human reviews them.
 - The rendering shapes are exact:
-  - rate: `rate(<selector>[$__rate_interval])`;
+  - rate: `rate(<selector>[$__rate_interval])`, or `rate(<selector>[<rateWindow>])` when the entry sets the optional `rateWindow` (a fixed range such as `5m`, `^[1-9][0-9]*[smh]$`). Set it for metrics reported too rarely for Dash0's `$__rate_interval` (`rate()` needs two samples in its range), from the measured collection interval; it is part of the reviewed entry ([#90](https://github.com/XNotAGuestX/thinchackdash/issues/90));
   - scale: `(<expr>) * <scale>`;
   - grain: `<agg> [by (g)] (<grainAgg> by (<g ∪ grain>) (<inner>))`.
 
