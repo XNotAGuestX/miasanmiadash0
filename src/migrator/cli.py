@@ -39,6 +39,26 @@ def _cmd_convert(args: argparse.Namespace) -> int:
     return result.exit_code
 
 
+def _cmd_publish(args: argparse.Namespace) -> int:
+    import os
+
+    from migrator.publish import PublishOptions, run_publish
+
+    try:
+        run = run_publish(
+            PublishOptions(
+                source_dir=args.source_dir, dry_run=args.dry_run, allow_partial=args.allow_partial
+            ),
+            os.environ,
+        )
+    except InputError as err:
+        print(f"error: {err}", file=sys.stderr)
+        return 1
+    for line in run.lines:
+        print(line)
+    return run.exit_code
+
+
 def _run_tool(argv: list[str]) -> int:
     return subprocess.call([sys.executable, "-m", *argv])
 
@@ -75,6 +95,13 @@ def build_parser() -> argparse.ArgumentParser:
     conv.add_argument("--format", choices=["json", "yaml"], default="json")
     conv.add_argument("--project", default="datadog-migration", help="Perses project name")
 
+    pub = sub.add_parser("publish", help="import converted artifacts into Dash0 (create-only)")
+    pub.add_argument("--from", dest="source_dir", required=True, help="a convert output directory")
+    pub.add_argument("--dry-run", action="store_true", help="print the plan; send nothing")
+    pub.add_argument(
+        "--allow-partial", action="store_true", help="also publish partially translated dashboards"
+    )
+
     sub.add_parser("test", help="run the test suite; extra args go to pytest")
     sub.add_parser("typecheck", help="run mypy")
     sub.add_parser("lint", help="run ruff")
@@ -95,6 +122,8 @@ def main(argv: list[str] | None = None) -> int:
         args, extra = parser.parse_known_args(argv[:1])
         return passthrough[argv[0]](args, argv[1:])
     args = parser.parse_args(argv)
+    if args.command == "publish":
+        return _cmd_publish(args)
     return _cmd_convert(args)
 
 
