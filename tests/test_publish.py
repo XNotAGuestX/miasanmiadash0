@@ -162,8 +162,19 @@ def test_unknown_result_blocks_republish(run_dir: Path) -> None:
     assert any(line.startswith(f"REFUSED {CHECK}") for line in r.lines)
 
 
+def test_server_error_blocks_republish(run_dir: Path) -> None:
+    # A 5xx may have created the asset, so it is "unknown" and a rerun refuses it.
+    run = run_publish(PublishOptions(str(run_dir)), ENV, FakeSend(HttpResponse(500, b"oops")))
+    assert run.exit_code == 1
+    assert load_receipts(run_dir)[0].status == "unknown"
+    send = FakeSend()
+    again = run_publish(PublishOptions(str(run_dir)), ENV, send)
+    assert send.requests == []
+    assert any(line.startswith("REFUSED") for line in again.lines)
+
+
 def test_failed_asset_is_retried_on_next_run(run_dir: Path) -> None:
-    run_publish(PublishOptions(str(run_dir)), ENV, FakeSend(HttpResponse(500, b"oops")))
+    run_publish(PublishOptions(str(run_dir)), ENV, FakeSend(HttpResponse(400, b"bad")))
     send = FakeSend(rule_ok("r1"))
     run_publish(PublishOptions(str(run_dir)), ENV, send)
     assert len(send.requests) == 1
