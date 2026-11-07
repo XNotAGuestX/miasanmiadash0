@@ -65,7 +65,7 @@ From now on, every task is tracked as a GitHub issue in `XNotAGuestX/thinchackda
 ### Definition of Done (every task issue)
 
 - Every acceptance criterion is met, with evidence (test names, commands and their real output) in the PR or a closing comment.
-- `npm test` and `npm run typecheck` pass; new behaviour has focused tests.
+- `uv run migrator check` passes (ruff, mypy --strict, pytest); new behaviour has focused tests.
 - Conversion stays deterministic and LLM-free; no timestamps, absolute paths or environment data in artifacts.
 - Changed expected trees are regenerated in the same commit and reviewed by the other track.
 - No secrets, raw live responses or run artifacts committed.
