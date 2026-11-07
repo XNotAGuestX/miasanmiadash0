@@ -31,6 +31,7 @@ Read existing code before changing it. The handoff describes planned behavior; s
 
 - Use neutral names such as `source`, `parser`, `compiler`, `mapping`, `destination`, and `report`. Avoid agent-specific modules or permanently assigning a subsystem to a tool.
 - Prefer one package, pure translation functions, explicit data types, and a small number of modules.
+- Manage the Python runtime and all requirements with uv only: `uv sync` (interpreter from `.python-version`, uv-managed only; dependencies from `uv.lock`), `uv run <cmd>`, `uv add [--group dev] <pkg>`. Don't use pip, `python -m venv`, requirements files, or a system Python. Commit `uv.lock` and `.python-version` together with `pyproject.toml` changes.
 - Select the source vendor through the single `SourceProvider` interface and static provider table (`--source datadog`); see the handoff's source provider interface section. Each provider owns its source-specific parsing, mapping, and translation; a vendor-neutral intermediate model is not required. Keep shared CLI, report, manifest, validation, and destination code free of source-specific logic. The static table is not a plugin framework: no dynamic loading, discovery, or config-driven registration.
 - Keep network I/O out of the parser/compiler. Offline compilation must work without credentials.
 - Parse the documented query subset completely. Never translate a recognized prefix and ignore trailing syntax. Regex may tokenize a bounded grammar; chained string replacements are not a semantic parser.

@@ -1,0 +1,253 @@
+# Agent0 answer, verbatim. Asked 2026-11-07 ~17:40 local (Dash0 UI chat, Advanced/High), prompt: prompt.md
+# (sent with the extra line "Postgres and host data ... only arrived between about 14:05 and 15:21 UTC today").
+# Provenance only, never test input.
+# Only edit: the last `notes` value was wrapped in single quotes (Agent0's plain scalar contained ': ', invalid YAML).
+- source_path: 'widgets[1].definition.widgets[0].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset. postgresql.percent_usage_connections does not exist. Rebuilding it as postgresql.backends / postgresql.connection.max gives a different number (Datadog counts every pg_stat_activity row; postgresql.backends is per-database numbackends from pg_stat_database, which leaves out background and replication processes).
+  otel_metrics: []
+  labels: {}
+  live_check: n/a (blocked)
+  notes: The approximation max(sum by (host_name)(backends) / on(host_name) connection.max) * 100 returns 1 series (≈8%) over 14:05–15:21Z, but it is not the same metric.
+
+- source_path: 'widgets[1].definition.widgets[1].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum(rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum"}[$__rate_interval])) / (sum(rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum"}[$__rate_interval])) + sum(rate({otel_metric_name="postgresql.tup_returned", otel_metric_type="sum"}[$__rate_interval]))) * 100'
+  otel_metrics: [postgresql.tup_fetched, postgresql.tup_returned]
+  labels: {host: host_name}
+  live_check: yes, 1 series (14:05–15:21Z, ≈10.8–12.3%)
+  notes: Both sides are pg_stat_database tup_fetched/tup_returned per database, the same source as Datadog rows_fetched/rows_returned, which are also rates. The query_value reduction over time (Datadog default avg) is set in the panel, not in PromQL.
+
+- source_path: 'widgets[2].definition.widgets[0].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum({otel_metric_name="postgresql.rows", otel_metric_type="sum", state="dead"})'
+  otel_metrics: [postgresql.rows]
+  labels: {db: postgresql_database_name, table: postgresql_table_name, host: host_name}
+  live_check: yes, 1 series (14:05–15:21Z, value 0)
+  notes: postgresql.rows{state="dead"} is pg_stat_user_tables n_dead_tup, the same source as Datadog dead_rows. It is a non-monotonic sum used as a gauge, so no rate(). postgresql_table_name values carry a schema prefix (e.g. "accounting.order"), so a non-default $table value would need that prefix.
+
+- source_path: 'widgets[2].definition.widgets[1].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric for query1. postgresql.total_size (pg_total_relation_size, which includes indexes and TOAST) has no counterpart; postgresql.table.size is pg_relation_size of the main table only (8–32 KiB here), so the values would not match.
+  otel_metrics: []
+  labels: {}
+  live_check: n/a (blocked)
+  notes: query2 (postgresql.index.scans), query3 (postgresql.rows state=live) and query4 (postgresql.rows state=dead) could be translated, but the request is all-or-nothing. postgresql.index.scans uses bare table names ("order") while postgresql.rows uses schema-qualified ones ("accounting.order"), so the table-table join would need a label_replace.
+
+- source_path: 'widgets[2].definition.widgets[2].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset (no temp-bytes or temp-files metric in the postgresql.* catalog)
+  otel_metrics: []
+  labels: {}
+  live_check: n/a (blocked)
+  notes: ''
+
+- source_path: 'widgets[2].definition.widgets[3].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg by (postgresql_index_name) (rate({otel_metric_name="postgresql.index.scans", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [postgresql.index.scans]
+  labels: {index: postgresql_index_name, db: postgresql_database_name, host: host_name}
+  live_check: yes, 4 series (14:05–15:21Z; order_pkey, orderitem_pkey, products_pkey, shipping_pkey)
+  notes: Per-index idx_scan from pg_stat_user_indexes, the same source as Datadog index_scans (which has an index tag); Datadog submits it as a per-second rate. Sorting descending and the toplist limit are set in the panel.
+
+- source_path: 'widgets[2].definition.widgets[4].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg by (postgresql_index_name) (rate({otel_metric_name="postgresql.index.scans", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [postgresql.index.scans]
+  labels: {index: postgresql_index_name, db: postgresql_database_name, host: host_name}
+  live_check: yes, 4 series (14:05–15:21Z)
+  notes: Same query as the previous request; ascending sort is set in the panel. Do not use bottomk(), which would drop series.
+
+- source_path: 'widgets[2].definition.widgets[5].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric. postgresql.total_size (pg_total_relation_size) has no counterpart; postgresql.table.size is pg_relation_size (main table only), a different measurement.
+  otel_metrics: []
+  labels: {}
+  live_check: n/a (blocked)
+  notes: postgresql.table.size by postgresql_table_name returns 4 series but under-reports compared with total_size.
+
+- source_path: 'widgets[2].definition.widgets[6].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg by (postgresql_table_name) (label_replace({otel_metric_name="postgresql.rows", otel_metric_type="sum", state="live"}, "postgresql_table_name", "$1", "postgresql_table_name", "[^.]*[.](.*)"))'
+  otel_metrics: [postgresql.rows]
+  labels: {table: postgresql_table_name, host: host_name}
+  live_check: yes, 4 series (14:05–15:21Z; order, orderitem, products, shipping)
+  notes: n_live_tup from pg_stat_user_tables, the same source as Datadog live_rows. label_replace strips the schema prefix so group keys match Datadog's table tag (relname), and same-named tables in different schemas are merged as Datadog does. Without it the series are "accounting.order" and so on.
+
+- source_path: 'widgets[3].definition.widgets[0].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset (no locks metric with lock_mode/table)
+  otel_metrics: []
+  labels: {}
+  live_check: n/a (blocked)
+  notes: top(..., 5, 'mean', 'desc') would also need a mean-ranked top-N, which plain topk does not provide over a range.
+
+- source_path: 'widgets[3].definition.widgets[1].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset (no locks metric)
+  otel_metrics: []
+  labels: {}
+  live_check: n/a (blocked)
+  notes: ''
+
+- source_path: 'widgets[3].definition.widgets[2].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'max by (postgresql_database_name) (increase({otel_metric_name="postgresql.deadlocks", otel_metric_type="sum"}[$__interval]))'
+  otel_metrics: [postgresql.deadlocks]
+  labels: {db: postgresql_database_name, host: host_name}
+  live_check: yes, 2 series (14:05–15:21Z; astronomy_db, postgres; all 0)
+  notes: pg_stat_database deadlocks, a monotonic counter. .as_count() (count per bucket) maps to increase() over the step ($__interval), not rate(). PromQL increase() extrapolates, so non-integer values are possible where Datadog sums exact deltas.
+
+- source_path: 'widgets[4].definition.widgets[0].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_inserted", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [postgresql.tup_inserted]
+  labels: {db: postgresql_database_name, host: host_name}
+  live_check: yes, 2 series (14:05–15:21Z; astronomy_db, postgres)
+  notes: Database-level pg_stat_database tup_inserted. Datadog also emits rows_inserted per table for configured relations; if any were configured, Datadog's avg would mix those in. The per-table OTel postgresql.operations{operation="ins"} was not used.
+
+- source_path: 'widgets[4].definition.widgets[1].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_updated", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [postgresql.tup_updated]
+  labels: {db: postgresql_database_name, host: host_name}
+  live_check: yes, 2 series (14:05–15:21Z)
+  notes: Database-level pg_stat_database tup_updated; same per-table caveat as rows_inserted.
+
+- source_path: 'widgets[4].definition.widgets[2].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_inserted", otel_metric_type="sum"}[$__rate_interval]))'
+    - 'avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_updated", otel_metric_type="sum"}[$__rate_interval]))'
+    - 'avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_deleted", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [postgresql.tup_inserted, postgresql.tup_updated, postgresql.tup_deleted]
+  labels: {db: postgresql_database_name, host: host_name}
+  live_check: yes, 2/2/2 series (14:05–15:21Z)
+  notes: Table columns join on postgresql_database_name. Same database-level vs per-table caveat as the single-metric requests.
+
+- source_path: 'widgets[4].definition.widgets[3].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_deleted", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [postgresql.tup_deleted]
+  labels: {db: postgresql_database_name, host: host_name}
+  live_check: yes, 2 series (14:05–15:21Z)
+  notes: Database-level pg_stat_database tup_deleted.
+
+- source_path: 'widgets[4].definition.widgets[4].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.operations", otel_metric_type="sum", operation="hot_upd"}[$__rate_interval]))'
+  otel_metrics: [postgresql.operations]
+  labels: {db: postgresql_database_name, host: host_name}
+  live_check: yes, 1 series (14:05–15:21Z; astronomy_db only, value 0)
+  notes: n_tup_hot_upd from pg_stat_user_tables, which is per table in both systems. The receiver covers all user tables; Datadog covers only configured relations, so the set being averaged can differ.
+
+- source_path: 'widgets[5].definition.widgets[0].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg by (postgresql_database_name) (max_over_time({otel_metric_name="postgresql.backends", otel_metric_type="sum"}[$__interval]))'
+  otel_metrics: [postgresql.backends]
+  labels: {db: postgresql_database_name, host: host_name}
+  live_check: yes, 2 series (14:05–15:21Z; astronomy_db, postgres)
+  notes: pg_stat_database numbackends, the same source as Datadog postgresql.connections. A non-monotonic sum used as a gauge. .rollup(max) maps to max_over_time over the step, before the space avg.
+
+- source_path: 'widgets[5].definition.widgets[0].definition.requests[1]'
+  outcome: blocked
+  reason: label mismatch. postgresql.connection.max carries no database label (only host and resource attributes), so "min by {db}" cannot reproduce Datadog's per-db series.
+  otel_metrics: []
+  labels: {}
+  live_check: n/a (blocked)
+  notes: min(postgresql.connection.max) returns 1 value (100), but grouped per host rather than per db.
+
+- source_path: 'widgets[5].definition.widgets[1].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'max by (postgresql_database_name) ({otel_metric_name="postgresql.backends", otel_metric_type="sum"})'
+  otel_metrics: [postgresql.backends]
+  labels: {db: postgresql_database_name, host: host_name}
+  live_check: yes, 2 series (14:05–15:21Z; astronomy_db=5, postgres=3)
+  notes: pg_stat_database numbackends. Sorting and limit are set in the toplist panel.
+
+- source_path: 'widgets[6].definition.widgets[0].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric for query2 (no sequential-scans metric in this dataset)
+  otel_metrics: []
+  labels: {}
+  live_check: n/a (blocked)
+  notes: query1 alone could map to avg by (postgresql_database_name)(rate(postgresql.index.scans)).
+
+- source_path: 'widgets[6].definition.widgets[1].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric for query2 (no sequential-scans metric in this dataset)
+  otel_metrics: []
+  labels: {}
+  live_check: n/a (blocked)
+  notes: ''
+
+- source_path: 'widgets[6].definition.widgets[2].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset (no sequential-scans metric)
+  otel_metrics: []
+  labels: {}
+  live_check: n/a (blocked)
+  notes: ''
+
+- source_path: 'widgets[6].definition.widgets[2].definition.requests[1]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset (no sequential-scans metric)
+  otel_metrics: []
+  labels: {}
+  live_check: n/a (blocked)
+  notes: week_before() would map to offset 1w, but the metric is missing; Postgres data in this dataset also only starts today.
+
+- source_path: 'widgets[6].definition.widgets[3].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset (no function-calls metric)
+  otel_metrics: []
+  labels: {}
+  live_check: n/a (blocked)
+  notes: ''
+
+- source_path: 'widgets[7].definition.widgets[0].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset (no replication-delay-bytes or WAL-lag metric)
+  otel_metrics: []
+  labels: {}
+  live_check: n/a (blocked)
+  notes: count_nonzero() would otherwise map to count(... != 0).
+
+- source_path: 'widgets[7].definition.widgets[1].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset (no replication-delay metric)
+  otel_metrics: []
+  labels: {}
+  live_check: n/a (blocked)
+  notes: ''
+
+- source_path: 'widgets[8].definition.widgets[0].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'sum(increase({otel_metric_name="postgresql.bgwriter.checkpoint.count", otel_metric_type="sum", type="scheduled"}[$__interval]))'
+    - 'sum(increase({otel_metric_name="postgresql.bgwriter.checkpoint.count", otel_metric_type="sum", type="requested"}[$__interval]))'
+  otel_metrics: [postgresql.bgwriter.checkpoint.count]
+  labels: {host: host_name}
+  live_check: yes, 1/1 series (14:05–15:21Z)
+  notes: type="scheduled" is checkpoints_timed and type="requested" is checkpoints_req (pg_stat_bgwriter), monotonic counters. .as_count() maps to increase() per step, with extrapolation (non-integer values possible). This metric has no db label; $db defaults to * and is dropped.
+
+- source_path: 'widgets[8].definition.widgets[0].definition.requests[1]'
+  outcome: translated
+  promql:
+    - 'sum(increase({otel_metric_name="postgresql.bgwriter.checkpoint.count", otel_metric_type="sum", type="requested"}[$__interval]))'
+  otel_metrics: [postgresql.bgwriter.checkpoint.count]
+  labels: {host: host_name}
+  live_check: yes, 1 series (14:05–15:21Z)
+  notes: 'Same mapping as formula 2 of requests[0]. Dataset-wide caveat for all requests: every postgresql.* series changes identity (dash0_resource_hash) every ~5–20 min. Simple aggregations keep the right series set, but values in windows that straddle a change can be slightly off (avg mixes fragments; rate/increase lose the boundary delta). Live checks ran with [5m] in place of $__rate_interval/$__interval.'
