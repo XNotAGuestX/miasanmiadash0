@@ -6,13 +6,51 @@ import socket
 import threading
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from typing import cast
+from typing import Any, cast
 
 import pytest
 
 from migrator.destination.dash0 import Dash0Config, Unknown, publish_dashboard
 from migrator.http import HttpRequest, HttpTransportError, urllib_send
 from migrator.target import PersesDashboard
+
+_LOOPBACK = frozenset({"127.0.0.1", "::1", "localhost"})
+_PROXY_VARS = ("http_proxy", "https_proxy", "all_proxy", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY")
+
+
+@pytest.fixture(autouse=True)
+def _no_network(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Override the root guard for this module: allow loopback only.
+
+    These tests need a real local server. Outbound connections stay blocked, and
+    proxy variables are cleared so urllib connects to 127.0.0.1 directly.
+    """
+    for name in _PROXY_VARS:
+        monkeypatch.delenv(name, raising=False)
+    real_create = socket.create_connection
+    real_connect = socket.socket.connect
+
+    def check(address: Any) -> None:
+        host = address[0] if isinstance(address, tuple) else address
+        if host not in _LOOPBACK:
+            raise RuntimeError("only loopback connections are allowed in tests/test_http.py")
+
+    def create_connection(address: Any, *args: Any, **kwargs: Any) -> socket.socket:
+        check(address)
+        return real_create(address, *args, **kwargs)
+
+    def connect(self: socket.socket, address: Any) -> None:
+        check(address)
+        real_connect(self, address)
+
+    monkeypatch.setattr(socket, "create_connection", create_connection)
+    monkeypatch.setattr(socket.socket, "connect", connect)
+
+
+def test_guard_still_blocks_outbound_connections() -> None:
+    with pytest.raises(RuntimeError, match="only loopback"):
+        socket.create_connection(("192.0.2.1", 80), timeout=1)
+
 
 DASHBOARD = cast(PersesDashboard, {"kind": "Dashboard", "metadata": {"name": "d"}, "spec": {}})
 Handler = Callable[[socket.socket], None]
