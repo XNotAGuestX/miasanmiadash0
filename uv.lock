@@ -279,6 +279,7 @@ wheels = [
 name = "dash0-dashboard-migrator"
 version = "0.1.0"
 source = { editable = "." }
+default-groups = ["dev", "oracle"]
 dependencies = [
     { name = "promql-parser" },
     { name = "pydantic" },

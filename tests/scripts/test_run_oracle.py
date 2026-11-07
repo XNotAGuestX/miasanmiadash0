@@ -319,7 +319,7 @@ def test_adopt_existing_records_answers_without_asking(tmp_path: Path) -> None:
 
 
 def test_mcp_client_calls_runtask_and_waitfortask_through_the_sdk() -> None:
-    pytest.importorskip("mcp", reason="opt-in uv group: uv sync --group oracle")
+    pytest.importorskip("mcp", reason="uv group oracle (default) not installed")
     from mcp import Client
     from mcp.server.mcpserver import MCPServer
 

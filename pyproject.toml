@@ -20,6 +20,10 @@ migrator = "migrator.cli:main"
 requires = ["uv_build>=0.13.6,<0.14.0"]
 build-backend = "uv_build"
 
+[tool.uv]
+# Plain `uv run` / `uv sync` install everything, including the Agent0 / Haiku oracle clients.
+default-groups = ["dev", "oracle"]
+
 [tool.uv.build-backend]
 module-name = "migrator"
 
@@ -58,7 +62,7 @@ module = [
 ]
 ignore_missing_imports = true
 
-# The Agent0 MCP client is an opt-in group (`uv sync --group oracle`); type-check without it too.
+# The oracle clients (group `oracle`, installed by default) are not part of the typed package.
 [[tool.mypy.overrides]]
 module = ["mcp", "mcp.*", "anthropic", "anthropic.*"]
 ignore_missing_imports = true
