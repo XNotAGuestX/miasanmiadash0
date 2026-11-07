@@ -14,9 +14,9 @@ Highest-priority requirement: deterministic conversion before all other objectiv
 | Shared Codex/Claude rules | Written | Root `AGENTS.md`; `CLAUDE.md` refers to it |
 | Local configuration template | Written | Root `.env.example` and `.gitignore` |
 | Starter/fork relationship | Unresolved | Current remote is `XNotAGuestX/thinchackdash`; required starter differs |
-| CLI/runtime/package | Working offline (`convert`); no `publish`/`fetch` | Python ≥ 3.13 + uv; single entry point `uv run migrator {convert,test,typecheck,lint,check}` (`pyproject.toml`, `uv.lock`) |
+| CLI/runtime/package | `convert` (offline), `publish` (run live 2026-11-07) and `fetch` (not run live, B3) | Python ≥ 3.13 + uv; single entry point `uv run migrator {convert,publish,fetch,test,typecheck,lint,check}` (`pyproject.toml`, `uv.lock`) |
 | Fixtures/parser/compiler | Dashboards done (plans 02–04, 05.T2–T8, 06.T3); monitors done in review (plan 06 T1–T2, T4–T5, PRs #77–#80): golden `fixtures/expected/postgres-monitors/`, `percent_usage_connections` translated, `replication_delay` blocked | Pinned integrations-core postgres, kafka, docker_daemon at `a9b9e42`; synthetic fixtures; mappings `postgres.json`, `kafka.json`, `docker.json`, all `reviewed: null` |
-| Datadog API integration | Not started | No credentials or live source evidence checked |
+| Datadog API integration | Implemented, not run live | Read-only client (#74) and `fetch` CLI (#83), tested with recorded fake responses; no Datadog account yet (B3) |
 | Dash0 API/schema spike | Done live (plan 07 Task 1, 2026-11-07) | Two demo imports to `default` with a scoped token; see "Dash0 import contract (live)" below. Sanitized responses in `fixtures/dash0/live-2026-11-07/` |
 | Telemetry and semantic validation | Data present, not durable | `default` has data since 2026-11-07 14:06 UTC from one `docker-desktop` host. Connection usage is about 0.08; no controlled threshold crossing exists yet |
 | Automated checks | Green | `uv run migrator check`: ruff clean, mypy --strict clean, pytest unit tests passing. Oracle suite (`tests/unit`, unreviewed cases skipped) runs against the converter; see "Oracle test suite handoff". Golden: `fixtures/expected/postgres-p1/` (Postgres dashboards, byte-equal and determinism tests), in review |
@@ -80,7 +80,7 @@ The starter/fork workflow is still unresolved; settle it before the first implem
 - Stack changed to Python + uv (user instruction, 2026-11-07). The handoff's TypeScript names map to Python modules; pydantic replaces Zod, `promql-parser` replaces Lezer PromQL. `00-context.md` §5 still describes TypeScript.
 - `AGENTS.md` Definition of Done still says `npm test` / `npm run typecheck`; with the Python stack the equivalent is `uv run migrator check` (ruff + mypy --strict + pytest).
 - Semantics, manual read-only check (2026-11-07, dataset `default`, data until ~15:10 UTC): the converted Connections query (with grain) returned `astronomy_db` ≈ 5 and `postgres` ≈ 3–4; the `percent_usage_connections` ratio returned ≈ 0.08. Not recorded in `report.validation.semantics`. Second check for the P1 golden (2026-11-07 ~17:54 UTC): Connections `astronomy_db` = 5, `postgres` = 3; widget 0 `rate(postgresql.tup_fetched)` ≈ 84.7/s; widget 6 I/O wait ≈ 0.47 %; widget 8 network receive ≈ 886 kB/s. Semantics: manual check.
-- Every mapping entry (`postgres.json`, `kafka.json`, `docker.json`) has `reviewed: null` and needs a human review before goldens are frozen.
+- Every mapping entry (`postgres.json`, `kafka.json`, `docker.json`, `redis.json`, `nginx.json`) has `reviewed: null` and needs a human review before goldens are frozen. Redis and nginx review notes: `mappings/datadog/REVIEW-redis-nginx.md` (#76).
 - ~~The official check-rule documentation has differing ID references in prose and schema.~~ Settled live: the import response carries the new id at `id` (see below).
 
 ## Dash0 import contract (live, plan 07 Task 1, 2026-11-07)
