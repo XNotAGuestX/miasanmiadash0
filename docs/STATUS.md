@@ -1,6 +1,6 @@
 # Shared project status
 
-Last updated: 2026-11-07: implementation plan written and split into handoffs in [`handoff/`](handoff/README.md). Dash0 inventory (M0) done ([DASH0_INVENTORY.md](DASH0_INVENTORY.md)).
+Last updated: 2026-11-07: two-person work split added ([`handoff/WORK_SPLIT.md`](handoff/WORK_SPLIT.md)). Earlier: implementation plan written and split into handoffs in [`handoff/`](handoff/README.md). Dash0 inventory (M0) done ([DASH0_INVENTORY.md](DASH0_INVENTORY.md)).
 
 Highest-priority requirement: deterministic conversion before all other objectives. No LLM involvement in source-to-Perses or query/alert conversion, including optional inference, repair, and fallback paths. Shared rules, handoff, kickoff prompt, and acceptance gates now state this explicitly. Codex and Claude remain implementation assistants only.
 
@@ -30,7 +30,8 @@ No implementation task is claimed. Codex and Claude must read this file before e
 
 | Task | Driver | Files | Dependencies / next handoff |
 | --- | --- | --- | --- |
-| Next: plan 01, bootstrap and `convert` CLI | Unclaimed | See [`handoff/01-bootstrap-cli.md`](handoff/01-bootstrap-cli.md) | None; runs offline. Then plans 02 → 03 → 04 (MVP converter) |
+| Track A: query and dashboard translation | Unclaimed | See [`handoff/WORK_SPLIT.md`](handoff/WORK_SPLIT.md#file-ownership) | Starts with plan 02 Task 1 after sync point S1 |
+| Track B: CLI, outputs, monitors and Dash0 delivery | Unclaimed | See [`handoff/WORK_SPLIT.md`](handoff/WORK_SPLIT.md#file-ownership) | Starts with plan 01 Tasks 1–2 (gives S1) |
 
 ## Next concrete action
 

@@ -37,6 +37,7 @@ This directory is the implementation plan, split into independent handoffs. Each
 01 → 10 (needs B3; independent)
 ```
 
+- Two people? Use [WORK_SPLIT.md](WORK_SPLIT.md): two parallel tracks, sync points and file ownership.
 - Plans 02 and 03 are sequential, because 03 consumes the parser's model.
 - Plans 05 and 06 can run in parallel after 04; they touch different files apart from `mapping.ts` and `compile-query.ts`, so coordinate those two.
 - 07 Task 1 (the live contract check) is worth doing as soon as **B1** arrives, because it unblocks the plan 05 gates.
