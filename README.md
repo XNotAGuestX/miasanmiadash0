@@ -4,7 +4,24 @@
 
 Hackathon project: a deterministic CLI that migrates Datadog dashboards and metric monitors to Dash0 using Perses, PromQL, and explicit telemetry mappings.
 
-**Current state: project handoff only. The CLI, fixtures, tests, and live integrations are not implemented yet.** Commands and source paths in the handoff describe the intended implementation.
+**Current state: the offline `convert` command works for Datadog dashboards (Track A: query parser, mapping, PromQL, Perses dashboards). Monitors are still reported as blocked, and `publish` and `fetch` don't exist yet.** See [STATUS.md](docs/STATUS.md).
+
+## Install, test, convert
+
+Everything runs through one entry point, `uv run migrator <command>`:
+
+```bash
+uv sync                      # install runtime and dev dependencies (Python ≥ 3.13)
+uv run migrator test         # pytest; extra args pass through, e.g. `uv run migrator test -k parse`
+uv run migrator typecheck    # mypy --strict over src and tests
+uv run migrator lint         # ruff
+uv run migrator check        # lint + typecheck + test
+uv run migrator convert --source datadog \
+  --input fixtures/datadog/integrations-core/postgres \
+  --mapping mappings/datadog/postgres.json --out /tmp/pg-out   # --format yaml, --project <name>
+```
+
+`convert` is offline. It writes `dashboards/`, `source/` copies, `report.json` and `manifest.json` into an empty `--out` directory, and exits `0` (all translated), `2` (some item partial or blocked) or `1` (bad input, mapping or arguments).
 
 ## Start here
 
@@ -22,11 +39,11 @@ Fetch one selected Datadog dashboard and one selected metric monitor, compile th
 
 Build a working vertical slice before expanding feature coverage. Business research, pricing, positioning, and pitch work are handled separately.
 
-## Proposed implementation defaults
+## Implementation stack
 
-- TypeScript, Node.js 22+, npm, one CLI package.
-- Commander for CLI arguments, Zod for boundary validation, Vitest for tests, tsx for local execution, tsc for type checking/building.
-- Built-in `fetch` for HTTP. Small deterministic parser and explicit mapping files for translation.
+- Python ≥ 3.13 with uv, one package (`src/migrator`), one console script (`migrator`).
+- argparse for the CLI, pydantic (strict) for mapping and Perses schema validation, `promql-parser` for the PromQL syntax check, PyYAML for YAML output, pytest, mypy, ruff.
+- Small deterministic parser and explicit mapping files for translation. The handoff's TypeScript names map one-to-one to Python modules (`parse-query.ts` → `parse_query.py`, and so on).
 - One `SourceProvider` interface selected with `--source` (only `datadog` for now). Each provider owns its own translation; shared code handles the report, manifest, and Dash0 import.
 - JSON inputs/outputs first. No frontend, database, or hosted service. LLM involvement in conversion is prohibited, not merely unnecessary.
 
