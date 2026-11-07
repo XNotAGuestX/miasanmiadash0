@@ -100,6 +100,13 @@ class Case:
         return ROOT / str(self.spec["mapping"])
 
 
+def verified_requests() -> set[str]:
+    """Request case ids that triage marked green (fixtures/expected/verified.json, scripts/triage.py)."""
+    path = ROOT / "fixtures" / "expected" / "verified.json"
+    doc = json.loads(path.read_text()) if path.exists() else {}
+    return {f"{key}/{sp}" for key, paths in doc.items() for sp in paths}
+
+
 def iter_cases(level: str) -> Iterator[Case]:
     # Only source_path / milestone / reviewed / expected are read. Other entry keys
     # (provenance, live_check, dataset, notes, ...) are fixture metadata and ignored on purpose.
@@ -142,9 +149,10 @@ def iter_cases(level: str) -> Iterator[Case]:
 
 def case_params(level: str) -> list[Any]:
     params = []
+    verified = verified_requests() if level == "request" else set()
     for case in iter_cases(level):
         marks = [getattr(pytest.mark, case.milestone)]
-        if not case.reviewed:
+        if not case.reviewed and case.case_id not in verified:
             marks.append(pytest.mark.unreviewed)
         params.append(pytest.param(case, id=case.case_id, marks=marks))
     if not params:

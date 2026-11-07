@@ -18,7 +18,7 @@ Verdict file format (YAML):
     reasons: [<short strings>]     # required (non-empty) for nit and block
     ...                            # verifier-specific extra keys are allowed
 
-Verdicts are triage signals, never approval: only a human sets `reviewed: true` in overrides.yaml.
+Triage-green requests count as verified (fixtures/expected/verified.json); a human `reviewed: true` always wins.
 Nothing under src/ imports this module and the converter never reads its output (AGENTS.md).
 """
 

@@ -156,7 +156,7 @@ def test_triage_md_is_deterministic_and_ordered(tmp_path: Path, tmp_verify: Path
     assert triage.main(["--all", "--out", str(out2)]) == 0
     text = out1.read_text()
     assert text == out2.read_text()
-    assert "Triage only, never approval" in text and "reviewed: true" in text and "overrides.yaml" in text
+    assert "count as verified" in text and "reviewed: true" in text and "overrides.yaml" in text
     assert "| lint | 10 / 10 | 100% | 2 / 2 (100%) | yes |" in text
     section = text.split(f"## {KEY}\n", 1)[1].split("\n## ", 1)[0]
     order = [line.split("`")[1] for line in section.splitlines() if line.startswith("- **")]
