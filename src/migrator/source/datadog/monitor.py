@@ -246,7 +246,9 @@ _TIME_FUNCTIONS: dict[str, str] = {
 }
 _OPEN_ESC = '{{ "{{" }}'
 _CLOSE_ESC = '{{ "}}" }}'
-_HANDLE = re.compile(r"(?:^|(?<=\s))@[A-Za-z0-9_][A-Za-z0-9_.\-]*")
+# A handle is any "@name" not preceded by an email-local-part character, so
+# "}}@pagerduty", "(@slack-ops)" and line starts count while "a@b.c" does not.
+_HANDLE = re.compile(r"(?<![A-Za-z0-9._%+\-])@[A-Za-z0-9_][A-Za-z0-9_.\-]*")
 
 
 @dataclass(frozen=True)
