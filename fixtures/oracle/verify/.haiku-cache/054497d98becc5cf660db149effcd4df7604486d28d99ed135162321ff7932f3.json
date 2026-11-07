@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Selector uses otel_metric_type=\"gauge\", but container.network.io.usage.tx_bytes is a monotonic sum and the dataset only has the sum type, so the selector matches nothing.",
+      "The Datadog query has no rate function. docker.net.bytes_sent reports the cumulative bytes-sent count per container, so wrapping it in rate() changes the unit from bytes to bytes/s.",
+      "The OTel metric is split by the interface attribute, and avg by (container_name) averages the per-interface series. The Datadog series is the per-container total, so this should be sum by (container_name) over the cumulative counter, with no rate, after fixing the type matcher.",
+      "container_name is an observed dataset label and the $scope template variable without a prefix is correctly dropped, so grouping and scope are fine."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

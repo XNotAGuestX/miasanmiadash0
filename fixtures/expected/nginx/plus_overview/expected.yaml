@@ -14,11 +14,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: yes, 1 series (14:05-15:21 UTC; host_name=docker-desktop)
+    agent0: yes, 1 series (cumulative values 52-185 in 14:05Z-15:21Z)
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="nginx.connections_accepted", otel_metric_type="sum"})
+    - sum({otel_metric_name="nginx.connections_accepted", otel_metric_type="sum", host_name=~"^($host)$"})
     errors: []
     warnings: []
 - source_path: widgets[1].definition.widgets[2].definition.requests[0]
@@ -28,11 +28,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: yes, 1 series
+    agent0: yes, 1 series (value 1 throughout)
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="active"}) - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting"})
+    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state=~"reading|writing", host_name=~"^($host)$"})
     errors: []
     warnings: []
 - source_path: widgets[1].definition.widgets[3].definition.requests[0]
@@ -42,11 +42,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: yes, 1 series
+    agent0: yes, 1 series (values 20-25)
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting"})
+    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting", host_name=~"^($host)$"})
     errors: []
     warnings: []
 - source_path: widgets[1].definition.widgets[4].definition.requests[0]
@@ -56,13 +56,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: yes, 1 series (checked with [5m] in place of $__rate_interval; value 0 throughout)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
     - UNSUPPORTED_QUERY_FUNCTION
-  notes:
-  - 'rule overlay: Datadog function(s) per_second block the request (plans 02/03/05); Agent0''s translation is discarded: sum(rate({otel_metric_name="nginx.connections_accepted", otel_metric_type="sum"}[$__rate_interval])) - sum(rate({otel_metric_name="nginx.connections_handled", otel_metric_type="sum"}[$__rate_interval]))'
 - source_path: widgets[1].definition.widgets[5].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -70,11 +68,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: yes, 1 series
+    agent0: yes, 1 series (cumulative values 424-2465)
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="nginx.requests", otel_metric_type="sum"})
+    - sum({otel_metric_name="nginx.requests", otel_metric_type="sum", host_name=~"^($host)$"})
     errors: []
     warnings: []
 - source_path: widgets[3].definition.widgets[0].definition.requests.fill
@@ -84,7 +82,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -98,7 +96,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -112,7 +110,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -126,7 +124,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -140,7 +138,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -154,7 +152,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -168,7 +166,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -182,7 +180,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -196,7 +194,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -210,7 +208,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -224,7 +222,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -238,12 +236,12 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: yes, 2 series (1 per formula)
+    agent0: yes, 2 series (1 per formula; active 1, idle 20-25)
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="active"}) - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting"})
-    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting"})
+    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state=~"reading|writing", host_name=~"^($host)$"})
+    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting", host_name=~"^($host)$"})
     errors: []
     warnings: []
 - source_path: widgets[6].definition.widgets[1].definition.requests[0]
@@ -253,13 +251,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: yes, 1 series (checked with [5m]; value 0 throughout)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
     - UNSUPPORTED_FORMULA
-  notes:
-  - 'rule overlay: Datadog function(s) per_second block the request (plans 02/03/05); Agent0''s translation is discarded: sum(rate({otel_metric_name="nginx.connections_accepted", otel_metric_type="sum"}[$__rate_interval])) - sum(rate({otel_metric_name="nginx.connections_handled", otel_metric_type="sum"}[$__rate_interval]))'
 - source_path: widgets[7].definition.widgets[0].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -267,7 +263,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -279,7 +275,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -291,7 +287,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -303,7 +299,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/plus_overview/answer.yaml
   live_check:
-    agent0: no, 0 series (no metric to query)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -351,7 +347,7 @@ widgets:
     title: Accepted connections
     panel_plugin: StatChart
     promql: &id003
-    - sum({otel_metric_name="nginx.connections_accepted", otel_metric_type="sum"})
+    - sum({otel_metric_name="nginx.connections_accepted", otel_metric_type="sum", host_name=~"^($host)$"})
     errors: []
     warnings: []
 - source_path: widgets[1].definition.widgets[2]
@@ -364,7 +360,7 @@ widgets:
     title: Active connections
     panel_plugin: StatChart
     promql: &id004
-    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="active"}) - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting"})
+    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state=~"reading|writing", host_name=~"^($host)$"})
     errors: []
     warnings: []
 - source_path: widgets[1].definition.widgets[3]
@@ -377,7 +373,7 @@ widgets:
     title: Idle/waiting connections
     panel_plugin: StatChart
     promql: &id005
-    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting"})
+    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting", host_name=~"^($host)$"})
     errors: []
     warnings: []
 - source_path: widgets[1].definition.widgets[4]
@@ -398,7 +394,7 @@ widgets:
     title: Total requests
     panel_plugin: StatChart
     promql: &id006
-    - sum({otel_metric_name="nginx.requests", otel_metric_type="sum"})
+    - sum({otel_metric_name="nginx.requests", otel_metric_type="sum", host_name=~"^($host)$"})
     errors: []
     warnings: []
 - source_path: widgets[2].definition.widgets[0]
@@ -517,8 +513,8 @@ widgets:
     title: Current connections (idle & active)
     panel_plugin: TimeSeriesChart
     promql: &id009
-    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="active"}) - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting"})
-    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting"})
+    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state=~"reading|writing", host_name=~"^($host)$"})
+    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting", host_name=~"^($host)$"})
     errors: []
     warnings: []
 - source_path: widgets[6].definition.widgets[1]

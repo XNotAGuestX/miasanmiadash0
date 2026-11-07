@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Range selector uses a fixed window [5m]; the converter may only use [$__rate_interval].",
+      "The promql divides by 1e7, a numeric constant that is not in the Datadog source. Unit scaling must go in notes with a documentation link, not in promql.",
+      "The unit check differs: the OTel metric is cumulative ns, and the Datadog docker.cpu.user unit is not established by the request. The scale is unverified and should be proposed in notes.",
+      "Quantity, aggregation (avg by container_name), grouping, and series selection (unprefixed $scope with default * dropped) match the Datadog request.",
+      "Outcome stays translated because an exact translation exists; the promql itself must be corrected to use $__rate_interval and drop the constant."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

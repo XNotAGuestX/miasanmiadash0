@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "query1 maps postgresql.rows_inserted to postgresql.tup_returned, but tup_returned counts rows read by scans, not rows inserted; the quantity differs. An inserted-rows metric (e.g. postgresql.tup_inserted) should be looked up instead, or the request blocked with MISSING_METRIC_MAPPING if none exists.",
+      "query2 (rows_updated to tup_updated) and query3 (rows_deleted to tup_deleted) measure the same quantity, and avg by database name matches by {db}.",
+      "The $db (prefix db) and $host (prefix host) template variables with default '*' should become matchers db/host label =~ \"$db\" / \"$host\" on the observed labels (postgresql_database_name, host_name). The candidate drops them, so the series set differs.",
+      "Candidate outcome is translated although query1 is not an exact translation, so the candidate is wrong as a whole."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

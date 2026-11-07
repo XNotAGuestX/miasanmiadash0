@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Quantity differs: docker.cpu.user is CPU time spent in user mode, but the candidate uses container.cpu.usage.kernelmode, which measures kernel-mode CPU time.",
+      "Unit handling is not allowed: the trailing / 1e7 is a numeric constant not present in the Datadog source. The ns-to-percent scale belongs in notes with a documentation link, not in promql.",
+      "Aggregation avg by (container_name) and the container_name grouping match the Datadog request, and the template variable $scope with no prefix and default * is correctly dropped.",
+      "Outcome should be blocked (MISSING_METRIC_MAPPING) unless a user-mode OTel CPU metric is defined; the candidate substitutes a metric measuring a different CPU mode."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

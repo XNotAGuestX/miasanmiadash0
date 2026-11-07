@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "aggregation differs: the Datadog query uses max: for both operands, but the candidate applies min() to the expand rate and max() to the shrink rate, so the difference is not the same computation.",
+      "series selection differs: the Datadog {$env} tag-prefixed template variable (default *) should become an env matcher (env=~\"$env\"), but the candidate drops it.",
+      "label name is unverified against the dataset: the candidate matches operation=\"expand\"/\"shrink\", but the observed dataset labels for kafka.isr.operation.count are group, topic, type, service_name and service_instance_id, with no operation label, so the matchers would select nothing. The label is likely type in the dataset.",
+      "quantity and unit are consistent: both sides are per-second rates of ISR expand and shrink operations on a monotonic sum, so rate() is appropriate, and the translation outcome is reasonable because the metric exists."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

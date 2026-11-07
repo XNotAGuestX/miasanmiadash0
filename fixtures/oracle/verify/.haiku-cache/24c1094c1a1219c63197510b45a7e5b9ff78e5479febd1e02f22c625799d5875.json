@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Quantity matches: Datadog postgresql.rows_fetched corresponds to pg_stat_database tup_fetched, and rate() of the monotonic sum gives the per-second value the widget title describes.",
+      "Series grain differs: the OTel tup_fetched series are per database and per table (postgresql_database_name, postgresql_table_name), while the Datadog series are per monitored instance/host. avg() over all table-level series averages per table, not per host, so the value differs.",
+      "Aggregation is not equivalent: a Datadog avg over host series should be a sum per host (over tables/databases) followed by an average across hosts; the candidate averages directly over table series. A correct translation needs sum by (host_name) before averaging, or at least a documented series-grain caveat in notes.",
+      "Outcome is translated, which is acceptable for this request since the metric exists in the dataset and no function is used; the template variable $scope has no prefix and default *, so dropping it is correct."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

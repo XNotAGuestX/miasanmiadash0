@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The candidate multiplies by a constant 100 that does not appear in the Datadog source, which the hard rules forbid. A unit scale must be proposed in notes, not applied in promql.",
+      "The Datadog metric nginx.net.request_per_s is already a per-second rate. Mapping it to rate(nginx.requests[$__rate_interval]) is a reasonable quantity match, but the candidate adds the unsupported scale on top of it.",
+      "The Host template variable has prefix host and default *, so it should become host=~\"$Host\". The candidate drops it, which changes the set of series. The dataset does not list a host label among observed labels, so this needs checking against the dataset.",
+      "Aggregation avg() across series matches the Datadog avg, and there is no grouping in either query, so those aspects are consistent."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

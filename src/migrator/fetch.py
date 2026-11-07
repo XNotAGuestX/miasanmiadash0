@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import cast
 
 from migrator.http import HttpSend, urllib_send
 from migrator.input import InputError
@@ -19,8 +20,6 @@ def run_fetch(
 ) -> list[str]:
     """Return the relative paths written. Raises InputError or the provider's fetch error."""
     provider = get_provider(source)
-    fetch = getattr(provider, "fetch", None)
-    if not callable(fetch):
+    if not callable(getattr(provider, "fetch", None)):
         raise InputError(f"--source '{source}' does not support fetch")
-    fetching: FetchingProvider = provider  # type: ignore[assignment]
-    return fetching.fetch(sel, env, out, send)
+    return cast(FetchingProvider, provider).fetch(sel, env, out, send)

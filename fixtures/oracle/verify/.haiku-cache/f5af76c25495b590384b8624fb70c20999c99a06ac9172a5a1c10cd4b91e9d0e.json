@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The candidate drops the $db and $host template filters entirely. Datadog's $db (prefix db) and $host (prefix host) must become matchers on the dataset labels (postgresql_database_name and host_name, both observed), e.g. postgresql_database_name=~\"$db\", host_name=~\"$host\". The $scope variable has no prefix and default *, so dropping it is correct. The series set therefore differs.",
+      "The selector uses otel_metric_type=\"gauge\", but postgresql.index.scans is a monotonic sum and dataset_types lists only sum, so the selector matches no series. It should be otel_metric_type=\"sum\".",
+      "The grouping label postgresql_index_name is not in the observed dataset labels (observed list has no index label), so the grouping cannot be confirmed against the dataset. The index attribute must be checked against observed labels before it can be used.",
+      "The outcome (translated, no function used) is appropriate, and rate() on a monotonic sum is the converter's convention. The quantity is the same index scan count, so the main failures are the selector type and the missing filters and grouping."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

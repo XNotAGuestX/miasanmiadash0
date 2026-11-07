@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "Candidate blocks with MISSING_METRIC_MAPPING, but the OTel postgresql receiver exposes rows updated as the monotonic sum postgresql.operations with operation=\"hot_upd\", which measures the same quantity as Datadog postgresql.rows_hot_updated.",
+      "otel_metric_definitions is empty, so the converter had no catalog evidence for the block; the block is not supported by the supplied definitions.",
+      "A translation would be rate(postgresql.operations{operation=\"hot_upd\"}[$__rate_interval]) summed by the database name label, with $host mapped to host_name and the $scope variable dropped. The database label name must be checked against observed dataset labels before use.",
+      "Datadog avg by {db} over a per-database counter should be checked against the OTel series grain (per database, per table or per instance) before a translation is finalized."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

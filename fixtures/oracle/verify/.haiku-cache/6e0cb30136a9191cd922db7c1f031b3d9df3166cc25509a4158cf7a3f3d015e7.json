@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Datadog avg:nginx.net.request_per_s{*} averages the per-second request rate across all series, but the candidate sums rate(nginx.requests) across all series, so the reported value is multiplied by the number of series.",
+      "The Datadog metric is already a per-second rate, and nginx.requests is a monotonic sum, so rate() over it matches the quantity and unit.",
+      "An exact translation exists (avg instead of sum over the rate), so translated is the correct outcome, but the aggregation in the candidate is wrong.",
+      "The template variable $Host is not referenced by the query ({*}), so omitting a host matcher is correct."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

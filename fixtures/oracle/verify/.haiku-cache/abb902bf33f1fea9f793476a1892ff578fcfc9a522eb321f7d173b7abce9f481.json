@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The selector uses otel_metric_type=\"gauge\", but nginx.requests is defined as a monotonic sum and the dataset only has dataset_types [sum]. The selector matches no series, so the candidate does not return the Datadog series.",
+      "Fix the matcher to otel_metric_type=\"sum\". With that change, rate() over the monotonic sum yields requests per second, matching nginx.net.request_per_s.",
+      "The quantity (request rate), unit (requests/s), the sum aggregation and the absence of grouping are otherwise correct. The $scope template variable has no prefix and default *, so dropping it is correct."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

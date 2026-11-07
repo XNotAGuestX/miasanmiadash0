@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "ok",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "Candidate is blocked with MISSING_METRIC_MAPPING, and otel_metric_definitions is empty, so no OTel metric in the provided set can be shown to measure nginx.net.request_per_s.",
+      "The Datadog query has no function, and the unprefixed $scope variable with default * is dropped, so the request is a plain sum that would need an exact OTel counterpart to translate.",
+      "Blocking is consistent with the supplied evidence. If a monotonic request-count sum were added to the definitions (for example an nginx requests counter), the expected output would be a rate-based translation, so this verdict should be revisited once such definitions are supplied."
+    ],
+    "verdict": "pass"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

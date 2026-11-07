@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Datadog system.load.5 is the 5-minute system load average, and the OTel metric system.cpu.load_average.5m (gauge, {thread}) measures the same quantity, so the metric mapping is correct.",
+      "The Datadog query has no explicit space aggregator, so it uses Datadog's default average across the in-scope series. The candidate wraps the selector in sum(), which adds the load across hosts and gives a different value. The expression should use avg() instead.",
+      "The scope template variable has no prefix and defaults to *, so dropping it is correct. The outcome should stay translated, not blocked."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

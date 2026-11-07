@@ -59,6 +59,15 @@ Exit codes:
 
 The same inputs, mapping and version always produce the same bytes.
 
+To view the converted dashboards in a local Perses (Docker, bound to `127.0.0.1`; queries go to Dash0 through its proxy, so set `DASH0_AUTH_TOKEN` to see data, or any placeholder to see the layout only):
+
+```bash
+DASH0_AUTH_TOKEN=... docker compose -f scripts/review/docker-compose.yaml up -d
+uv run scripts/review/load_local.py /tmp/pg-out    # prints each dashboard's URL
+```
+
+See [scripts/review/README.md](scripts/review/README.md).
+
 ## Publish to Dash0
 
 ```bash

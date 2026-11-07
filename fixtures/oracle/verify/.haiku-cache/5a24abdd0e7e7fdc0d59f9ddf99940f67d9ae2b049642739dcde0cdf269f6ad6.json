@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Formula 1 applies a constant factor of 100 that does not appear in the Datadog source; the rules forbid applying unit scales in promql and require them to be proposed in notes only. Formula 2 has no such factor, so the two formulas are also internally inconsistent.",
+      "The unit scale is not justified: redis.cpu.time is a cumulative sum in seconds, so rate() gives a seconds-per-second value. Whether Datadog redis.cpu.sys is a percent or a ratio is not established in the request, so a scale proposal belongs in notes with a documentation link.",
+      "Template variable host has prefix host and default *, so both PromQL queries need a host=~\"$host\" matcher. Neither has one, so the candidate selects a different set of series.",
+      "Template variable key has prefix key and default *, so a key=~\"$key\" matcher is expected. The candidate omits it and does not mention the absence of a key label in notes.",
+      "The scope variable has no prefix and default *, so dropping it is correct. The metric and state=sys/user selection maps the quantity sensibly, and the translated outcome is appropriate because an OTel equivalent exists."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

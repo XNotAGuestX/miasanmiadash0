@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Datadog system.load.15 with no by-clause defaults to avg across the hosts in scope, but the candidate uses sum(), which yields a different number for a per-host load average.",
+      "Quantity matches: the 15-minute load average is the same measure as system.cpu.load_average.15m (gauge, unit {thread}, unitless in Datadog).",
+      "The template variable $scope has no prefix and default *, so dropping it is correct.",
+      "The outcome is translated, which is acceptable once the aggregation is corrected to avg()."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

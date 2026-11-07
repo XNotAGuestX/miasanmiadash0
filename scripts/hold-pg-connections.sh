@@ -21,9 +21,10 @@
 # The demo check is avg over 15m with degraded > 0.8 and failed > 0.9:
 #   count=75 -> (8 + 75) / 100 = 0.83  degraded
 #   count=85 -> (8 + 85) / 100 = 0.93  failed
-# The script's own "current" counts every pg_stat_activity row, including
-# background workers (autovacuum, walwriter, ...), so it reads higher than the
-# client count and the refusal is a little stricter than max_connections needs.
+# The script's "current" counts only client backends (backend_type 'client
+# backend'), excluding its own psql, so it matches the 8 above. Background workers
+# (autovacuum, walwriter, ...) don't use max_connections slots. With current 8 the
+# refusal limit is 97, so count=85 (8 + 85 = 93 < 97) is allowed.
 # Hold for at least 1800 s so the 15-minute average crosses. Re-measure with
 # --dry-run first (it prints max_connections and current) and record the live
 # values in docs/DEMO.md.
@@ -68,7 +69,7 @@ raw=$(query "show max_connections") || die "could not read max_connections (psql
 max=$(strip "$raw")
 raw=$(query "show superuser_reserved_connections") || die "could not read superuser_reserved_connections (psql failed)"
 reserved=$(strip "$raw")
-raw=$(query "select count(*) from pg_stat_activity") || die "could not read the current connection count (psql failed)"
+raw=$(query "select count(*) from pg_stat_activity where backend_type = 'client backend' and pid <> pg_backend_pid()") || die "could not read the current connection count (psql failed)"
 current=$(strip "$raw")
 is_pos_int "$max" || die "unexpected max_connections value"
 case "$reserved" in '' | *[!0-9]*) die "unexpected superuser_reserved_connections value" ;; esac

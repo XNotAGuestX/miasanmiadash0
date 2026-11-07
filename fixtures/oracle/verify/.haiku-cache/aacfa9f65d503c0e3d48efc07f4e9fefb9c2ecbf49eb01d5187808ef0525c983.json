@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "ok"
+    },
+    "reasons": [
+      "postgresql.rows_inserted, rows_deleted and rows_updated map to postgresql.tup_inserted, tup_deleted and tup_updated, which are monotonic sums counting the same rows.",
+      "The per-second display is matched by rate() over the monotonic sums, with avg() aggregation and no grouping, consistent with the Datadog request.",
+      "The unprefixed $scope template variable with default * is correctly dropped, so no matcher is needed.",
+      "All three formulas are translated; no function appears in the Datadog request, so translating is the correct outcome."
+    ],
+    "verdict": "pass"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

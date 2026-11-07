@@ -1,0 +1,23 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "ok"
+    },
+    "reasons": [
+      "system.load.1 is the 1-minute system load average; system.cpu.load_average.1m is the OpenTelemetry gauge for the same 1-minute load average, so the quantity matches.",
+      "Both are unitless load values (OTel unit {thread} is an annotation for the same count), so no scale is needed.",
+      "Datadog's default for an ungrouped query is a single average across hosts, which matches avg() with no by-clause.",
+      "The unprefixed $scope variable with default * is correctly dropped, so no matcher is needed.",
+      "The gauge is selected with otel_metric_type=\"gauge\" and no rate() is applied, which is correct.",
+      "The translated outcome is correct because an exact mapping exists."
+    ],
+    "verdict": "pass"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

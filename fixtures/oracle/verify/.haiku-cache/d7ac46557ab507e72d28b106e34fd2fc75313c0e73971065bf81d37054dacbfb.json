@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The expand selector uses otel_metric_type=\"gauge\", but kafka.isr.operation.count is defined as a monotonic sum (dataset_types: sum). The selector matches nothing, so the expand side is empty and the formula breaks. It should be otel_metric_type=\"sum\" and it is still a rate over a sum, which is valid.",
+      "The Datadog query filters on {$env}, a template variable with prefix env and default *. The candidate drops that matcher, so it returns all environments. It should carry env=~\"$env\". The label name cannot be confirmed because 'env' is not in the observed dataset labels (the deployment-environment label may use a newer name), so the label must be checked against the dataset before the matcher is finalised.",
+      "Quantity, unit, aggregation (max over rate of a monotonic count, matching Datadog .rate with max) and grouping (none in Datadog, none in candidate) are consistent. The outcome of translated is appropriate since no function is used. The series set is wrong because of the dropped env filter."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Quantity differs: Datadog docker.io.read_bytes counts bytes read per container, but the candidate uses container.blockio.io_service_time_recursive, which measures I/O service time (ns), not bytes.",
+      "Unit differs: Datadog bytes versus OTel ns; no scaling would make service time equal a byte count.",
+      "The candidate filters on operation=\"read\" and wraps the metric in rate(), so it yields a rate of time per device series rather than the bytes-read total the widget shows.",
+      "Grouping uses container_image_name, which is not verified against dataset labels (none observed for this metric), so the by-docker_image grouping is unsupported.",
+      "The correct outcome is blocked with MISSING_METRIC_MAPPING, because no OTel metric in the provided definitions measures bytes read; the candidate translated instead."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

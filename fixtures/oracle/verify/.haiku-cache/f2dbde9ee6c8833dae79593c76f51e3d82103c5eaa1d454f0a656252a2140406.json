@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The candidate uses a fixed range `[5m]`, which the rules forbid. The only allowed range is `$__rate_interval`, so the PromQL must be `rate(...[$__rate_interval])`.",
+      "The metric choice is defensible: postgresql.tup_returned is a monotonic sum for rows returned, and rate() gives the per-second value that the widget title expects.",
+      "The avg aggregation without a by-clause matches the Datadog query, and the scope variable is correctly dropped because it has no prefix and defaults to '*'.",
+      "Series grain caveat: the Datadog metric is per host, while the OTel sum is per database and table. The average runs over database series, so the notes should say that series are split per database and that averaging across them differs from averaging per host.",
+      "Outcome 'translated' is the right outcome since no function is involved; only the range in the PromQL is wrong."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "differs",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Candidate maps nginx.requests.total (requests) to nginx.connections_accepted (connections, unit {connections}), a different quantity.",
+      "The Datadog template variable $host (tag prefix host, default *) should become a host label matcher =~\"$host\"; the candidate omits it.",
+      "No OTel metric in the definitions measures requests, so the correct outcome is blocked with MISSING_METRIC_MAPPING, not translated.",
+      "Candidate outcome translated is wrong for this request."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

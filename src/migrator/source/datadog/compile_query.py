@@ -230,7 +230,7 @@ def _render_metric(
     fixed = [Matcher(label, value) for label, value in sorted(entry.matchers.items())]
     inner = render_selector(MetricRef(entry.target.name, entry.target.type), matchers + fixed)
     if isinstance(entry, RateMapping):
-        inner = f"rate({inner}[{RATE_INTERVAL}])"
+        inner = f"rate({inner}[{entry.rateWindow or RATE_INTERVAL}])"
     if entry.grain is not None:
         grain_by = group_labels + [lbl for lbl in entry.grain.labels if lbl not in group_labels]
         inner = render_aggregation(entry.grain.aggregation, grain_by, inner)

@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The candidate multiplies the result by 100, a numeric constant that does not appear in the Datadog source. Hard rules forbid this, and it changes the values.",
+      "Template variables $db (tag db) and $host (tag host) have prefixes and default '*', so they must become matchers (postgresql_database_name=~\"$db\", host_name=~\"$host\"). The candidate applies neither, so the series set is wrong.",
+      "The metric choice is plausible: postgresql.tup_updated is a monotonic sum counting updated tuples, which matches rows updated, and rate() is valid on it. The grouping by database name matches the db tag. The label names are the observed ones.",
+      "Outcome is translated, which is correct because the request contains no Datadog functions."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

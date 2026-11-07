@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Grouping differs: Datadog uses avg by {container_name} (one series per container), but the candidate's bare avg(...) collapses all containers into a single series; it needs avg by (container_name).",
+      "Unit handling: the candidate applies a hard-coded constant (/ 1e7) that is not in the Datadog source, which the rules forbid. The ns-to-percent scale should be noted in notes with a documentation link, not applied in promql.",
+      "Quantity matches: container.cpu.usage.usermode (monotonic sum, ns) is the OTel counter for the user-mode CPU usage that docker.cpu.user measures, so an exact translation exists and translated is the right outcome.",
+      "Template variable $scope has no prefix and default *, so dropping it is correct."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

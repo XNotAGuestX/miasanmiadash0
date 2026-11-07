@@ -1,0 +1,76 @@
+# lint verdicts for nginx/plus_overview. Triage only, never approval: humans set reviewed: true.
+verifier: lint
+meta:
+  tool: scripts/lint_expected.py
+results:
+- source_path: widgets[1].definition.widgets[1].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'rate: monotonic counter nginx.connections_accepted selected without rate()/increase()'
+  - 'aggregation: q: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[1].definition.widgets[1].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'rate: monotonic counter nginx.connections_accepted selected without rate()/increase()'
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[1].definition.widgets[1].definition.requests[0]#sibling_metric
+  verdict: nit
+  reasons:
+  - 'rate: monotonic counter nginx.connections_handled selected without rate()/increase()'
+- source_path: widgets[1].definition.widgets[1].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[1].definition.widgets[2].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: q: derived from 2 aggregations `avg({otel_metric_name="nginx.connections_current",otel_metric_type=...`, not a 1:1 metric'
+  - 'aggregation: q: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[1].definition.widgets[2].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+  - 'aggregation: q: derived from 2 aggregations `100 * (sum({otel_metric_name="nginx.connections_current",otel_metri...`, not a 1:1 metric'
+- source_path: widgets[1].definition.widgets[2].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[1].definition.widgets[3].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: q: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[1].definition.widgets[3].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[1].definition.widgets[3].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[1].definition.widgets[5].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'rate: monotonic counter nginx.requests selected without rate()/increase()'
+  - 'aggregation: q: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[1].definition.widgets[5].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'rate: monotonic counter nginx.requests selected without rate()/increase()'
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[1].definition.widgets[5].definition.requests[0]#sibling_metric
+  verdict: nit
+  reasons:
+  - 'rate: monotonic counter nginx.connections_accepted selected without rate()/increase()'
+- source_path: widgets[1].definition.widgets[5].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[6].definition.widgets[0].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: promql[0] query1: derived from 2 aggregations `avg({otel_metric_name="nginx.connections_current",otel_metric_type=...`, not a 1:1 metric'
+  - 'aggregation: promql[0] query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[6].definition.widgets[0].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: promql[0] constant 100 is not in the Datadog source'
+  - 'aggregation: promql[0] query1: derived from 2 aggregations `100 * (sum({otel_metric_name="nginx.connections_current",otel_metri...`, not a 1:1 metric'
+- source_path: widgets[6].definition.widgets[0].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []

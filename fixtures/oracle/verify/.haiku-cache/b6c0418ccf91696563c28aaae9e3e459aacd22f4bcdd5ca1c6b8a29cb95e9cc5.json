@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "differs",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "The candidate blocks with MISSING_METRIC_MAPPING, but the OpenTelemetry PostgreSQL receiver defines postgresql.backends (gauge, number of backends/connections per database), which measures the same quantity as Datadog postgresql.connections per db.",
+      "The otel_metric_definitions block is empty, so this is judged from the metric's known meaning; the definition should be verified in the catalog before finalizing.",
+      "Expected translation: max(postgresql.backends) grouped by the database-name label (observed dataset label name needed, e.g. postgresql_database_name), with the $db matcher on that label, $host and $table left as applicable, and $scope dropped; the query uses no function, so the outcome should be translated rather than blocked."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

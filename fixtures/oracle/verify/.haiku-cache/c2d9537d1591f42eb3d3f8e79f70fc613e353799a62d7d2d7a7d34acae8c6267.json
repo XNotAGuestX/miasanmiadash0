@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Datadog docker.cpu.user is a percent of one core (100 = one full core), while container.cpu.usage.usermode is a monotonic sum in ns, so the units differ and a scale is needed.",
+      "The candidate applies the scale inside promql with the constants 100 and 1e7, which the hard rules forbid; the scale must be proposed in notes only.",
+      "The applied scale is also wrong: percent of one core is rate_ns/1e7, so the extra factor of 100 makes the result 100x too large.",
+      "Quantity (CPU usage per container), rate on the monotonic sum, avg by container_name, and dropped $scope are otherwise consistent with the request and the observed labels."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Wrong metric: the Datadog query measures postgresql.rows_updated (rows updated per database), but the candidate uses postgresql.blks_hit, which counts buffer blocks hit in cache. These are different quantities with different units ({blks_hit} vs rows).",
+      "Aggregation differs: the Datadog request is avg over a row count, while the candidate applies avg over rate() of a block-hit counter, so the values are not comparable.",
+      "The candidate ignores the Datadog series and the table/db/host template variables, and the rate() of a monotonic sum does not reproduce the Datadog value.",
+      "The grouping label postgresql_database_name is observed in the dataset and would fit the Datadog 'by {db}' grouping, but the metric itself is wrong. If no OTel row-count metric is mapped (e.g. postgresql.rows with operation=update, which is not in the provided definitions), the request should be blocked with MISSING_METRIC_MAPPING rather than translated to blks_hit."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "differs",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "redis.memory.lua measures Lua engine memory in bytes (unit By), not the memory fragmentation ratio, so the quantity is different.",
+      "The Datadog metric is a dimensionless ratio; the candidate's unit (bytes) cannot match it.",
+      "The candidate drops the $host matcher (tag prefix host, default *), which should become host=~\"$host\" if a valid mapping existed.",
+      "No OTel metric in the provided definitions measures the fragmentation ratio, so the correct outcome is blocked with MISSING_METRIC_MAPPING, not translated.",
+      "The $scope template variable (no prefix, default *) is correctly dropped, and avg is the right aggregation, but these do not rescue the wrong metric."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

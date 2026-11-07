@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Aggregation differs: the Datadog query uses avg by {db} but the candidate uses sum by (postgresql_database_name), which changes the value per group.",
+      "Quantity/unit: the candidate applies rate() to the monotonic sum tup_deleted, giving rows per second, while the Datadog query has no rate function and reads the metric as stored. Confirm the Datadog metric's type before accepting either form.",
+      "Series set differs: the $db template variable (prefix db) and the $host variable (prefix host, default *) should become matchers such as postgresql_database_name=~\"$db\" and host_name=~\"$host\" (host_name is observed in the dataset). The candidate drops both, so it selects a different set of series.",
+      "Grouping is correct: {db} maps to postgresql_database_name, which is observed in the dataset. $scope (no prefix, default *) is correctly dropped.",
+      "Outcome is correct: no Datadog function is used, so translated is the right outcome."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

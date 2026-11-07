@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Selector uses otel_metric_type=\"gauge\" but postgresql.tup_updated is defined as a monotonic sum and the dataset only has dataset_types [sum], so the query would match no series.",
+      "rate() is applied to a monotonic sum, which is allowed, and the per-second rate fits the widget title, so the quantity and unit are plausible once the type is fixed.",
+      "Datadog avg with no grouping maps to avg() with no by-clause, so aggregation and grouping are consistent.",
+      "Scope template variable has no prefix and default *, so dropping it is correct.",
+      "Outcome translated is appropriate because the metric exists in the dataset and a direct mapping exists; the fix is changing otel_metric_type to sum."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

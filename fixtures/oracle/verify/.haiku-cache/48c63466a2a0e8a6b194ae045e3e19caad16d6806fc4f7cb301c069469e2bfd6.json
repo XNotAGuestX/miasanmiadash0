@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "differs",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "The candidate blocks with MISSING_METRIC_MAPPING, but the OpenTelemetry definitions supplied are empty, so the absence of a mapping is unverified.",
+      "The OpenTelemetry PostgreSQL receiver is generally understood to expose row operations as the monotonic sum postgresql.rows with an operation attribute (ins, upd, del), which would measure the same quantity as postgresql.rows_inserted, rows_updated and rows_deleted.",
+      "If that metric is in the catalog, the converter should translate each query as rate(postgresql.rows{operation=\"ins\"|\"upd\"|\"del\"}[$__rate_interval]) grouped by db, with the template variables mapped to their tag labels, rather than blocking.",
+      "Verify the catalog entry and the operation label values in the dataset before confirming the block; the aggregation of the Datadog avg across series also needs checking against the translation."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "ok",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "Correctly blocked: no OTel metric measures dropped connections directly. The nginx receiver exposes connections_accepted and connections_handled, so dropped would have to be computed as accepted minus handled, which the rules require to be blocked rather than translated.",
+      "MISSING_METRIC_MAPPING is the right code since no defined OTel metric matches the quantity.",
+      "otel_metric_definitions is empty, so no metric was checked against the catalog; the block rests on the nginx receiver's known metric set."
+    ],
+    "verdict": "pass"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

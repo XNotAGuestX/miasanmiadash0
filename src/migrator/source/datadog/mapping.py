@@ -21,6 +21,8 @@ from pydantic import (
 Label = Annotated[str, StringConstraints(pattern=r"^[a-zA-Z_][a-zA-Z0-9_]*$")]
 NonEmpty = Annotated[str, StringConstraints(min_length=1)]
 Scale = Annotated[float, Field(gt=0, allow_inf_nan=False)]
+# A fixed PromQL range such as "5m". Used by RateMapping.rateWindow (issue #90).
+RangeDuration = Annotated[str, StringConstraints(pattern=r"^[1-9][0-9]*[smh]$")]
 
 
 class _Strict(BaseModel):
@@ -70,6 +72,11 @@ class RateMapping(_Strict):
     labels: dict[str, Label]
     matchers: dict[Label, str] = Field(default_factory=dict)
     grain: Grain | None = None
+    # A fixed rate() range, used instead of $__rate_interval. For metrics reported
+    # too rarely for Dash0's $__rate_interval (e.g. every 60 s): rate() needs at least
+    # two samples in its range. Set it from the measured collection interval, as part
+    # of the reviewed entry (issue #90).
+    rateWindow: RangeDuration | None = None
     ref: NonEmpty
     reviewed: Reviewed | None
 
