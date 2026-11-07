@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 import tomllib
@@ -61,6 +62,54 @@ def test_inputs_are_sorted_and_symlinks_skipped(tmp_path: Path) -> None:
         collect_input_files([str(root / "b.json")] * 2)
     with pytest.raises(InputError, match="input not found"):
         collect_input_files([str(tmp_path / "missing")])
+
+
+def test_non_utf8_input_is_an_input_error(tmp_path: Path) -> None:
+    bad = tmp_path / "latin1.json"
+    bad.write_bytes('{"title": "café"}'.encode("latin-1"))
+    with pytest.raises(InputError, match=r"input is not valid UTF-8: latin1\.json \(byte 14: "):
+        collect_input_files([str(bad)])
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root ignores file permissions")
+def test_unreadable_input_is_an_input_error(tmp_path: Path) -> None:
+    locked = tmp_path / "locked.json"
+    locked.write_text("{}")
+    locked.chmod(0)
+    try:
+        with pytest.raises(
+            InputError, match=r"cannot read input: locked\.json \(Permission denied\)"
+        ):
+            collect_input_files([str(locked)])
+    finally:
+        locked.chmod(0o600)
+
+
+def test_cli_reports_undecodable_input_without_traceback(tmp_path: Path) -> None:
+    bad = tmp_path / "latin1.json"
+    bad.write_bytes(b'{"title": "caf\xe9"}')
+    r = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "migrator.cli",
+            "convert",
+            "--source",
+            "datadog",
+            "--input",
+            str(bad),
+            "--mapping",
+            MAPPING,
+            "--out",
+            str(tmp_path / "o"),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert r.returncode == 1
+    assert r.stderr.startswith("error: input is not valid UTF-8: latin1.json")
+    assert "Traceback" not in r.stderr
 
 
 def test_unknown_provider() -> None:
