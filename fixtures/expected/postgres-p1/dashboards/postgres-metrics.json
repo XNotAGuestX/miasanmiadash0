@@ -74,7 +74,7 @@
                 "plugin": {
                   "kind": "PrometheusTimeSeriesQuery",
                   "spec": {
-                    "query": "avg (rate({otel_metric_name=\"postgresql.tup_fetched\", otel_metric_type=\"sum\"}[$__rate_interval]))"
+                    "query": "avg (max by (service_instance_id, postgresql_database_name) (rate({otel_metric_name=\"postgresql.tup_fetched\", otel_metric_type=\"sum\"}[$__rate_interval])))"
                   }
                 }
               }
@@ -85,7 +85,7 @@
                 "plugin": {
                   "kind": "PrometheusTimeSeriesQuery",
                   "spec": {
-                    "query": "avg (rate({otel_metric_name=\"postgresql.tup_returned\", otel_metric_type=\"sum\"}[$__rate_interval]))"
+                    "query": "avg (max by (service_instance_id, postgresql_database_name) (rate({otel_metric_name=\"postgresql.tup_returned\", otel_metric_type=\"sum\"}[$__rate_interval])))"
                   }
                 }
               }
@@ -96,7 +96,7 @@
                 "plugin": {
                   "kind": "PrometheusTimeSeriesQuery",
                   "spec": {
-                    "query": "avg (rate({otel_metric_name=\"postgresql.tup_inserted\", otel_metric_type=\"sum\"}[$__rate_interval]))"
+                    "query": "avg (max by (service_instance_id, postgresql_database_name) (rate({otel_metric_name=\"postgresql.tup_inserted\", otel_metric_type=\"sum\"}[$__rate_interval])))"
                   }
                 }
               }
@@ -107,7 +107,7 @@
                 "plugin": {
                   "kind": "PrometheusTimeSeriesQuery",
                   "spec": {
-                    "query": "avg (rate({otel_metric_name=\"postgresql.tup_updated\", otel_metric_type=\"sum\"}[$__rate_interval]))"
+                    "query": "avg (max by (service_instance_id, postgresql_database_name) (rate({otel_metric_name=\"postgresql.tup_updated\", otel_metric_type=\"sum\"}[$__rate_interval])))"
                   }
                 }
               }
