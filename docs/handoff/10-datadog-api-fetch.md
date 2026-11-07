@@ -10,7 +10,7 @@
 - The Datadog implementation does read-only GETs and writes the raw response text.
 - No translation happens during fetch. API and file inputs meet at `collectInputFiles`.
 
-**Tech Stack:** TypeScript, built-in `fetch`, vitest (with mocked fetch).
+**Tech Stack:** Python 3.13 (uv), standard-library `urllib.request`, pytest (with the HTTP call mocked).
 
 **Spec:** [00-context.md](00-context.md) §2 and §6; `docs/SOURCES.md` (Datadog API references).
 
@@ -43,9 +43,9 @@ Creating demo copies of the integrations-core assets in Datadog is a write to th
 ### Task 1: The Datadog fetch client
 
 **Files:**
-- Create: `src/source/datadog/api.ts`
-- Modify: `src/source/provider.ts` (optional `fetch`)
-- Test: `tests/datadog/api.test.ts`
+- Create: `src/migrator/source/datadog/api.py`
+- Modify: `src/migrator/source/provider.py` (optional `fetch`)
+- Test: `tests/datadog/test_api.py`
 
 **Interfaces:**
 - Produces:
@@ -64,12 +64,12 @@ Creating demo copies of the integrations-core assets in Datadog is a write to th
 ### Task 2: CLI and round trip
 
 **Files:**
-- Modify: `src/cli.ts`
-- Test: `tests/fetch-convert.test.ts`
+- Modify: `src/migrator/cli.py`
+- Test: `tests/test_fetch_convert.py`
 
 - [ ] **Step 1: Write `fetched folder converts`.**
   - The mock fetch returns the pinned "Postgres - Metrics" JSON and the **inner** `definition` of `percent_usage_connections` (the API shape).
   - Run `convert` on that folder with `fixtures/mappings/postgres-p0.json`.
   - The dashboard artifact is byte-equal to `fixtures/expected/postgres-p0/dashboards/postgres-metrics.json`.
-- [ ] **Step 2: Wire the `fetch` command.** Run `npm test && npm run typecheck`; both must pass. Commit.
+- [ ] **Step 2: Wire the `fetch` command.** Run `uv run migrator check`; it must pass. Commit.
 - [ ] **Step 3: Live run** (with credentials and the user's go-ahead). Fetch one real dashboard and one real monitor, convert them, and record the selected IDs and the sanitized shapes in `docs/STATUS.md`.
