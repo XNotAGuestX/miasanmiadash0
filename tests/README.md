@@ -1,9 +1,10 @@
 # Unit tests (pytest)
 
-Test-first suite for the deterministic Datadog → Perses (Dash0 PromQL) converter. It is written
-before the engine exists: today every test fails red with `ModuleNotFoundError: No module named
-'migrator.source'`. A case turns green when the converter implements the interface below and
-produces exactly the expected outcome.
+Oracle-backed suite for the deterministic Datadog → Perses (Dash0 PromQL) converter. The
+converter is PR #85's `migrator` package, which is the source of truth for the package layout,
+stack and public API; this suite tests it only through that API. The parser cases run by default
+and pass; a case from `fixtures/expected/` turns green once a human has reviewed it and the
+converter produces exactly the expected outcome.
 
 No LLM takes part in conversion (`AGENTS.md`). Agent0 was used **only at development time** to
 *propose* expected outcomes. Its answers are frozen as provenance, never read by a test, and every
@@ -12,16 +13,19 @@ expectation must be confirmed by a human before it counts (see "Review").
 ## Run
 
 ```bash
-uv sync                                  # once: uv-managed Python 3.11 + locked deps (uv.lock)
-uv run pytest                            # reviewed cases only; unreviewed ones are skipped
+uv sync                                  # once: uv-managed Python 3.13 + locked deps (uv.lock)
+uv run migrator check                    # project DoD: ruff + mypy + pytest (unreviewed cases skipped)
 uv run pytest --include-unreviewed       # also run oracle-proposed, not yet reviewed cases
 uv run pytest -m p0                      # only the MVP cases (also: -m p1, -m p2)
 uv run pytest tests/unit/requests        # only request/widget/parser tests
-uv run pytest tests/scripts              # oracle runner (scripts/run_oracle.py)
+uv sync --group oracle                   # opt-in: Agent0 MCP client for scripts/run_oracle.py
+uv run pytest tests/scripts              # fixture tooling (the MCP SDK test skips without the group)
 ```
 
 Tests are offline: an autouse fixture in `conftest.py` replaces `socket.socket` and
-`socket.create_connection`, so any network access raises.
+`socket.create_connection`, so any network access raises. A case whose mapping file
+(`mappings/datadog/<name>.json`) does not exist yet is skipped; nginx and Redis mappings arrive
+with PR #76.
 
 ## Layout
 
@@ -31,50 +35,55 @@ Tests are offline: an autouse fixture in `conftest.py` replaces `socket.socket` 
 | `unit/requests/test_request.py` | one request (`queries` + `formulas`) → PromQL or a blocking diagnostic | `fixtures/expected/*/*/expected.yaml` → `requests:` |
 | `unit/requests/test_widget.py` | one widget → one Perses panel, or blocked | `expected.yaml` → `widgets:` |
 | `unit/dashboards/test_dashboards.py` | a whole dashboard → Perses dashboard + per-widget outcomes | `expected.yaml` → `dashboard:` |
-| `support.py` | shared helpers: case loading, source-path resolution, PromQL canonicalization, diagnostics checks | |
-| `conftest.py` | `--include-unreviewed` option, `unreviewed` skip, no-network guard | |
+| `support.py` | shared helpers: case loading, the converter adapter, PromQL canonicalization, diagnostic codes | |
+| `conftest.py` | p0/p1/p2/unreviewed markers, `--include-unreviewed` option, no-network guard | |
+| `scripts/` | fixture tooling: `build_expected.py` rules, oracle runner | |
 
-## Interfaces under test
+## Interfaces under test (PR #85)
 
-All from `migrator.source.datadog` (layout: `docs/handoff/00-context.md` §4). Results are
-dataclasses; tests convert them to plain dicts with `support.as_plain`, so field names matter and
-class names do not.
+The tests call only the converter's public API. Results are dataclasses and TypedDicts.
 
 ```python
-parse_metric_query(text: str) -> ParseResult
-#   ParseResult: ok: bool, query: MetricQuery | None, code: str | None, offset: int | None, message: str | None
-#   MetricQuery: aggregator, metric, filters[{kind, key, value} | {kind, name}], group_by: list[str], functions[{name, args}]
+from migrator.source.datadog.parse_query import parse_metric_query
+parse_metric_query(text) -> ParseOk(ok=True, query: MetricQuery) | ParseError(ok=False, code, offset, message)
+#   MetricQuery: aggregator, metric, filters[{kind, key, value} | {kind, name}], group_by, functions[{name, args}]
 #   A failed parse has code UNSUPPORTED_QUERY_SYNTAX or UNSUPPORTED_QUERY_FUNCTION and 0 <= offset <= len(text).
 
-load_mapping(path) -> Mapping                          # mappings/datadog/<service>.json
-
-translate_request(request: dict, *, mapping, variables: list[dict], source_path: str) -> RequestResult
-#   RequestResult: outcome ("translated" | "blocked"), queries: list[str] (PromQL, one per displayed formula),
-#                  diagnostics: list[Diagnostic]
-#   Diagnostic: code, severity, source_id, source_path, message, suggested_action, source_text
-
-translate_widget(widget: dict, *, mapping, variables: list[dict], source_path: str) -> WidgetResult
-#   WidgetResult: outcome, panel_key ("widget-<i>" or group child "widget-<i>-<j>"), panel (Perses Panel | None), diagnostics
-
-translate_dashboard(dashboard: dict, *, mapping, project: str) -> DashboardResult
-#   DashboardResult: outcome ("translated" | "partial" | "blocked"), dashboard (Perses Dashboard | None),
-#                    widgets: list[WidgetResult] (one per leaf widget, source order), diagnostics
+from migrator.source.datadog.mapping import parse_mapping   # mappings/datadog/<name>.json -> MappingOk | MappingInvalid
+from migrator.source.datadog.dashboard import compile_dashboard
+compile_dashboard(SourceAsset, slug, DatadogMapping, CompileOptions(project)) -> DashboardCompilation
+#   dashboard: PersesDashboard | None (None when blocked)
+#   items: [ItemResult(kind="dashboard"), *ItemResult(kind="widget") per leaf widget, source order]
+#   diagnostics: [Diagnostic(code, severity, source_id, source_path, message, suggested_action, source_text)]
+#   panels are keyed "widget-<i>" (group child "widget-<i>-<j>")
 ```
+
+The converter has no per-request or per-widget entry point, so `support.py` derives them:
+
+- **widget** = the widget's `ItemResult`, its panel, and the diagnostics at or under its source path,
+  from one compile of the whole source dashboard;
+- **request** = the request compiled as the only request of a widget with the same type and title,
+  placed as `widgets[0]` in front of the source dashboard's widgets (so template variable promotion
+  sees the same queries); diagnostic paths are mapped back to the source request. Only requests of
+  `timeseries` and `query_value` widgets are cases: for other types the converter reports
+  `UNSUPPORTED_WIDGET` on the type and never reads the requests.
 
 What the tests assert:
 
-- **Request:** outcome; for `translated`, the PromQL list equals the expected list after
+- **Request:** outcome; for `translated`, the panel's PromQL list equals the expected list after
   canonicalization (`support.canonical_promql`: ignores whitespace, redundant parentheses, matcher
   order, `by`/`without` label order and `+`/`*` operand order; different metrics, functions,
-  matchers or aggregations never compare equal); a blocked request emits no queries; error codes
-  exact, warning codes exact for translated requests; every diagnostic's `source_path` lies inside
+  matchers, aggregations or range variables never compare equal); a blocked request emits no panel;
+  the set of error codes matches, and for translated requests the set of warning codes (sets
+  because the converter reports a code once per offending query); every diagnostic lies inside
   the request.
-- **Widget:** all-or-nothing (never drop a series); panel key, title, Perses panel plugin
-  (`TimeSeriesChart`, `StatChart`, `Markdown`), only `TimeSeriesQuery` queries, PromQL as above.
+- **Widget:** all-or-nothing (never drop a series); outcome, error/warning code sets, panel key,
+  title, Perses panel plugin (`TimeSeriesChart`, `StatChart`, `Markdown`), only `TimeSeriesQuery`
+  queries, PromQL as above.
 - **Dashboard:** dashboard outcome and the ordered per-widget outcomes; exactly the translated
   widgets become panels with their PromQL; structure invariants (kind, project, slug name, no
   `dash0Extensions` id, panel keys, every layout item references a panel, grid width ≤ 24);
-  byte-identical output on a second run (determinism).
+  identical dashboard, items and diagnostics on a second compile (determinism).
 - **Parser:** spec cases (subset match); every real corpus query parses or yields exactly one of
   the two parse codes, never a prefix match; deterministic.
 
@@ -101,9 +110,9 @@ requests:
   expected:
     outcome: translated | blocked
     promql: [...]                         # translated only
-    errors: [...]                         # e.g. MISSING_METRIC_MAPPING, UNSUPPORTED_FORMULA,
-                                          #      UNSUPPORTED_QUERY_FUNCTION, UNSUPPORTED_DATA_SOURCE
-    warnings: [...]                       # e.g. TEMPLATE_VARIABLE_DROPPED, DEFAULT_AGGREGATOR_APPLIED
+    errors: [...]                         # e.g. MISSING_METRIC_MAPPING, MISSING_AGGREGATOR, UNSUPPORTED_FORMULA,
+                                          #      UNSUPPORTED_QUERY_FUNCTION, UNSUPPORTED_QUERY_SYNTAX, UNSUPPORTED_DATA_SOURCE
+    warnings: [...]                       # e.g. TEMPLATE_VARIABLE_DROPPED (compared as a set)
   notes: [...]                            # optional, e.g. rule overlay applied
 widgets:   [{source_path, type, milestone, reviewed, expected: {outcome, panel_key, title, panel_plugin, promql, errors, warnings}}]
 dashboard: {milestone, reviewed, expected: {outcome, widgets: [{source_path, outcome, panel_key, promql}]}}
@@ -116,9 +125,15 @@ missing from the Dash0 dataset snapshot (`fixtures/oracle/dash0_default_metrics.
 `translated` and gets the `dataset` block; only metrics found in neither are `blocked` with
 `MISSING_METRIC_MAPPING`.
 
+`mapping` names the converter's mapping file, which is not always the integrations-core directory
+name (`docker_daemon` → `docker.json`, `redisdb` → `redis.json`; `MAPPING_FILE` in the script). The
+expectations assume that file in its reviewed end state, so a translated case also expects no
+`UNREVIEWED_MAPPING` warning.
+
 Widget and dashboard expectations are derived from the request expectations: a widget is
-translated only if its type is supported (`timeseries`, `query_value`, `note`) and all its requests
-are translated; otherwise it is blocked (`UNSUPPORTED_WIDGET` or the requests' error codes).
+translated only if its type is supported (`timeseries`, `query_value`, `note`), it has no blocking
+option (`time`), and all its requests are translated; otherwise it is blocked with
+`UNSUPPORTED_WIDGET`, the request read errors (data source, formula), or the requests' error codes.
 
 ## Provenance pipeline (development time only)
 
@@ -135,8 +150,15 @@ scripts/build_expected.py <svc>/<id>     case + answer + rules overlay + overrid
 metrics query, and requests that use **any** Datadog function in a query or formula (`.rollup()`,
 `.as_count()`, `.weighted()`, `top()`, `per_second()`, `diff()`, ...), are forced to `blocked`, whatever
 Agent0 proposed (plans 02/03/05). `ALLOWED_FUNCTIONS` in the script is empty; a function may only be
-added through its own plan task with an exact test. Error codes are derived from the source text, not
-Agent0's prose; warnings come from template variables and missing aggregators. Every OTel metric in
+added through its own plan task with an exact test. The converter's mapping-independent checks
+also override Agent0, in PR #85's order: request read errors (non-metric data source, a formula with
+a function or a reference to a non-metric query) first; then for every displayed query a wrapping
+function, a syntax error (`count:`, `p95:`, `100*(...)`, `-sum:...`), a trailing function, a missing
+space aggregator (`MISSING_AGGREGATOR`: #85 has no default aggregator), or an undefined or non-`*`
+template variable. Error codes come from these rules, not Agent0's prose; a block that no rule
+explains gets `MISSING_METRIC_MAPPING` plus a note that the code is a proposal (the real code depends
+on the mapping). `TEMPLATE_VARIABLE_DROPPED` is expected for unprefixed `*` variables only; prefixed
+ones are promoted to a Perses ListVariable (`<label>=~"$name"`). Every OTel metric in
 a translated request is checked against the dataset snapshot and the catalog: present in the dataset →
 nothing to note; only in the catalog → stays `translated` with a `dataset` block and a note (no live check
 possible); in neither → `blocked` with `MISSING_METRIC_MAPPING`. Other Agent0 choices
@@ -150,7 +172,8 @@ Agent0's live checks ran against the Dash0 `default` dataset, where receiver dat
 ## Review (`overrides.yaml`)
 
 Unreviewed expectations are proposals. A human reviews `fixtures/expected/REVIEW.md`, then records
-decisions in `fixtures/expected/<svc>/<id>/overrides.yaml`, keyed by request `source_path`:
+decisions in `fixtures/expected/<svc>/<id>/overrides.yaml`, keyed by request `source_path`, or by
+widget `source_path` for a widget without requests (note, image, event stream, ...):
 
 ```yaml
 'widgets[0].definition.requests[0]':
@@ -165,4 +188,5 @@ decisions in `fixtures/expected/<svc>/<id>/overrides.yaml`, keyed by request `so
 
 Then re-run `uv run scripts/build_expected.py <svc>/<id>`. Overridden entries get
 `provenance: {kind: human, ref: .../overrides.yaml}`. A widget counts as reviewed when all its
-requests are; a dashboard when all its widgets are.
+requests are (a widget without requests through its own override); a dashboard when all its
+widgets are.
