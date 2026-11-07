@@ -1,58 +1,50 @@
-"""Unit tests: one Datadog request (queries + formulas) -> PromQL queries or a blocking diagnostic.
+"""One Datadog request (queries + formulas) -> PromQL queries or a blocking diagnostic.
 
-This is the main transformation unit. Cases come from
-fixtures/expected/<service>/<dashboard>/expected.yaml (`requests:`), with the
-input resolved from the pinned source dashboard by `source_path`.
+Cases come from fixtures/expected/<service>/<dashboard>/expected.yaml (`requests:`), with the
+input resolved from the pinned source dashboard by `source_path`. Only requests of widget types
+the converter compiles (timeseries, query_value) are cases; other widgets are blocked on their
+type (see test_widget.py).
 
-Interface under test:
-    migrator.source.datadog.load_mapping(path) -> Mapping
-    migrator.source.datadog.translate_request(
-        request: dict, *, mapping, variables: list[dict], source_path: str
-    ) -> RequestResult
-    RequestResult: dataclass with outcome ("translated" | "blocked"),
-                   queries: list[str]  (PromQL, one per displayed formula, in order),
-                   diagnostics: list[Diagnostic]
-    Diagnostic: dataclass with code, severity, source_id, source_path, message,
-                suggested_action, source_text
+The converter (PR #85) has no per-request entry point, so `support.request_unit` compiles the
+request as the only request of a widget of the same type, inside its source dashboard.
 """
 
 from __future__ import annotations
 
 import pytest
 
-from support import as_plain, assert_diagnostics, canonical_list, case_params
-
-
-def _translate(case):
-    from migrator.source.datadog import load_mapping, translate_request
-
-    return as_plain(
-        translate_request(
-            case.source_item,
-            mapping=load_mapping(case.mapping_path),
-            variables=case.variables,
-            source_path=case.source_path,
-        )
-    )
+from tests.support import (
+    Case,
+    assert_codes,
+    canonical_list,
+    case_params,
+    panel_queries,
+    request_unit,
+    under,
+    widget_path_of,
+)
 
 
 @pytest.mark.parametrize("case", case_params("request"))
-def test_request_translation(case):
-    result = _translate(case)
+def test_request_translation(case: Case) -> None:
+    unit = request_unit(case)
     expected = case.expected
-    assert result["outcome"] == expected["outcome"]
+    assert unit.outcome == expected["outcome"]
     if expected["outcome"] == "translated":
-        # Compared after PromQL normalization (whitespace, parens, matcher order, + and * operand order).
-        assert canonical_list(result["queries"]) == canonical_list(expected["promql"])
+        assert unit.panel is not None
+        # Compared after PromQL normalization (whitespace, parens, matcher order, + and * order).
+        assert canonical_list(panel_queries(unit.panel)) == canonical_list(expected["promql"])
     else:
-        assert result["queries"] == [], "a blocked request must not emit any series"
-    assert_diagnostics(result, expected)
+        assert unit.panel is None, "a blocked request must not emit a panel"
+    assert_codes(unit, expected)
 
 
 @pytest.mark.parametrize("case", case_params("request"))
-def test_request_diagnostics_point_into_source(case):
-    """Every diagnostic carries a source path inside the request it came from."""
-    result = _translate(case)
-    for d in result["diagnostics"]:
-        assert d["source_path"].startswith(case.source_path), d
-        assert d["message"], d
+def test_request_diagnostics_point_into_source(case: Case) -> None:
+    """Every diagnostic carries a message and a source path inside the request (or, for the
+    widget-level query_value checks, the widget's request list)."""
+    unit = request_unit(case)
+    requests_path = f"{widget_path_of(case.source_path)}.definition.requests"
+    for d in unit.diagnostics:
+        assert under(d.source_path, case.source_path) or d.source_path == requests_path, d
+        assert d.message, d

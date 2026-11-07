@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import shutil
+from collections.abc import Iterator
 from pathlib import Path
 
-import pytest
-import yaml
-
 import build_expected as be
+import pytest
 import render_oracle_prompt as rp
 import run_oracle as ro
+import yaml
 
 KEY = "nginx/NGINX-Metrics_dashboard"
 
@@ -22,7 +22,9 @@ def selector(name: str, kind: str) -> str:
 def catalog_only_metric(kind: str = "sum") -> str:
     """A metric OpenTelemetry defines that the dataset snapshot does not contain."""
     present = be.dataset_metrics()
-    return next(n for n, m in be.otel_catalog().items() if n not in present and m["type"] == kind)
+    return str(
+        next(n for n, m in be.otel_catalog().items() if n not in present and m["type"] == kind)
+    )
 
 
 def test_dataset_metric_needs_no_note() -> None:
@@ -47,7 +49,7 @@ def test_type_mismatch_is_reported_for_absent_metrics() -> None:
 
 
 @pytest.fixture
-def sandbox(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+def sandbox(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
     """A copy of the inputs build() reads, with ROOT pointing at it."""
     case_rel = Path("fixtures/cases") / f"{KEY}.yaml"
     case = yaml.safe_load((be.ROOT / case_rel).read_text())
@@ -79,7 +81,9 @@ def rewrite_answer(root: Path, source_path: str, promql: list[str]) -> None:
 
 def first_single_formula_request() -> str:
     case = yaml.safe_load((be.ROOT / "fixtures/cases" / f"{KEY}.yaml").read_text())
-    return next(r["source_path"] for r in case["requests"] if len(r["formulas"]) <= 1 and r["queries"])
+    return str(
+        next(r["source_path"] for r in case["requests"] if len(r["formulas"]) <= 1 and r["queries"])
+    )
 
 
 def test_build_keeps_translation_with_dataset_block(sandbox: Path) -> None:
@@ -108,14 +112,20 @@ def test_validation_requires_otel_source_outside_the_dataset() -> None:
     case = ro.load_case(KEY)
     sp = first_single_formula_request()
     items = [
-        {"source_path": r["source_path"], "outcome": "blocked", "reason": "x"} for r in case["requests"]
+        {"source_path": r["source_path"], "outcome": "blocked", "reason": "x"}
+        for r in case["requests"]
     ]
     items[[r["source_path"] for r in case["requests"]].index(sp)] = {
-        "source_path": sp, "outcome": "translated", "promql": ["q"], "in_dataset": "no",
+        "source_path": sp,
+        "outcome": "translated",
+        "promql": ["q"],
+        "in_dataset": "no",
     }
     with pytest.raises(ro.AnswerError, match="needs otel_source"):
         ro.validate_answer(yaml.safe_dump(items), case)
-    items[[r["source_path"] for r in case["requests"]].index(sp)]["otel_source"] = ["x/metadata.yaml"]
+    items[[r["source_path"] for r in case["requests"]].index(sp)]["otel_source"] = [
+        "x/metadata.yaml"
+    ]
     ro.validate_answer(yaml.safe_dump(items), case)
 
 
@@ -124,5 +134,7 @@ def test_prompt_lists_otel_candidates_with_dataset_presence() -> None:
     lines = rp.candidate_lines(case)
     zookeeper = [line for line in lines if line.startswith("- zookeeper.")]
     assert zookeeper and all("not in dataset" in line for line in zookeeper)
-    assert any(line.startswith("- kafka.message.count ") and "; in dataset;" in line for line in lines)
+    assert any(
+        line.startswith("- kafka.message.count ") and "; in dataset;" in line for line in lines
+    )
     assert lines == sorted(lines)
