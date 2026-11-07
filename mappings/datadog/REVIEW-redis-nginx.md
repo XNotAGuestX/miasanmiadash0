@@ -40,10 +40,13 @@ Drafted by Track B on 2026-11-07 (Python stack, mapping schema with `rate` and `
 
 ## Mapped now (all `reviewed: null`)
 
-Every entry cites its Datadog row, the `metadata.csv` line at the pinned integrations-core commit, and a read-only
-Dash0 query. **Kind follows how Datadog submits the metric** (`metadata.csv`, checked 2026-11-07): a per-second rate
-becomes `rate`; a running total submitted as a gauge stays `gauge` on the cumulative sum, so values are comparable
-without `rate()`.
+Every entry cites its Datadog row, the verbatim `metadata.csv` line at the pinned integrations-core commit, and a
+read-only Dash0 query. **Kind follows how the agent check submits the metric, not the `metadata.csv` type column**,
+which labels every agent rate `gauge`. For Redis that is `redisdb/datadog_checks/redisdb/constants.py` at `a9b9e42`:
+keys in `RATE_KEYS` (submitted via `self.rate()`, e.g. `used_cpu_sys`, `keyspace_hits`) become `rate` over the
+cumulative OTel sum; keys in `GAUGE_KEYS` (e.g. `evicted_keys`, `rejected_connections`) stay `gauge` on the cumulative
+sum, so values are comparable without `rate()`. (Corrected 2026-11-07 after review: `redis.cpu.sys`/`redis.cpu.user`
+were wrongly `gauge`.)
 
 ### `redis.json`
 
@@ -63,8 +66,8 @@ without `rate()`.
 | `redis.keys.evicted` | gauge | `redis.keys.evicted` (sum) | Datadog: "total number", no per-second unit |
 | `redis.keys.expired` | gauge | `redis.keys.expired` (sum) | as above |
 | `redis.net.rejected` | gauge | `redis.connections.rejected` (sum) | as above |
-| `redis.cpu.sys` | gauge + `state="sys"` | `redis.cpu.time` (sum) | Dash0 also has `sys_children`, `sys_main_thread`; excluded by the matcher |
-| `redis.cpu.user` | gauge + `state="user"` | `redis.cpu.time` (sum) | as above for `user_*` |
+| `redis.cpu.sys` | **rate** + `state="sys"` | `redis.cpu.time` (sum) | Dash0 also has `sys_children`, `sys_main_thread`; excluded by the matcher |
+| `redis.cpu.user` | **rate** + `state="user"` | `redis.cpu.time` (sum) | as above for `user_*` |
 
 ### `nginx.json`
 
