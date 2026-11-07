@@ -6,11 +6,11 @@
 
 **Architecture:**
 
-- `promql.ts` (shared) renders selectors and escapes label values.
-- `mapping.ts` validates the Datadog mapping file with Zod.
-- `compile-query.ts` applies a fixed sequence of checks, stops at the first blocking error for each query, collects warnings, and renders `agg [by (labels)] (selector)`.
+- `promql.py` (shared) renders selectors and escapes label values.
+- `mapping.py` validates the Datadog mapping file with a strict pydantic model.
+- `compile_query.py` applies a fixed sequence of checks, stops at the first blocking error for each query, collects warnings, and renders `agg [by (labels)] (selector)`.
 
-**Tech Stack:** TypeScript, zod, vitest.
+**Tech Stack:** Python 3.13 (uv), pydantic, pytest.
 
 **Spec:** [00-context.md](00-context.md) §2 (rules 3–4), §3 (A1), §7 (Dash0 PromQL conventions) and §8.
 
@@ -37,8 +37,8 @@
 ### Task 1: Shared PromQL rendering
 
 **Files:**
-- Create: `src/promql.ts`
-- Test: `tests/promql.test.ts`
+- Create: `src/migrator/promql.py`
+- Test: `tests/test_promql.py`
 
 **Interfaces:**
 - Produces:
@@ -64,13 +64,13 @@ describe("promql", () => {
 ```
 
 - [ ] **Step 2: Run it.** It must FAIL. **Step 3: Implement it.** **Step 4: Verify.** It must PASS.
-- [ ] **Step 5: Commit.** `git add src/promql.ts tests/promql.test.ts && git commit -m "feat: PromQL selector rendering and escaping"`.
+- [ ] **Step 5: Commit.** `git add src/migrator/promql.py tests/test_promql.py && git commit -m "feat: PromQL selector rendering and escaping"`.
 
 ### Task 2: Mapping schema and loader
 
 **Files:**
-- Create: `src/source/datadog/mapping.ts`
-- Test: `tests/datadog/mapping.test.ts`
+- Create: `src/migrator/source/datadog/mapping.py`
+- Test: `tests/datadog/test_mapping.py`
 
 **Interfaces:**
 - Produces:
@@ -83,8 +83,8 @@ export interface DatadogMapping { version: 1; source: "datadog"; metrics: Record
 export function parseMapping(raw: unknown): { ok: true; mapping: DatadogMapping } | { ok: false; errors: string[] };
 ```
 
-- Use a strict Zod object (unknown keys rejected) and a discriminated union on `kind`.
-- Each error message is `<json.path>: <zod message>`.
+- Use strict pydantic models (`extra="forbid"`, unknown keys rejected) and a discriminated union on `kind` (`Field(discriminator="kind")`).
+- Each error message is `<json.path>: <pydantic message>`.
 - `runConvert` (plan 01) calls `parseMapping` through the provider. `{ok:false}` becomes an `InputError("invalid mapping: " + errors.join("; "))`, which exits 1. Wire this in `datadogProvider.compile`, at its first line.
 
 - [ ] **Step 1: Write the failing tests.**
@@ -99,8 +99,8 @@ export function parseMapping(raw: unknown): { ok: true; mapping: DatadogMapping 
 ### Task 3: compileMetricQuery
 
 **Files:**
-- Create: `src/source/datadog/compile-query.ts`
-- Test: `tests/datadog/compile-query.test.ts`
+- Create: `src/migrator/source/datadog/compile_query.py`
+- Test: `tests/datadog/test_compile_query.py`
 
 **Interfaces:**
 - Consumes: `MetricQuery` (plan 02), `DatadogMapping` (Task 2), `renderSelector` (Task 1), `Diagnostic` (plan 01).
@@ -151,7 +151,7 @@ Every diagnostic carries `ctx.sourceId`, `ctx.sourcePath` and `sourceText: ctx.s
 
 **Files:**
 - Create: `mappings/datadog/postgres.json`
-- Test: `tests/datadog/mapping-files.test.ts`
+- Test: `tests/datadog/test_mapping_files.py`
 
 **Interfaces:**
 - Produces: the mapping file that plan 04's golden run uses.
@@ -178,7 +178,7 @@ Every diagnostic carries `ctx.sourceId`, `ctx.sourcePath` and `sourceText: ctx.s
 ```
 
 - [ ] **Step 2: Write the test.** `every mapping file under mappings/datadog parses`: glob the directory, and `parseMapping` must return `ok:true` for each file.
-- [ ] **Step 3: Verify.** Run `npx vitest run tests/datadog`. It must PASS.
+- [ ] **Step 3: Verify.** Run `uv run migrator test tests/datadog`. It must PASS.
 - [ ] **Step 4: Request a human review.**
   - Ask the user or a teammate to check the entry against the metrics_mapping row and `docs/DASH0_INVENTORY.md`, and then set `reviewed` themselves.
   - Record the semantic note: `backends` counts all backend types; Datadog's `connections` counts `numbackends`.
