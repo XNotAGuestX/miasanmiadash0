@@ -56,6 +56,29 @@ def _cmd_fetch(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_publish(args: argparse.Namespace) -> int:
+    import os
+
+    from migrator.publish import PublishOptions, run_publish
+
+    try:
+        run = run_publish(
+            PublishOptions(
+                source_dir=args.source_dir,
+                dry_run=args.dry_run,
+                allow_partial=args.allow_partial,
+                name_prefix=args.name_prefix,
+            ),
+            os.environ,
+        )
+    except InputError as err:
+        print(f"error: {err}", file=sys.stderr)
+        return 1
+    for line in run.lines:
+        print(line)
+    return run.exit_code
+
+
 def _run_tool(argv: list[str]) -> int:
     return subprocess.call([sys.executable, "-m", *argv])
 
@@ -98,6 +121,18 @@ def build_parser() -> argparse.ArgumentParser:
     fet.add_argument("--monitor-id", action="append", help="monitor ID (repeatable)")
     fet.add_argument("--out", required=True, help="output directory (must be empty)")
 
+    pub = sub.add_parser("publish", help="import converted artifacts into Dash0 (create-only)")
+    pub.add_argument("--from", dest="source_dir", required=True, help="a convert output directory")
+    pub.add_argument("--dry-run", action="store_true", help="print the plan; send nothing")
+    pub.add_argument(
+        "--allow-partial", action="store_true", help="also publish partially translated dashboards"
+    )
+    pub.add_argument(
+        "--name-prefix",
+        metavar="PREFIX",
+        help="prepend PREFIX (a-z, 0-9, '-'; e.g. demo-) to every published name",
+    )
+
     sub.add_parser("test", help="run the test suite; extra args go to pytest")
     sub.add_parser("typecheck", help="run mypy")
     sub.add_parser("lint", help="run ruff")
@@ -120,6 +155,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "fetch":
         return _cmd_fetch(args)
+    if args.command == "publish":
+        return _cmd_publish(args)
     return _cmd_convert(args)
 
 
