@@ -13,9 +13,9 @@ These rules apply to all contributors and coding agents, including **Codex and C
 ## Read first
 
 1. This file.
-2. `docs/PROJECT_HANDOFF.md` for the technical contract.
+2. `docs/handoff/README.md`, the implementation plan: which handoff holds what, the order, and the open decisions. Then `docs/handoff/00-context.md` (the shared spec) and the plan you're taking.
 3. `docs/STATUS.md` for actual progress and current ownership.
-4. `docs/EXECUTION_PLAN.md` for the next unfinished milestone.
+4. `docs/PROJECT_HANDOFF.md` and `docs/EXECUTION_PLAN.md` for background. Where they conflict with `docs/handoff/`, the handoff directory wins.
 
 Read existing code before changing it. The handoff describes planned behavior; source code, executable checks, and recorded live evidence establish what works today.
 

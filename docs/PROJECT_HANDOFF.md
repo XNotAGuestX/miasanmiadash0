@@ -1,5 +1,7 @@
 # Project initialization handoff
 
+> **Superseded where it conflicts (2026-11-07):** the implementation plan is now [`docs/handoff/`](handoff/README.md). Where this document disagrees with it (first example, command names, priorities, phases), the handoff directory wins. This file stays as background.
+
 ## Non-negotiable first priority
 
 **Deterministic conversion is of utmost importance and comes before anything else. No LLM shall be involved in translation from any source to Perses.** The same prohibition covers source-query-to-PromQL and source-monitor-to-check-rule conversion. MVP deadlines, broader coverage, and demo goals never justify an exception.

@@ -2,6 +2,8 @@
 
 Written for the next planning session from the approved planning session of 2026-11-07. It describes planned behavior; nothing below is implemented unless stated.
 
+> **Superseded for planning (2026-11-07):** the implementation plan is now [`docs/handoff/`](handoff/README.md), split into self-contained handoffs. This file stays as research notes; its §7 decisions are carried over as A1–A4 and B1–B3 in [`handoff/00-context.md`](handoff/00-context.md).
+
 > **Update (2026-11-07, about 14:50 UTC): M0 is done.** The Dash0 inventory is in [DASH0_INVENTORY.md](DASH0_INVENTORY.md). It corrects §5.2, §6 and §8 (the real Postgres labels are `postgresql_database_name` and `postgresql_table_name`, and series must be deduplicated), adds the gaps in [§8a](#8a-gaps-found-by-the-inventory), and sets the service order in [§9](#9-draft-development-plan-finalize-after-m0). The open decisions are now §7 items 1–5.
 
 ## 1. Purpose and read order

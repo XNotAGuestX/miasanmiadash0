@@ -1,6 +1,6 @@
 # Shared project status
 
-Last updated: 2026-11-07, about 14:50 UTC: Dash0 inventory (M0) done ([DASH0_INVENTORY.md](DASH0_INVENTORY.md)); planning handoff in [PLANNING_HANDOFF.md](PLANNING_HANDOFF.md).
+Last updated: 2026-11-07: implementation plan written and split into handoffs in [`handoff/`](handoff/README.md). Dash0 inventory (M0) done ([DASH0_INVENTORY.md](DASH0_INVENTORY.md)).
 
 Highest-priority requirement: deterministic conversion before all other objectives. No LLM involvement in source-to-Perses or query/alert conversion, including optional inference, repair, and fallback paths. Shared rules, handoff, kickoff prompt, and acceptance gates now state this explicitly. Codex and Claude remain implementation assistants only.
 
@@ -9,7 +9,7 @@ Highest-priority requirement: deterministic conversion before all other objectiv
 | Area | State | Evidence |
 | --- | --- | --- |
 | Project scope and handoff | Written | `PROJECT_HANDOFF.md`, `EXECUTION_PLAN.md`, `DEMO.md` |
-| Planning for the Postgres golden case and service order | In progress: M0 done; waiting on the user's decisions (§7 items 1–5) | [`PLANNING_HANDOFF.md`](PLANNING_HANDOFF.md): user decisions, research, gaps (§8a), draft M0–M4 plan |
+| Implementation plan | Written; awaiting the user's review and confirmation of assumed defaults A1–A4 | [`handoff/README.md`](handoff/README.md) maps plans 00–10; research notes in [`PLANNING_HANDOFF.md`](PLANNING_HANDOFF.md) |
 | Dash0 inventory (M0) | Done (read-only, via MCP) | [`DASH0_INVENTORY.md`](DASH0_INVENTORY.md): `default` has live Postgres (27 metrics), Kafka (broker JMX and consumer lag), Redis, Nginx, host, Docker and HTTP-check data from a local OTel Demo run; `dash0-demo` has no database metrics. Service order: Postgres → host → Kafka → Redis → Nginx → Docker |
 | Shared Codex/Claude rules | Written | Root `AGENTS.md`; `CLAUDE.md` refers to it |
 | Local configuration template | Written | Root `.env.example` and `.gitignore` |
@@ -30,21 +30,15 @@ No implementation task is claimed. Codex and Claude must read this file before e
 
 | Task | Driver | Files | Dependencies / next handoff |
 | --- | --- | --- | --- |
-| Next: user decisions (§7 items 1–5), then finalize the plan and docs | Unclaimed | `docs/PROJECT_HANDOFF.md`, `docs/EXECUTION_PLAN.md`, `docs/DEMO.md`, `docs/STATUS.md` | Needs the user's answers; see `PLANNING_HANDOFF.md` §7 and §10 |
+| Next: plan 01, bootstrap and `convert` CLI | Unclaimed | See [`handoff/01-bootstrap-cli.md`](handoff/01-bootstrap-cli.md) | None; runs offline. Then plans 02 → 03 → 04 (MVP converter) |
 
 ## Next concrete action
 
-Follow [`PLANNING_HANDOFF.md`](PLANNING_HANDOFF.md) §10:
+Follow [`handoff/README.md`](handoff/README.md):
 
-1. ~~Run the read-only Dash0 inventory (M0).~~ Done: [`DASH0_INVENTORY.md`](DASH0_INVENTORY.md).
-2. ~~Order the services by the data found.~~ Done: Postgres → host → Kafka → Redis → Nginx → Docker.
-3. Ask the user the open decisions (§7):
-   1. target vocabulary;
-   2. alert file format;
-   3. monitor strictness;
-   4. demo telemetry owner and connection-holder script;
-   5. Dash0 token or UI export.
-4. Finalize the development plan, update `PROJECT_HANDOFF.md`, `EXECUTION_PLAN.md` and `DEMO.md`, and start M1 (bootstrap).
+1. The user reviews the plans and confirms or changes the assumed defaults A1–A3 (target vocabulary, alert output, monitor strictness) and A4 (`convert` / `publish` command names).
+2. Claim plan 01 here and execute plans 01 → 02 → 03 → 04 (the offline MVP converter). No credentials needed.
+3. In parallel, resolve blockers B1 (Dash0 token), B2 (demo telemetry owner) and B3 (Datadog account, plan 10 only).
 
 The starter/fork workflow is still unresolved; settle it before the first implementation commit.
 

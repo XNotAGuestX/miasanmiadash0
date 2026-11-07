@@ -6,9 +6,9 @@ Follow its highest-priority rule first: deterministic conversion takes precedenc
 
 Then read:
 
-1. [Project handoff](docs/PROJECT_HANDOFF.md).
+1. [Implementation plan overview](docs/handoff/README.md) (which handoff holds what), then [the shared spec](docs/handoff/00-context.md).
 2. [Current status and ownership](docs/STATUS.md).
-3. [Execution plan](docs/EXECUTION_PLAN.md).
+3. Background: [project handoff](docs/PROJECT_HANDOFF.md) and [execution plan](docs/EXECUTION_PLAN.md). `docs/handoff/` wins where they conflict.
 
 Keep shared instructions in `AGENTS.md`. Use tool-neutral code, task, and subsystem names. Respect existing work and file ownership, finish the MVP before expanding scope, and update the shared status at handoff.
 

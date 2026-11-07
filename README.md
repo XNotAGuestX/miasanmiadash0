@@ -9,8 +9,8 @@ Hackathon project: a deterministic CLI that migrates Datadog dashboards and metr
 ## Start here
 
 1. Read [AGENTS.md](AGENTS.md), the shared working rules for humans, Codex, and Claude.
-2. Read [the project handoff](docs/PROJECT_HANDOFF.md) for scope, architecture, contracts, and acceptance criteria.
-3. Follow [the execution plan](docs/EXECUTION_PLAN.md) in priority order.
+2. Read [the implementation plan overview](docs/handoff/README.md): which handoff holds what, the order of work, and the open decisions. Each numbered file in `docs/handoff/` is a self-contained, test-first plan.
+3. Background: [the project handoff](docs/PROJECT_HANDOFF.md) (scope, architecture, acceptance criteria) and [the execution plan](docs/EXECUTION_PLAN.md). Where they conflict with `docs/handoff/`, the handoff directory wins.
 4. Check and update [STATUS.md](docs/STATUS.md) before handing work to another contributor.
 5. Use [the demo runbook](docs/DEMO.md) to verify the deliverable.
 

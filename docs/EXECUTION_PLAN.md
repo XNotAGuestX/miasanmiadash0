@@ -1,5 +1,7 @@
 # MVP execution plan
 
+> **Superseded where it conflicts (2026-11-07):** the implementation plan is now [`docs/handoff/`](handoff/README.md). Where this document disagrees with it (first example, command names, priorities, phases), the handoff directory wins. This file stays as background.
+
 **Before anything else, enforce deterministic conversion. No LLM shall be involved in source-to-Perses translation or related query/alert conversion, including optional repair or fallback paths.** Establish the explicit parser/mapping/rule contract before feature work. Every milestone is subordinate to this rule; cut features before relaxing it.
 
 Work in order. Choose one driver per task and keep ownership in [STATUS.md](STATUS.md). Drivers can be a human, Codex, or Claude; module names stay independent of the tool. This plan does not request parallel agents.
