@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 
+from migrator.http import HttpSend, urllib_send
 from migrator.input import InputFile
 from migrator.target import CompileResult, Diagnostic
 
@@ -52,4 +53,10 @@ class SourceProvider(Protocol):
 class FetchingProvider(SourceProvider, Protocol):
     """A provider that can also fetch assets from its API by explicit ID (optional)."""
 
-    def fetch(self, sel: FetchSelection, env: Mapping[str, str | None], out: str) -> list[str]: ...
+    def fetch(
+        self,
+        sel: FetchSelection,
+        env: Mapping[str, str | None],
+        out: str,
+        send: HttpSend = urllib_send,
+    ) -> list[str]: ...

@@ -23,6 +23,15 @@ uv run migrator convert --source datadog \
 
 `convert` is offline. It writes `dashboards/`, `source/` copies, `report.json` and `manifest.json` into an empty `--out` directory, and exits `0` (all translated), `2` (some item partial or blocked) or `1` (bad input, mapping or arguments).
 
+`fetch` is read-only and downloads selected Datadog assets unchanged into a folder that `convert --input` reads:
+
+```bash
+DD_API_KEY=… DD_APP_KEY=… DD_SITE=datadoghq.eu \
+  uv run migrator fetch --source datadog --dashboard-id abc-def-123 --monitor-id 4242 --out /tmp/dd-in
+```
+
+It needs an application key with `dashboards_read` / `monitors_read`, validates every ID and the empty `--out` before any request, writes nothing unless every request succeeded, and exits `0` or `1`. It is tested against a fake transport only; no live Datadog run yet (blocker B3).
+
 ## Start here
 
 1. Read [AGENTS.md](AGENTS.md), the shared working rules for humans, Codex, and Claude.
