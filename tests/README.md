@@ -21,6 +21,11 @@ uv run pytest tests/unit/requests        # only request/widget/parser tests
 uv run pytest tests/scripts              # fixture tooling (oracle runner, verifiers)
 ```
 
+Each run that executes `test_request_translation` writes `out/test-report/index.html` (git-ignored;
+the `file://` URL is printed in the summary): per request case the expected and actual outcome,
+PromQL and diagnostic codes side by side, the canonical PromQL diff and the Datadog request, failures
+first. `conftest.py` collects the records (`record_comparison` fixture), `report_html.py` renders them.
+
 Tests are offline: an autouse fixture in `conftest.py` replaces `socket.socket` and
 `socket.create_connection`, so any network access raises. A case whose mapping file
 (`mappings/datadog/<name>.json`) does not exist yet is skipped; nginx and Redis mappings arrive

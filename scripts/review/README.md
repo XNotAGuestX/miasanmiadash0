@@ -1,3 +1,20 @@
+# Local Perses viewer: converter output and oracle review dashboards
+
+## View converter output
+
+Start Perses (step 2 below), then load any `migrator convert --out` directory. Nothing is sent to Dash0
+except the dashboards' own PromQL queries, through the local datasource proxy:
+
+```sh
+uv run migrator convert --source datadog --input fixtures/datadog/integrations-core/postgres \
+  --mapping mappings/datadog/postgres.json --out out/convert/postgres
+uv run scripts/review/load_local.py out/convert/postgres --perses-url http://localhost:8080
+```
+
+The script creates project `datadog-migration` with the same `dash0` Secret and datasource, loads
+each dashboard, verifies the read-back and prints its URL. The rest of this file describes the oracle
+review dashboards, which load the same way.
+
 # Oracle review dashboards (issue #87)
 
 Development-time aid for humans reviewing the agent0-derived expectations in
