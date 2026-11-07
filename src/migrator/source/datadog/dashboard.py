@@ -156,13 +156,14 @@ def read_template_variables(body: dict[str, Any]) -> list[TemplateVariable]:
         default: str | None
         if tv.get("default") is not None:
             default = str(tv["default"])
-        elif "defaults" in tv and isinstance(tv["defaults"], list):
+        elif isinstance(tv.get("defaults"), list) and tv["defaults"]:
             defaults = tv["defaults"]
             if len(defaults) == 1:
                 default = str(defaults[0])
             else:
                 default = json.dumps(defaults, separators=(",", ":"))
         else:
+            # No `default`, and `defaults` missing or empty: the variable has no default.
             default = None
         out.append(TemplateVariable(name=tv["name"], prefix=prefix, default=default))
     return out

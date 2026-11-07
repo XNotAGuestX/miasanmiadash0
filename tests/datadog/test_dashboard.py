@@ -236,6 +236,32 @@ def test_reads_template_variable_defaults() -> None:
     ) == [TemplateVariable("s", None, '["a","b"]')]
 
 
+def test_empty_defaults_list_means_no_default() -> None:
+    assert read_template_variables(
+        {"template_variables": [{"name": "db", "prefix": "db", "defaults": []}]}
+    ) == [TemplateVariable("db", "db", None)]
+    # A dashboard fetched from the API may carry `defaults: []`; widgets using the
+    # variable must not be blocked with UNSUPPORTED_TEMPLATE_VARIABLE.
+    c = compile_body(
+        body(
+            ts({"q": "avg:postgresql.connections{$db}"}),
+            ts({"q": "avg:postgresql.connections{$host}"}),
+            variables=[
+                {"name": "db", "prefix": "db", "defaults": []},
+                {"name": "host", "prefix": "nomapping", "defaults": []},
+            ],
+        )
+    )
+    assert [i.outcome for i in c.items] == ["translated", "translated", "translated"]
+    assert "UNSUPPORTED_TEMPLATE_VARIABLE" not in [d.code for d in c.diagnostics]
+    assert c.dashboard is not None
+    [var] = c.dashboard["spec"]["variables"]
+    assert var["spec"]["name"] == "db"
+    dropped = [d for d in c.diagnostics if d.code == "TEMPLATE_VARIABLE_DROPPED"]
+    assert [d.source_path for d in dropped] == ["widgets[1].definition.requests[0].q"]
+    assert "(no default)" in dropped[0].message
+
+
 def test_maps_prefixed_variables_to_list_variable() -> None:
     c = compile_body(
         body(
