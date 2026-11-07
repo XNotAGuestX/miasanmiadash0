@@ -10,7 +10,10 @@ dependencies = ["PyYAML>=6"]
 [dependency-groups]
 dev = ["pytest>=8", "promql-parser>=0.12"]
 # Development-time Agent0 oracle runner (scripts/run_oracle.py); never used by the converter.
-oracle = ["mcp==2.3.0"]
+oracle = [
+    "anthropic>=2.6.0",
+    "mcp==2.3.0",
+]
 
 [tool.uv]
 default-groups = ["dev", "oracle"]
