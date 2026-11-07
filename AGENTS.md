@@ -14,7 +14,7 @@ These rules apply to all contributors and coding agents, including **Codex and C
 
 1. This file.
 2. `docs/handoff/README.md`, the implementation plan: which handoff holds what, the order, and the open decisions. Then `docs/handoff/00-context.md` (the shared spec) and the plan you're taking.
-3. `docs/STATUS.md` for actual progress and current ownership.
+3. The GitHub issue you're working on, including its comments, then `docs/STATUS.md` for the overall state.
 4. `docs/PROJECT_HANDOFF.md` and `docs/EXECUTION_PLAN.md` for background. Where they conflict with `docs/handoff/`, the handoff directory wins.
 
 Read existing code before changing it. The handoff describes planned behavior; source code, executable checks, and recorded live evidence establish what works today.
@@ -43,14 +43,41 @@ Read existing code before changing it. The handoff describes planned behavior; s
 
 ## Working together
 
-- Both Codex and Claude may work in this repository. Before editing, inspect the worktree and read current ownership in `docs/STATUS.md`.
-- Use task-based ownership: state the goal, files being changed, interface dependencies, and next handoff. Avoid simultaneous edits to shared contracts, package manifests, lockfiles, and the same source files.
-- Do not overwrite, discard, stash, reset, or clean another contributor's changes. Coordinate when ownership overlaps.
-- Agree on interface changes before making dependent edits. Update the handoff and consumers together when a contract changes.
+- Both Codex and Claude may work in this repository. Before editing, inspect the worktree, the issue's assignee and comments, and open PRs.
+- Use task-based ownership through issues (below). Avoid simultaneous edits to shared contracts, package manifests, lockfiles, and the same source files; file ownership per track is in `docs/handoff/WORK_SPLIT.md#file-ownership`.
+- Do not overwrite, discard, stash, reset, or clean another contributor's changes. Coordinate in the issue when ownership overlaps.
+- Agree on interface changes in the issue before making dependent edits. Update the handoff and consumers together when a contract changes.
 - Parallel agent work is optional and only used when explicitly requested. This handoff does not itself authorize spawning agents.
-- At handoff, update `docs/STATUS.md` with completed work, exact checks and results, remaining blockers, and the next concrete task. Record facts, not assumed completion.
-- Do not commit directly to `main`. Follow the challenge's fork → feature branch → upstream PR workflow. Do not push or open a PR merely because this document describes submission.
-- Exception: an agent may merge a feature branch into `main` (and push `main`) only when the user explicitly asks for that specific merge. The request covers only the named branch at that time; it is not standing permission. Never force-push or rewrite `main`'s history, and stop to report conflicts or failing checks instead of resolving them by discarding changes.
+- At handoff, comment on the issue with completed work, exact checks and results, remaining blockers, and the next concrete task (template in `docs/STATUS.md`). Update `docs/STATUS.md` itself only when the overall state changes, such as a plan finishing or a blocker resolving. Record facts, not assumed completion.
+
+## Tracking work in GitHub issues
+
+From now on, every task is tracked as a GitHub issue in `XNotAGuestX/thinchackdash`, and agents and people communicate through those issues.
+
+- **Existing work is already filed.** Each plan task (`01.T1` … `10.T2`) has one issue, labelled `task`, `plan:NN` and `track:A` or `track:B`, and attached as a sub-issue of its plan's `epic`. Open decisions and blockers B1–B3 have issues labelled `decision` or `blocker`. Dependencies are set as native "blocked by" links and listed in each issue body.
+- **New work gets an issue first.** Open it with the **Task** form (`.github/ISSUE_TEMPLATE/task.yml`) before writing code. Agents using `gh issue create` must use the same section headings: Summary, Plan reference, Track, Tasks, Acceptance criteria, Out of scope, Dependencies, Files, Definition of Done.
+- **Write tickets well.** One issue fits one branch and one PR; split anything bigger. The summary states the outcome and why it matters. Acceptance criteria are specific to the issue and pass or fail on observable evidence: a named test, an exact output, an exit code. The Definition of Done below is shared by all task issues and isn't repeated as acceptance criteria. The plans keep the "how"; issues link to them instead of copying steps.
+- **Claim before starting.** Assign the issue (an agent assigns the person it works for) and comment the branch name. One driver per issue. Don't start an issue whose dependencies are open unless its body says how to work around them, for example with mocks.
+- **Talk in the issue.** Questions, decisions, blockers, interface changes, review requests and handoffs are comments on the issue they concern; refer to other issues by number. A decision that lives only in chat or local notes doesn't count. Use the labels `blocked`, `needs:review` (the reviewer sets `reviewed` in mapping files), `needs:approval` (live writes and upstream pushes need Felix's go-ahead, linked in the issue), and `needs:B1`/`B2`/`B3`.
+- **Close through the PR.** The PR says `Closes #<n>` and shows the evidence for each acceptance criterion. An issue closes only when its acceptance criteria and the Definition of Done are met. File follow-ups as new issues instead of reopening scope.
+
+### Definition of Done (every task issue)
+
+- Every acceptance criterion is met, with evidence (test names, commands and their real output) in the PR or a closing comment.
+- `npm test` and `npm run typecheck` pass; new behaviour has focused tests.
+- Conversion stays deterministic and LLM-free; no timestamps, absolute paths or environment data in artifacts.
+- Changed expected trees are regenerated in the same commit and reviewed by the other track.
+- No secrets, raw live responses or run artifacts committed.
+- Docs touched by the change are updated (README, plan status in `docs/handoff/README.md`, `docs/STATUS.md` when a plan finishes).
+- Work is on its own branch; the PR says `Closes #<this issue>`; follow-ups are filed as new issues.
+- Merged into `main` by Felix.
+
+## Branches and merging
+
+- By default every agent works on its own branch, one per issue, created from current `main` and named `<issue-number>-<short-slug>` (for example `17-query-parser`). Push it and open a PR to `main`.
+- **Only Felix merges into `main`.** Agents never merge their own or anyone's branch, unless the user explicitly forces that specific merge; that covers only the named branch at that time and is not standing permission.
+- Do not commit directly to `main`. Never force-push or rewrite `main`'s history, and stop to report conflicts or failing checks instead of resolving them by discarding changes.
+- Submission to the challenge follows the fork → feature branch → upstream PR workflow (plan 09 Task 5), only on Felix's explicit request. Do not push or open a PR upstream merely because this document describes submission.
 
 ## Credentials and live operations
 

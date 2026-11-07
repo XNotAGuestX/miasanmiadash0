@@ -8,12 +8,14 @@ sync points; what each task does stays in its plan. `04.T2` means plan 04, Task 
 - **Track B — CLI, outputs, monitors and Dash0 delivery:** package and shared contracts, writers,
   validation, wiring, goldens, monitors, publish, demo, fetch.
 
-Claim a track in `docs/STATUS.md` before starting.
+Every task below is a GitHub issue labelled [`track:A`](https://github.com/XNotAGuestX/thinchackdash/issues?q=is%3Aopen+label%3Atrack%3AA) or
+[`track:B`](https://github.com/XNotAGuestX/thinchackdash/issues?q=is%3Aopen+label%3Atrack%3AB), with its dependencies set as "blocked by" links. Claim tasks
+by assigning their issues.
 
 ## Day 0 (together)
 
-- [ ] Settle the fork and branch workflow (open item in `STATUS.md`) and name the integration
-      branch both tracks merge into.
+- [ ] The integration branch is `main`: one branch and PR per issue, merged by Felix (`AGENTS.md`).
+      The starter/fork decision is [#2](https://github.com/XNotAGuestX/thinchackdash/issues/2).
 - [ ] Track B lands 01.T1–T2 first (S1).
 
 ## Timeline
@@ -97,13 +99,14 @@ own service folders. New dependencies go through Track B.
 
 ## Rules for working in parallel
 
-1. Don't edit the other track's files without asking first.
+1. Don't edit the other track's files without asking first, in the issue concerned.
 2. From S7 on, a change that alters an expected tree regenerates it in the same commit, and the
    other track reviews the diff. The P0 tree changes with 05.T1, 05.T5, 05.T7 and 05.T8, because
    05.T0 freezes the mapping, not the compiler.
 3. A golden that reads a mapping file reads a frozen copy, because `report.json` records the
    mapping hash. 05.T9 is the exception: it runs after the last `postgres.json` edit.
 4. Mapping entries are reviewed by the other track's person, who sets `reviewed` personally.
-5. In `docs/STATUS.md`, each track edits only its own ownership row and handoff entries.
-6. When a track's list is done, it claims unstarted items from the other track's tail (08, 10)
-   in `STATUS.md`.
+   Request it with the `needs:review` label and a comment in the issue.
+5. Announce each sync point in its issue when the PR is merged; the waiting track watches it.
+6. When a track's list is done, it claims unstarted issues from the other track's tail (08, 10)
+   by reassigning them and relabelling the track.

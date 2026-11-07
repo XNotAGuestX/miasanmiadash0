@@ -1,6 +1,6 @@
 # Shared project status
 
-Last updated: 2026-11-07: two-person work split added ([`handoff/WORK_SPLIT.md`](handoff/WORK_SPLIT.md)). Earlier: implementation plan written and split into handoffs in [`handoff/`](handoff/README.md). Dash0 inventory (M0) done ([DASH0_INVENTORY.md](DASH0_INVENTORY.md)).
+Last updated: 2026-11-07: all plan tasks, open decisions and blockers filed as GitHub issues (#1–#62); from now on work is tracked and discussed in [issues](https://github.com/XNotAGuestX/thinchackdash/issues). Earlier: two-person work split added ([`handoff/WORK_SPLIT.md`](handoff/WORK_SPLIT.md)). Earlier: implementation plan written and split into handoffs in [`handoff/`](handoff/README.md). Dash0 inventory (M0) done ([DASH0_INVENTORY.md](DASH0_INVENTORY.md)).
 
 Highest-priority requirement: deterministic conversion before all other objectives. No LLM involvement in source-to-Perses or query/alert conversion, including optional inference, repair, and fallback paths. Shared rules, handoff, kickoff prompt, and acceptance gates now state this explicitly. Codex and Claude remain implementation assistants only.
 
@@ -26,19 +26,21 @@ Handoff verification: all eight Markdown files passed local link, heading-anchor
 
 ## Current ownership
 
-No implementation task is claimed. Codex and Claude must read this file before editing and record task-based ownership here when sharing active work. Avoid concurrent edits to the same files.
+Ownership lives in GitHub issues: the assignee of an issue is its driver, and the branch is named in the issue. See `AGENTS.md`, "Tracking work in GitHub issues" and "Branches and merging".
 
-| Task | Driver | Files | Dependencies / next handoff |
-| --- | --- | --- | --- |
-| Track A: query and dashboard translation | Unclaimed | See [`handoff/WORK_SPLIT.md`](handoff/WORK_SPLIT.md#file-ownership) | Starts with plan 02 Task 1 after sync point S1 |
-| Track B: CLI, outputs, monitors and Dash0 delivery | Unclaimed | See [`handoff/WORK_SPLIT.md`](handoff/WORK_SPLIT.md#file-ownership) | Starts with plan 01 Tasks 1–2 (gives S1) |
+| View | Link |
+| --- | --- |
+| Track A tasks | [`track:A`](https://github.com/XNotAGuestX/thinchackdash/issues?q=is%3Aopen+label%3Atrack%3AA) |
+| Track B tasks | [`track:B`](https://github.com/XNotAGuestX/thinchackdash/issues?q=is%3Aopen+label%3Atrack%3AB) |
+| Plans (epics with sub-issues) | [`epic`](https://github.com/XNotAGuestX/thinchackdash/issues?q=is%3Aopen+label%3Aepic) |
+| Decisions and blockers | [#1](https://github.com/XNotAGuestX/thinchackdash/issues/1) A1–A4, [#2](https://github.com/XNotAGuestX/thinchackdash/issues/2) starter/fork, [#3](https://github.com/XNotAGuestX/thinchackdash/issues/3) B1, [#4](https://github.com/XNotAGuestX/thinchackdash/issues/4) B2, [#5](https://github.com/XNotAGuestX/thinchackdash/issues/5) B3 |
 
 ## Next concrete action
 
 Follow [`handoff/README.md`](handoff/README.md):
 
 1. The user reviews the plans and confirms or changes the assumed defaults A1–A3 (target vocabulary, alert output, monitor strictness) and A4 (`convert` / `publish` command names).
-2. Claim plan 01 here and execute plans 01 → 02 → 03 → 04 (the offline MVP converter). No credentials needed.
+2. Claim the plan 01 issues ([epic #6](https://github.com/XNotAGuestX/thinchackdash/issues/6)) and execute plans 01 → 02 → 03 → 04 (the offline MVP converter). No credentials needed.
 3. In parallel, resolve blockers B1 (Dash0 token), B2 (demo telemetry owner) and B3 (Datadog account, plan 10 only).
 
 The starter/fork workflow is still unresolved; settle it before the first implementation commit.
@@ -62,7 +64,7 @@ The starter/fork workflow is still unresolved; settle it before the first implem
 
 ## Handoff entry template
 
-Append a concise entry at a meaningful handoff; update the current-state table rather than leaving contradictory entries.
+Post this as a comment on the issue at a meaningful handoff. Update the current-state table above only when the overall state changes, rather than leaving contradictory entries.
 
 ```text
 Time / contributor:

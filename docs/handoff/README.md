@@ -64,8 +64,8 @@ These are also in `00-context.md` §3. Answer them in free text.
 ## How to take a handoff
 
 1. Read `AGENTS.md`, this file, `00-context.md`, then the plan.
-2. Claim it in `docs/STATUS.md` (task, driver, files).
-3. Work task by task. Steps are checkboxes, and each task ends with a commit.
-4. At handoff, update this table's Status column and `docs/STATUS.md` with the exact check results.
+2. Claim the task's [GitHub issue](https://github.com/XNotAGuestX/thinchackdash/issues) (assign it, comment the branch name). Each plan task has one issue; each plan has an epic.
+3. Work task by task on your own branch. Steps are checkboxes, and each task ends with a commit and a PR that closes its issue; only Felix merges.
+4. At handoff, comment on the issue with the exact check results; when a plan finishes, update this table's Status column and `docs/STATUS.md`.
 
 Recommended execution: run plans 01–04 with **subagent-driven development**. Their tasks have tight interfaces (shared types, codes, exact PromQL strings), so a reviewer per task catches drift early. The later plans can run natively.
