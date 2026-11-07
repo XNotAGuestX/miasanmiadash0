@@ -1,4 +1,7 @@
-"""Golden: Postgres monitors (plan 06 Task 5). Regenerate by hand and review the diff."""
+"""Golden: Postgres monitors (plan 06 Task 5). Regenerate by hand and review the diff.
+
+Uses the frozen mapping copy fixtures/mappings/postgres.json, so edits to the live
+mappings/datadog/postgres.json (e.g. setting `reviewed`) do not churn this golden."""
 
 from __future__ import annotations
 
@@ -27,7 +30,7 @@ def test_postgres_monitors_golden(tmp_path: Path) -> None:
             "--input",
             "fixtures/datadog/integrations-core/postgres/monitors",
             "--mapping",
-            "mappings/datadog/postgres.json",
+            "fixtures/mappings/postgres.json",
             "--out",
             str(out),
         ]
