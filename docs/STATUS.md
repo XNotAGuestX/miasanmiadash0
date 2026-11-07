@@ -30,6 +30,7 @@ Ownership lives in GitHub issues: the assignee of an issue is its driver, and th
 
 | View | Link |
 | --- | --- |
+| Project board (Status, Priority, Size, Track, Plan, Phase) | [thinchack-Dash0](https://github.com/users/XNotAGuestX/projects/3) |
 | Track A tasks | [`track:A`](https://github.com/XNotAGuestX/thinchackdash/issues?q=is%3Aopen+label%3Atrack%3AA) |
 | Track B tasks | [`track:B`](https://github.com/XNotAGuestX/thinchackdash/issues?q=is%3Aopen+label%3Atrack%3AB) |
 | Plans (epics with sub-issues) | [`epic`](https://github.com/XNotAGuestX/thinchackdash/issues?q=is%3Aopen+label%3Aepic) |
