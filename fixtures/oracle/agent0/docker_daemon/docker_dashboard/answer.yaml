@@ -1,0 +1,150 @@
+# Agent0 answer, verbatim. Asked 2026-11-07 ~17:44 local (dash0 MCP runTask, default model Advanced/High), thread: https://app.dash0.com/goto/agent0?thread_id=aff1389d-e057-40ae-bf62-0a1063ccc8be&dataset=default&org=701d5eb3-98fe-4205-b6cc-f3a7f9104e43, prompt: prompt.md.
+# Provenance only, never test input.
+- source_path: 'widgets[0].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset (no running-container count metric); fill(0) is also unsupported
+  otel_metrics: []
+  labels: {docker_image: container_image_name}
+  live_check: no, 0 series (no metric to query)
+  notes: The dockerstats receiver emits only per-container resource metrics. Counting its series would be a derived approximation, not docker.containers.running.
+- source_path: 'widgets[1].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset (no container.memory.rss; only container.memory.usage.total, container.memory.file, container.memory.percent, container.memory.usage.limit)
+  otel_metrics: []
+  labels: {container_name: container_name}
+  live_check: no, 0 series (no metric to query)
+  notes: container.memory.usage.total is not RSS and is not used as a substitute.
+- source_path: 'widgets[2].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'topk(5, max_over_time((avg by (container_name) (rate({otel_metric_name="container.cpu.usage.usermode", otel_metric_type="sum"}[$__rate_interval])) / 1e7)[$__range:]))'
+  otel_metrics: [container.cpu.usage.usermode]
+  labels: {container_name: container_name}
+  live_check: yes, 5 series (topk over 14:20-15:20 UTC evaluated at 15:20 UTC)
+  notes: The source is cumulative ns in user mode. rate() gives ns/s, and dividing by 1e7 gives percent of one core, which is the Datadog docker.cpu.user unit. The max reducer maps to max_over_time over a $__range subquery. avg by container_name averages across container IDs that share a name (restarts).
+- source_path: 'widgets[3].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset (no container.memory.rss)
+  otel_metrics: []
+  labels: {container_name: container_name}
+  live_check: no, 0 series (no metric to query)
+  notes: Same gap as widgets[1].
+- source_path: 'widgets[4].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset (no running-container count metric)
+  otel_metrics: []
+  labels: {}
+  live_check: no, 0 series (no metric to query)
+  notes: count() over a dockerstats metric would be an approximation, not docker.containers.running.
+- source_path: 'widgets[5].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset (no stopped-container metric; the dockerstats receiver reports running containers only)
+  otel_metrics: []
+  labels: {}
+  live_check: no, 0 series (no metric to query)
+  notes: Stopped containers emit no telemetry here, so this cannot be derived either.
+- source_path: 'widgets[6].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg by (container_name) (rate({otel_metric_name="container.cpu.usage.usermode", otel_metric_type="sum"}[$__rate_interval])) / 1e7'
+  otel_metrics: [container.cpu.usage.usermode]
+  labels: {container_name: container_name}
+  live_check: yes, 23 series (22-23 per step over 14:05-15:21 UTC)
+  notes: ns/s divided by 1e7 gives percent of one core, matching docker.cpu.user. Heatmap rendering is a panel concern.
+- source_path: 'widgets[7].definition.requests[0]'
+  outcome: blocked
+  reason: unsupported function (.fill(0) gap-filling has no exact PromQL equivalent)
+  otel_metrics: [container.cpu.usage.usermode]
+  labels: {docker_image: container_image_name}
+  live_check: no, 0 series (not translated; without fill the base query avg by (container_image_name) of the rate returns 23 series)
+  notes: Without fill(0) the metric mapping would match widgets[6]. container.image.name includes the tag, like docker_image.
+- source_path: 'widgets[8].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset (no container.memory.rss); fill(0) is also unsupported
+  otel_metrics: []
+  labels: {docker_image: container_image_name}
+  live_check: no, 0 series (no metric to query)
+  notes: container.memory.usage.total is not RSS.
+- source_path: 'widgets[11].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset (no running-container count metric)
+  otel_metrics: []
+  labels: {}
+  live_check: no, 0 series (no metric to query)
+  notes: timeshift(-300) would map to offset 5m, but the base metric is missing.
+- source_path: 'widgets[12].definition.requests[0]'
+  outcome: blocked
+  reason: unsupported function (.fill(0) gap-filling has no exact PromQL equivalent)
+  otel_metrics: [container.cpu.usage.kernelmode]
+  labels: {docker_image: container_image_name}
+  live_check: no, 0 series (not translated)
+  notes: The kernel-mode equivalent of docker.cpu.system is container.cpu.usage.kernelmode (ns/s divided by 1e7). container.cpu.usage.system is host-wide system CPU and is not equivalent.
+- source_path: 'widgets[14].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset (no container.memory.cache)
+  otel_metrics: []
+  labels: {docker_image: container_image_name}
+  live_check: no, 0 series (no metric to query)
+  notes: container.memory.file (cgroup v2 file cache) exists but is not asserted to be equivalent to docker.mem.cache.
+- source_path: 'widgets[18].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset (no per-container swap metric)
+  otel_metrics: []
+  labels: {docker_image: container_image_name}
+  live_check: no, 0 series (no metric to query)
+  notes: system.swap.usage is host-level, in pages, with no container labels.
+- source_path: 'widgets[20].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg by (container_image_name) (rate({otel_metric_name="container.blockio.io_service_bytes_recursive", otel_metric_type="sum", operation="read"}[$__rate_interval]))'
+  otel_metrics: [container.blockio.io_service_bytes_recursive]
+  labels: {docker_image: container_image_name}
+  live_check: yes, 23 series (20-23 per step over 14:05-15:21 UTC)
+  notes: Bytes/s. Only one block device (254 0) is present, so averaging raw per-device series equals averaging per-container totals. Operation values are lowercase read and write.
+- source_path: 'widgets[21].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg by (container_image_name) (rate({otel_metric_name="container.blockio.io_service_bytes_recursive", otel_metric_type="sum", operation="write"}[$__rate_interval]))'
+  otel_metrics: [container.blockio.io_service_bytes_recursive]
+  labels: {docker_image: container_image_name}
+  live_check: yes, 23 series (20-23 per step over 14:05-15:21 UTC)
+  notes: Bytes/s. Single device present, as in widgets[20].
+- source_path: 'widgets[23].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg by (container_image_name) (rate({otel_metric_name="container.network.io.usage.rx_bytes", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [container.network.io.usage.rx_bytes]
+  labels: {docker_image: container_image_name}
+  live_check: yes, 23 series (22-23 per step over 14:05-15:21 UTC)
+  notes: Bytes/s. Only interface eth0 is present, so there is one series per container.
+- source_path: 'widgets[24].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg by (container_image_name) (rate({otel_metric_name="container.network.io.usage.tx_bytes", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [container.network.io.usage.tx_bytes]
+  labels: {docker_image: container_image_name}
+  live_check: yes, 23 series (22-23 per step over 14:05-15:21 UTC)
+  notes: Bytes/s. Only interface eth0 is present.
+- source_path: 'widgets[25].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'topk(5, max_over_time((avg by (container_name) (rate({otel_metric_name="container.network.io.usage.tx_bytes", otel_metric_type="sum"}[$__rate_interval])))[$__range:]))'
+  otel_metrics: [container.network.io.usage.tx_bytes]
+  labels: {container_name: container_name}
+  live_check: yes, 5 series (topk over 14:20-15:20 UTC evaluated at 15:20 UTC)
+  notes: The max reducer maps to max_over_time over a $__range subquery. Values are bytes/s.
+- source_path: 'widgets[26].definition.requests[0]'
+  outcome: translated
+  promql:
+    - 'avg by (container_name) (rate({otel_metric_name="container.network.io.usage.tx_bytes", otel_metric_type="sum"}[$__rate_interval]))'
+  otel_metrics: [container.network.io.usage.tx_bytes]
+  labels: {container_name: container_name}
+  live_check: yes, 23 series (22-23 per step over 14:05-15:21 UTC)
+  notes: Bytes/s. Heatmap rendering is a panel concern.
+- source_path: 'widgets[27].definition.requests[0]'
+  outcome: blocked
+  reason: no equivalent metric in this dataset (no running-container count metric); fill(60) is also unsupported
+  otel_metrics: []
+  labels: {docker_image: container_image_name}
+  live_check: no, 0 series (no metric to query)
+  notes: timeshift(40) and top 20 last would be expressible, but the base metric is missing.
