@@ -37,6 +37,7 @@ def test_golden_artifacts_validate() -> None:
         (lambda r: r.update(enabled=True), "enabled"),
         (lambda r: r.pop("for"), "for"),
         (lambda r: r.update(expression="up > 1"), "expression"),
+        (lambda r: r.update(expression=r["expression"] + "\n"), "expression"),
         (lambda r: r.update(expression="avg_over_time(( > $__threshold"), "syntax error"),
         (lambda r: r["thresholds"].pop("failed"), "failed"),
         (lambda r: r["annotations"].update(summary="x" * 256), "summary"),
