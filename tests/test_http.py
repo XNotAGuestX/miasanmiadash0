@@ -10,9 +10,9 @@ from typing import Any, cast
 
 import pytest
 
-from migrator.destination.dash0 import Dash0Config, Unknown, publish_dashboard
+from migrator.destination.dash0 import Dash0Config, Unknown, publish_check_rule
 from migrator.http import HttpRequest, HttpTransportError, urllib_send
-from migrator.target import PersesDashboard
+from migrator.target import Dash0CheckRule
 
 _LOOPBACK = frozenset({"127.0.0.1", "::1", "localhost"})
 _PROXY_VARS = ("http_proxy", "https_proxy", "all_proxy", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY")
@@ -52,7 +52,10 @@ def test_guard_still_blocks_outbound_connections() -> None:
         socket.create_connection(("192.0.2.1", 80), timeout=1)
 
 
-DASHBOARD = cast(PersesDashboard, {"kind": "Dashboard", "metadata": {"name": "d"}, "spec": {}})
+RULE = cast(
+    Dash0CheckRule,
+    {"name": "r", "expression": "up == 0", "thresholds": {"failed": 1}, "interval": "1m"},
+)
 Handler = Callable[[socket.socket], None]
 
 
@@ -133,7 +136,7 @@ def test_truncated_error_body_is_a_transport_error() -> None:
 def test_truncated_import_response_is_unknown() -> None:
     with raw_server(truncated(200)) as url:
         cfg = Dash0Config(api_url=url, token="tok", dataset="default")
-        out = publish_dashboard(DASHBOARD, cfg)
+        out = publish_check_rule(RULE, cfg)
     assert isinstance(out, Unknown)
 
 
