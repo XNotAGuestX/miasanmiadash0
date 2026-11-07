@@ -66,7 +66,7 @@ uv run migrator publish --from /tmp/pg-out --allow-partial     # import, includi
 uv run migrator publish --from /tmp/pg-out --dry-run --name-prefix demo-   # demo names: demo-Postgres - Metrics, …
 ```
 
-> **Not yet run live.** The dry run has been run; the live import (second line) waits on a Dash0 token (blocker B1) and has only been tested against a fake HTTP transport.
+> **`publish` itself not yet run live.** The dry run has been run. The import API it calls was checked live with one demo dashboard and one disabled check rule (plan 07 Task 1); the full live `publish` (plan 07 Task 5) waits on the user's go-ahead.
 
 `publish` reads JSON output only: a run converted with `--format yaml` fails with "not valid JSON".
 
@@ -76,6 +76,7 @@ uv run migrator publish --from /tmp/pg-out --dry-run --name-prefix demo-   # dem
 
 **How it sends them:**
 - Before the first request, it checks every path, sha256 and schema.
+- For each dashboard it also lists the dataset's dashboards (`GET /api/dashboards`) before and after the import, because the import response has no id.
 - It is create-only: it never sends a dashboard's `metadata.dash0Extensions.id` or a check-rule `id`.
 - Receipts in `<run dir>/import-results.json` make reruns safe. An imported asset reports `UNCHANGED`. A changed or ambiguous (`unknown`: a timeout or network error, any HTTP 5xx, or a 2xx without an ID) asset is refused until a human reconciles it. Only a 4xx counts as a definite failure that may be retried.
 - HTTP 401 or 403 stops the run.
@@ -157,7 +158,7 @@ Entries can also carry fixed label matchers, unit scale, label renames and a ded
 - **Mappings need human review.** Every shipped entry is still `reviewed: null`.
 - **Series churn.** After a collector restart, Dash0 can briefly hold two series for one instance. Sums must deduplicate first, as the Postgres entries do with `max by (service_instance_id, …)`; see [DASH0_INVENTORY.md caveat 2](docs/DASH0_INVENTORY.md#caveats).
 - **Ephemeral demo data.** The `default` dataset has data only while the demo stack runs ([caveat 1](docs/DASH0_INVENTORY.md#caveats)).
-- **Not yet proven live:** the response ID paths of the Dash0 import API (`DASHBOARD_ID_PATH`, `CHECK_RULE_ID_PATH`) and whether Dash0 renders `{{…}}` in a check-rule `name`. Both are confirmed by plan 07 Task 1.
+- **Dash0 import contract (checked live 2026-11-07, plan 07 Task 1):** a check rule's id comes back at `id`. A dashboard import returns no id, so `publish` lists the dataset's dashboards before and after and takes the one new id with that `metadata.name`; anything else is `unknown`. Still open: whether Dash0 renders `{{…}}` in a check-rule `name`. Details in [STATUS.md](docs/STATUS.md#dash0-import-contract-live-plan-07-task-1-2026-11-07).
 - **Validation level.** `report.validation` records syntax and schema checks only. API acceptance and semantics are proven separately (`docs/STATUS.md`).
 
 ## For contributors
