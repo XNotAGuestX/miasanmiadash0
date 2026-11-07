@@ -1,6 +1,6 @@
 """Cross-check agent0-derived expectations with Claude Haiku (development time only, issue #87).
 
-Two verifiers, both triage signals only (never approval: only a human sets `reviewed: true`):
+Two verifiers, both triage signals (green triage counts as verified; see scripts/triage.py):
 
   rerun   round-to-round consistency (verifier "rerun"). Compares
           fixtures/oracle/agent0/<key>/answer.yaml with <round2-dir>/<key>/answer.yaml per request,

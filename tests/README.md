@@ -170,10 +170,11 @@ Agent0's live checks ran against the Dash0 `default` dataset, where receiver dat
 
 ## Verifying the oracle (development time only, issue #87)
 
-Before a human signs off, verifiers triage each request's expectation. Their verdicts
-(`pass | nit | block`, contract in `scripts/verify_common.py`) are written to
-`fixtures/oracle/verify/<svc>/<id>/<verifier>.yaml`. They only set the **review order**: no test
-and no converter code reads them, and only a human sets `reviewed: true`.
+Verifiers triage each request's expectation. Their verdicts (`pass | nit | block`, contract in
+`scripts/verify_common.py`) are written to `fixtures/oracle/verify/<svc>/<id>/<verifier>.yaml`.
+`scripts/triage.py` writes the **green** requests to `fixtures/expected/verified.json`; tests run
+those like human-reviewed ones. The converter never reads any of it. Humans verify as much as
+possible (red and yellow first); a human `reviewed: true` in overrides.yaml always wins.
 
 | Layer | Command | What it checks |
 |---|---|---|
