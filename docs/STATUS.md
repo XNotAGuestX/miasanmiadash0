@@ -14,9 +14,9 @@ Highest-priority requirement: deterministic conversion before all other objectiv
 | Shared Codex/Claude rules | Written | Root `AGENTS.md`; `CLAUDE.md` refers to it |
 | Local configuration template | Written | Root `.env.example` and `.gitignore` |
 | Starter/fork relationship | Unresolved | Current remote is `XNotAGuestX/thinchackdash`; required starter differs |
-| CLI/runtime/package | Working offline (`convert`); no `publish`/`fetch` | Python ≥ 3.13 + uv; single entry point `uv run migrator {convert,test,typecheck,lint,check}` (`pyproject.toml`, `uv.lock`) |
+| CLI/runtime/package | `convert` working offline; `fetch` implemented (read-only); `publish` in PR #81 | Python ≥ 3.13 + uv; single entry point `uv run migrator {convert,fetch,test,typecheck,lint,check}` (`pyproject.toml`, `uv.lock`) |
 | Fixtures/parser/compiler | Dashboards done (plans 02–04, 05.T2–T8, 06.T3); monitors still blocked (plan 06 Track B) | Pinned integrations-core postgres, kafka, docker_daemon at `a9b9e42`; synthetic fixtures; mappings `postgres.json`, `kafka.json`, `docker.json`, all `reviewed: null` |
-| Datadog API integration | Not started | No credentials or live source evidence checked |
+| Datadog API integration | Implemented, not run live | Read-only client (plan 10.T1, PR #74) and `fetch` CLI (10.T2, PR #83), tested with recorded fake responses; no Datadog credentials yet, so no live fetch |
 | Dash0 API/schema spike | Docs researched | API, PromQL naming, and CLI facts in `PLANNING_HANDOFF.md` §5.3; no live request made |
 | Telemetry and semantic validation | Data present, not durable | `default` has data since 2026-11-07 14:06 UTC from one `docker-desktop` host. Connection usage is about 0.08; no controlled threshold crossing exists yet |
 | Automated checks | Green | `uv run migrator check`: ruff clean, mypy --strict clean, pytest unit tests passing. Oracle suite (`tests/unit`, unreviewed cases skipped) runs against the converter; see "Oracle test suite handoff". Golden: `fixtures/expected/postgres-p1/` (Postgres dashboards, byte-equal and determinism tests), in review |
