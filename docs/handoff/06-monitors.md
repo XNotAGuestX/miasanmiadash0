@@ -6,12 +6,12 @@
 
 **Architecture:**
 
-- `monitor.ts` parses the monitor query, reusing `parseMetricQuery` for the inner metric query, and evaluates options against a reviewed allowlist (decision A3).
+- `monitor.py` parses the monitor query, reusing `parseMetricQuery` for the inner metric query, and evaluates options against a reviewed allowlist (decision A3).
 - It compiles the inner query with `compileMetricQuery`. A new `expression` mapping kind provides derived ratios.
 - It wraps the result as `<time>_over_time((<space-aggregated>)[<window>:1m])`.
 - Both outputs come from the same condition string.
 
-**Tech Stack:** TypeScript, zod, vitest.
+**Tech Stack:** Python 3.13 (uv), pydantic, pytest.
 
 **Spec:** [00-context.md](00-context.md) §3 (A2, A3), §6 (monitor facts), §7 (check-rule body) and §8.
 
@@ -43,9 +43,9 @@
 ### Task 1: Monitor query parser
 
 **Files:**
-- Create: `src/source/datadog/monitor.ts` (parser part)
-- Modify: `src/source/datadog/model.ts`
-- Test: `tests/datadog/monitor-parse.test.ts`
+- Create: `src/migrator/source/datadog/monitor.py` (parser part)
+- Modify: `src/migrator/source/datadog/model.py`
+- Test: `tests/datadog/test_monitor_parse.py`
 
 **Interfaces:**
 - Produces:
@@ -75,8 +75,8 @@ export function parseMonitorQuery(text: string):
 ### Task 2: Options allowlist
 
 **Files:**
-- Modify: `src/source/datadog/monitor.ts`
-- Test: `tests/datadog/monitor-options.test.ts`
+- Modify: `src/migrator/source/datadog/monitor.py`
+- Test: `tests/datadog/test_monitor_options.py`
 
 **Interfaces:**
 - Produces: `export function evaluateMonitorOptions(options: Record<string, unknown>, ctx: { sourceId: string }): { ok: true; thresholds: { critical: number; warning?: number }; diagnostics: Diagnostic[] } | { ok: false; diagnostics: Diagnostic[] }`
@@ -107,8 +107,8 @@ export function parseMonitorQuery(text: string):
 ### Task 3: The `expression` mapping kind and the Postgres ratio
 
 **Files:**
-- Modify: `src/source/datadog/mapping.ts`, `compile-query.ts`, `mappings/datadog/postgres.json`
-- Test: `tests/datadog/compile-query.test.ts`
+- Modify: `src/migrator/source/datadog/mapping.py`, `compile_query.py`, `mappings/datadog/postgres.json`
+- Test: `tests/datadog/test_compile_query.py`
 
 **Interfaces:**
 - Produces: `ExpressionMapping { kind: "expression"; expression: string; outputLabels: string[]; labels: Record<string, string>; sourceUnit: string; targetUnit: string; scale: number; ref: string; reviewed: Reviewed | null }`. It's added to the `MetricMapping` union.
@@ -143,13 +143,13 @@ export function parseMonitorQuery(text: string):
   - In Dash0 (dataset `default`), confirm `postgresql.connection.max` carries `service_instance_id`.
   - Then run the ratio at a 1m step. Expect about `0.08`.
   - If the label is missing, change the expression to divide by `scalar(max(...))`, update the test, and record why in `ref`.
-- [ ] **Step 5: Request a human review.** Run `npm test`; it must PASS. Commit.
+- [ ] **Step 5: Request a human review.** Run `uv run migrator test`; it must PASS. Commit.
 
 ### Task 4: compileMonitor and both renderers
 
 **Files:**
-- Modify: `src/source/datadog/monitor.ts`
-- Test: `tests/datadog/monitor.test.ts`
+- Modify: `src/migrator/source/datadog/monitor.py`
+- Test: `tests/datadog/test_monitor.py`
 
 **Interfaces:**
 - Produces:
@@ -185,20 +185,20 @@ export function parseMonitorQuery(text: string):
 ### Task 5: Wiring, validation and golden
 
 **Files:**
-- Modify: `src/source/datadog/index.ts`, `src/convert.ts`, `src/validation.ts`
+- Modify: `src/migrator/source/datadog/__init__.py`, `src/migrator/convert.py`, `src/migrator/validation.py`
 - Create: `fixtures/expected/postgres-monitors/`
-- Test: `tests/golden.test.ts` (new case)
+- Test: `tests/test_golden.py` (new case)
 
 **Interfaces:**
 - Produces:
   - Files `rules/<slug>.prometheus.json|yaml` and `check-rules/<slug>.json`.
   - Manifest kinds `prometheus-rule` and `check-rule`, with `eligible` only if the monitor is `translated`.
-  - `validateCheckRule(r: unknown): string[]`, a strict Zod schema of `Dash0CheckRule`.
+  - `validateCheckRule(r: unknown): string[]`, a strict pydantic model of `Dash0CheckRule`.
   - PromQL syntax checking of every rule expression, through `checkPromqlSyntax`.
 
 - [ ] **Step 1: Write the failing test `postgres monitors golden`.**
   - Input: `fixtures/datadog/integrations-core/postgres/monitors` with `mappings/datadog/postgres.json`.
   - Expect exit `2`: one translated monitor and one blocked.
   - Every file except `source/` is byte-equal to `fixtures/expected/postgres-monitors/`.
-- [ ] **Step 2: Implement the wiring.** Generate and review the expected tree by hand, as in plan 04 Task 4. Run `npm test && npm run typecheck`; both must pass.
+- [ ] **Step 2: Implement the wiring.** Generate and review the expected tree by hand, as in plan 04 Task 4. Run `uv run migrator check`; it must pass.
 - [ ] **Step 3: Document.** Update `README.md`, and mark plan 06 Done in `docs/handoff/README.md`. Commit.

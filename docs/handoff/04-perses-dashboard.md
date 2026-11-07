@@ -6,12 +6,12 @@
 
 **Architecture:**
 
-- `dashboard.ts` walks the top-level widgets.
+- `dashboard.py` walks the top-level widgets.
 - For each widget it runs the widget-level checks first: type, option keys, data source and formulas. Only then does it parse (plan 02) and compile (plan 03) each displayed query.
 - A widget is all or nothing. Translated widgets become Perses panels in a 24-column Grid.
-- `validation.ts` checks the emitted object with Zod and checks every PromQL string with the official Lezer PromQL grammar.
+- `validation.py` checks the emitted object with a strict pydantic model and checks every PromQL string with `promql-parser` (Python bindings for the Rust port of the Prometheus parser).
 
-**Tech Stack:** TypeScript, zod, `@prometheus-io/lezer-promql`, vitest.
+**Tech Stack:** Python 3.13 (uv), pydantic, `promql-parser`, pytest.
 
 **Spec:** [00-context.md](00-context.md) §6 (golden dashboard table), §7 (Perses shape) and §8 (outcomes and codes).
 
@@ -30,7 +30,7 @@
   - every widget translated → `translated`;
   - at least one translated → `partial`;
   - none translated → `blocked`, with **no dashboard artifact**.
-- The dashboard is never written if Zod validation or the PromQL syntax check fails. That's an internal bug: emit `TARGET_VALIDATION_FAILED` and block the dashboard.
+- The dashboard is never written if pydantic validation or the PromQL syntax check fails. That's an internal bug: emit `TARGET_VALIDATION_FAILED` and block the dashboard.
 
 ## Allowed source keys
 
@@ -55,9 +55,9 @@ These are evaluated per widget, before any query is compiled.
 ### Task 1: compileDashboard
 
 **Files:**
-- Create: `src/source/datadog/dashboard.ts`
+- Create: `src/migrator/source/datadog/dashboard.py`
 - Create: `fixtures/datadog/synthetic/dashboards/{supported.json,unsupported.json,layout.json}`
-- Test: `tests/datadog/dashboard.test.ts`
+- Test: `tests/datadog/test_dashboard.py`
 
 **Interfaces:**
 - Consumes: `SourceAsset` and `CompileOptions` (plan 01), `parseMetricQuery` (plan 02), `compileMetricQuery`, `TemplateVariable` and `DatadogMapping` (plan 03).
@@ -108,32 +108,32 @@ export function compileDashboard(asset: SourceAsset, slug: string, mapping: Data
     - the grid items are `[{x:0,y:0,width:8,height:2}, {x:8,y:0,width:16,height:2}]`.
     - Note: in `layout.json` the group also has a layout, so every widget has one.
   - `reads template variable defaults`: `readTemplateVariables({template_variables: [{name: "db", prefix: "db", defaults: ["*"]}]})` gives `[{name: "db", prefix: "db", default: "*"}]`.
-- [ ] **Step 2: Run it.** Run `npx vitest run tests/datadog/dashboard.test.ts`. It must FAIL.
-- [ ] **Step 3: Implement `readTemplateVariables` and `compileDashboard`** in `src/source/datadog/dashboard.ts`, following the rules and tables above.
+- [ ] **Step 2: Run it.** Run `uv run migrator test tests/datadog/test_dashboard.py`. It must FAIL.
+- [ ] **Step 3: Implement `readTemplateVariables` and `compileDashboard`** in `src/migrator/source/datadog/dashboard.py`, following the rules and tables above.
 - [ ] **Step 4: Verify.** The tests must PASS.
 - [ ] **Step 5: Commit.** `git add src fixtures/datadog/synthetic tests && git commit -m "feat: compile Datadog timeseries widgets to Perses panels"`.
 
 ### Task 2: Output validation
 
 **Files:**
-- Create: `src/validation.ts`
-- Modify: `package.json` (`npm i @prometheus-io/lezer-promql`)
-- Test: `tests/validation.test.ts`
+- Create: `src/migrator/validation.py`
+- Modify: `pyproject.toml`, `uv.lock` (`uv add promql-parser`; already present if plan 01 added it)
+- Test: `tests/test_validation.py`
 
 **Interfaces:**
 - Produces:
-  - `export function validateDashboard(d: unknown): string[]`. It returns an empty array when the object matches a strict Zod schema of `PersesDashboard` (plan 01 types).
-  - `export function checkPromqlSyntax(expr: string): string | null`. It returns `null` when the expression parses cleanly, or the first error position, as `syntax error at <from>`.
+  - `export function validateDashboard(d: unknown): string[]`. It returns an empty array when the object matches a strict pydantic model (`extra="forbid"`) of `PersesDashboard` (plan 01 types).
+  - `export function checkPromqlSyntax(expr: string): string | null`. It returns `null` when the expression parses cleanly, or `syntax error: <parser message>`.
 
 - [ ] **Step 1: Write the failing tests.**
   - `checkPromqlSyntax('avg by (a) ({otel_metric_name="x", otel_metric_type="sum"})')` is `null`.
-  - `checkPromqlSyntax("avg by (a) (")` matches `/syntax error at/`.
+  - `checkPromqlSyntax("avg by (a) (")` matches `/syntax error/`.
   - `checkPromqlSyntax('rate({otel_metric_name="x"}[$__rate_interval])')` is `null`.
   - `validateDashboard(<supported.json output from Task 1>)` is `[]`.
   - `validateDashboard({kind: "Dashboard"})` isn't empty.
 - [ ] **Step 2: Run it.** It must FAIL.
 - [ ] **Step 3: Implement it.**
-  - Parse with `parser.parse(text)` from `@prometheus-io/lezer-promql`. Walk the tree with `tree.iterate`; any node where `node.type.isError` is true is a failure.
+  - Parse with `promql_parser.parse(text)`; it raises a `ValueError` on a syntax error, which is the failure.
   - Before parsing (for the check only), replace `$__rate_interval`, `$__interval` and `$__range` with `5m`, and `$__threshold` with `0`.
 - [ ] **Step 4: Verify.** It must PASS.
 - [ ] **Step 5: Commit.** `git commit -am "feat: validate emitted Perses dashboards and PromQL syntax"`. Add the new files first.
@@ -141,8 +141,8 @@ export function compileDashboard(asset: SourceAsset, slug: string, mapping: Data
 ### Task 3: Wiring into the provider and the writers
 
 **Files:**
-- Modify: `src/source/datadog/index.ts` (replace the skeleton's dashboard branch), `src/convert.ts`, `src/report.ts`
-- Test: `tests/convert.test.ts` (extend)
+- Modify: `src/migrator/source/datadog/__init__.py` (replace the skeleton's dashboard branch), `src/migrator/convert.py`, `src/migrator/report.py`
+- Test: `tests/test_convert.py` (extend)
 
 **Interfaces:**
 - Consumes: `compileDashboard`, `validateDashboard`, `checkPromqlSyntax` and `assignSlugs` (plan 01).
@@ -155,7 +155,7 @@ export function compileDashboard(asset: SourceAsset, slug: string, mapping: Data
     - `schema` follows the same rule using `validateDashboard`;
     - `api` and `semantics` stay `not_run`.
 - Monitors stay on the skeleton (`UNSUPPORTED_MONITOR_TYPE`) until plan 06.
-- Replace the skeleton assertions in `tests/provider.test.ts` (plan 01 Task 5) with assertions of real outcomes. The goldens use only the `dashboards/` folder, so later monitor work can't change them.
+- Replace the skeleton assertions in `tests/test_provider.py` (plan 01 Task 5) with assertions of real outcomes. The goldens use only the `dashboards/` folder, so later monitor work can't change them.
 
 - [ ] **Step 1: Write the failing tests.**
   - `writes a dashboard per non-blocked source dashboard`: running `supported.json` + `unsupported.json` writes `dashboards/` containing exactly one file.
@@ -163,14 +163,14 @@ export function compileDashboard(asset: SourceAsset, slug: string, mapping: Data
     - Two copies of `supported.json`, placed in different subfolders of a temporary input folder, give `dashboards/<slug>.json` and `dashboards/<slug>-2.json`.
     - The slugs are assigned in `sourceId` order.
   - `yaml format writes .yaml`: with `--format yaml`, the dashboard file ends in `.yaml` and parses back to the same object as the JSON run.
-- [ ] **Step 2: Run them.** They must FAIL. **Step 3: Implement.** **Step 4: Verify.** `npm test && npm run typecheck` must pass.
+- [ ] **Step 2: Run them.** They must FAIL. **Step 3: Implement.** **Step 4: Verify.** `uv run migrator check` must pass.
 - [ ] **Step 5: Commit.** `git commit -am "feat: write Perses dashboards from convert"`.
 
 ### Task 4: Golden Postgres run
 
 **Files:**
 - Create: `fixtures/expected/postgres-p0/` (the full `--out` tree except `source/`)
-- Test: `tests/golden.test.ts`
+- Test: `tests/test_golden.py`
 
 **Interfaces:**
 - Consumes: the full `convert` pipeline, the pinned postgres fixtures, and `mappings/datadog/postgres.json`.
@@ -196,10 +196,10 @@ export function compileDashboard(asset: SourceAsset, slug: string, mapping: Data
   - There are 10 widget items with code `UNSUPPORTED_WIDGET` (`Widget type 'group' is not supported.`).
   - There's no `dashboards/postgres-overview.json`.
 - [ ] **Step 3: Generate the expected tree.**
-  - Run `npm run dev -- convert --source datadog --input fixtures/datadog/integrations-core/postgres/dashboards --mapping mappings/datadog/postgres.json --out /tmp/pg-p0`.
+  - Run `uv run migrator convert --source datadog --input fixtures/datadog/integrations-core/postgres/dashboards --mapping mappings/datadog/postgres.json --out /tmp/pg-p0`.
   - Review `dashboards/postgres-metrics.json` and `report.json` by hand against the assertions above.
   - Copy everything except `source/` into `fixtures/expected/postgres-p0/`.
-- [ ] **Step 4: Verify.** Run `npm test`. It must PASS, and so must the determinism test from plan 01.
+- [ ] **Step 4: Verify.** Run `uv run migrator test`. It must PASS, and so must the determinism test from plan 01.
 - [ ] **Step 5: Check against real data (read-only, manual).**
   - In the Dash0 UI or through the `dash0` MCP `promql` tool, on dataset `default`, run the widget-1 query.
   - Expect two series, `astronomy_db` and `postgres`, with small integer values (about 5 and 3 on 2026-11-07).
