@@ -47,17 +47,17 @@ Read existing code before changing it. The handoff describes planned behavior; s
 - Use task-based ownership through issues (below). Avoid simultaneous edits to shared contracts, package manifests, lockfiles, and the same source files.
 - Do not overwrite, discard, stash, reset, or clean another contributor's changes. Coordinate in the issue when ownership overlaps.
 - Agree on interface changes in the issue before making dependent edits. Update the handoff and consumers together when a contract changes.
-- Parallel agent work is optional and only used when explicitly requested. This handoff does not itself authorize spawning agents.
+- Parallel agent work is used only when explicitly requested. `docs/handoff/README.md` says how to run it (waves, file ownership, merge order); reading it does not itself authorize spawning agents.
 - At handoff, comment on the issue with completed work, exact checks and results, remaining blockers, and the next concrete task (template in `docs/STATUS.md`). Update `docs/STATUS.md` itself only when the overall state changes, such as a plan finishing or a blocker resolving. Record facts, not assumed completion.
 
 ## Tracking work in GitHub issues
 
 From now on, every task is tracked as a GitHub issue in `XNotAGuestX/thinchackdash`, and agents and people communicate through those issues.
 
-- **Existing work is already filed.** Each plan task (`01.T1` … `10.T2`) has one issue, labelled `task`, `plan:NN` and `track:A` or `track:B`, and attached as a sub-issue of its plan's `epic`. Open decisions and blockers B1–B3 have issues labelled `decision` or `blocker`. Dependencies are set as native "blocked by" links and listed in each issue body.
+- **Open work is already filed.** Each task in `docs/handoff/README.md` has one issue, labelled `task` and `wave:N` (plus `hotspot:converter` when it must merge one at a time), and attached as a sub-issue of its `epic`. Decisions and blockers have issues labelled `decision` or `blocker`; `horizon` marks tracked but unscheduled work. Dependencies are set as native "blocked by" links and listed in each issue body.
 - **Project board:** [thinchack-Dash0](https://github.com/users/XNotAGuestX/projects/3) holds every issue, with the fields Status, Priority, Size, Track, Plan and Phase. Keep Status current: `Backlog` (dependencies open) → `Ready` → `In progress` (when claimed) → `In review` (PR open) → `Done` (merged). Add new issues to the board and set their fields.
-- **New work gets an issue first.** Open it with the **Task** form (`.github/ISSUE_TEMPLATE/task.yml`) before writing code. Agents using `gh issue create` must use the same section headings: Summary, Plan reference, Track, Tasks, Acceptance criteria, Out of scope, Dependencies, Files, Definition of Done.
-- **Write tickets well.** One issue fits one branch and one PR; split anything bigger. The summary states the outcome and why it matters. Acceptance criteria are specific to the issue and pass or fail on observable evidence: a named test, an exact output, an exit code. The Definition of Done below is shared by all task issues and isn't repeated as acceptance criteria. The plans keep the "how"; issues link to them instead of copying steps.
+- **New work gets an issue first.** Open it with the **Task** form (`.github/ISSUE_TEMPLATE/task.yml`) before writing code. Agents using `gh issue create` must use the same section headings: Summary, Context, Plan reference, Parallel group, Tasks, Acceptance criteria, Verify, Out of scope, Stop and ask, Dependencies, Files, Definition of Done.
+- **Write tickets well.** One issue fits one branch and one PR; split anything bigger. The summary states the outcome and why it matters. Acceptance criteria are specific to the issue and pass or fail on observable evidence: a named test, an exact output, an exit code. The Definition of Done below is shared by all task issues and isn't repeated as acceptance criteria. Write for an agent with no chat context: the issue names the files it may change, the commands that verify it, and when to stop and ask.
 - **Claim before starting.** Assign the issue (an agent assigns the person it works for) and comment the branch name. One driver per issue. Don't start an issue whose dependencies are open unless its body says how to work around them, for example with mocks.
 - **Talk in the issue.** Questions, decisions, blockers, interface changes, review requests and handoffs are comments on the issue they concern; refer to other issues by number. A decision that lives only in chat or local notes doesn't count. Use the labels `blocked`, `needs:review` (the reviewer sets `reviewed` in mapping files), `needs:approval` (live writes and upstream pushes need Felix's go-ahead, linked in the issue), and `needs:B1`/`B2`/`B3`.
 - **Close through the PR.** The PR says `Closes #<n>` and shows the evidence for each acceptance criterion. An issue closes only when its acceptance criteria and the Definition of Done are met. File follow-ups as new issues instead of reopening scope.
@@ -67,7 +67,7 @@ From now on, every task is tracked as a GitHub issue in `XNotAGuestX/thinchackda
 - Every acceptance criterion is met, with evidence (test names, commands and their real output) in the PR or a closing comment.
 - `uv run migrator check` passes (ruff, mypy --strict, pytest); new behaviour has focused tests.
 - Conversion stays deterministic and LLM-free; no timestamps, absolute paths or environment data in artifacts.
-- Changed expected trees are regenerated in the same commit and reviewed by the other track.
+- Changed goldens and expected trees are regenerated in the same commit, and the PR explains the diff.
 - No secrets, raw live responses or run artifacts committed.
 - Docs touched by the change are updated (README, the open work list in `docs/handoff/README.md`, `docs/STATUS.md` when the overall state changes).
 - Work is on its own branch; the PR says `Closes #<this issue>`; follow-ups are filed as new issues.
@@ -80,7 +80,7 @@ From now on, every task is tracked as a GitHub issue in `XNotAGuestX/thinchackda
 - **XNotAGuestX (Felix) is the required reviewer on every PR and every task issue.** `.github/CODEOWNERS` requests the review automatically on PRs from other accounts. GitHub doesn't let an account approve its own PR, so for a PR opened from Felix's account, his explicit go-ahead (a PR comment, or his instruction in the agent session) counts as the review.
 - **Merging into `main`:** Felix, or an agent acting for Felix, merges a PR once it is reviewed as above and its checks pass. Other contributors and their agents never merge. Without the review, an agent merges only when Felix explicitly forces that specific merge.
 - Do not commit directly to `main`. Never force-push or rewrite `main`'s history, and stop to report conflicts or failing checks instead of resolving them by discarding changes.
-- Submission to the challenge follows the fork → feature branch → upstream PR workflow (plan 09 Task 5), only on Felix's explicit request. Do not push or open a PR upstream merely because this document describes submission.
+- Submission to the challenge follows the fork → feature branch → upstream PR workflow (`docs/handoff/README.md`, "Submission"), only on Felix's explicit request. Do not push or open a PR upstream merely because this document describes submission.
 
 ## Credentials and live operations
 

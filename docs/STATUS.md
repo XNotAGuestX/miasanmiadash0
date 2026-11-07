@@ -1,6 +1,6 @@
 # Shared project status
 
-Last updated: 2026-11-07: repository slimmed (oracle triage stack and finished plan files removed; backup branch `main-pre-rip`). Open work, in order: [`handoff/README.md`](handoff/README.md). Work is tracked in [issues](https://github.com/XNotAGuestX/thinchackdash/issues) and on the [project board](https://github.com/users/XNotAGuestX/projects/3).
+Last updated: 2026-11-07: repository slimmed (oracle triage stack and finished plan files removed; backup branch `main-pre-rip`). Open work: the orchestrator handoff [`handoff/README.md`](handoff/README.md) (epic #104: parallel waves of agent-ready issues, merge order, human-only items, live-Datadog horizon #122). Work is tracked in [issues](https://github.com/XNotAGuestX/thinchackdash/issues) and on the [project board](https://github.com/users/XNotAGuestX/projects/3).
 
 Highest-priority requirement: deterministic conversion before all other objectives. No LLM involvement in source-to-Perses or query/alert conversion, including optional inference, repair, and fallback paths. Codex and Claude remain implementation assistants only.
 
@@ -8,28 +8,29 @@ Highest-priority requirement: deterministic conversion before all other objectiv
 
 | Area | State | Evidence |
 | --- | --- | --- |
-| CLI/runtime/package | `convert` (offline), `publish` (run live 2026-11-07), `fetch` (offline-tested; live blocked on B3) | Python ≥ 3.13 + uv; `uv run migrator {convert,publish,fetch,test,typecheck,lint,check}` |
-| Dashboards | Plans 02–05 merged, except 05.T1 default aggregator (branch `default-avg-aggregator`, #33) | Golden `fixtures/expected/postgres-p1/` (byte-equal and determinism tests) |
+| CLI/runtime/package | `convert` (offline), `publish` (run live 2026-11-07), `fetch` (offline-tested; live is horizon #122) | Python ≥ 3.13 + uv; `uv run migrator {convert,publish,fetch,test,typecheck,lint,check}` |
+| Dashboards | Plans 02–05 merged, except the default aggregator (#107, port of branch `default-avg-aggregator`) | Golden `fixtures/expected/postgres-p1/` (byte-equal and determinism tests) |
 | Monitors | Plan 06 merged: `percent_usage_connections` translated, `replication_delay` blocked | Golden `fixtures/expected/postgres-monitors/` |
 | Mappings | `postgres`, `kafka`, `docker`, `redis`, `nginx`; every entry `reviewed: null` | `mappings/datadog/`; Redis/nginx notes in `REVIEW-redis-nginx.md` |
 | Oracle cases | 9 integrations-core dashboards, 207 requests; Agent0 proposals plus the deterministic rules in `scripts/build_expected.py`; none human-reviewed, so they skip by default | `fixtures/expected/*/*/expected.yaml`; `uv run pytest --include-unreviewed` |
 | Dash0 | Import contract checked live; Postgres dashboards and the disabled check rule published and read back | Sections below; sanitized responses in `fixtures/dash0/live-2026-11-07/` |
 | Telemetry | Not durable: `default` has receiver data only 2026-11-07 ~14:05–15:21 UTC (one `docker-desktop` host) | [`DASH0_INVENTORY.md`](DASH0_INVENTORY.md) |
 | Automated checks | Green: `uv run migrator check` (ruff, mypy --strict, pytest) | 613 passed, 621 skipped (unreviewed oracle cases) |
-| Submission | Not started | #2, plan 09 T5 (only on the user's request) |
+| Submission | Not started | #2; steps in `handoff/README.md`, "Human-only items" (only on the user's request) |
 
 ## Recorded decisions
 
 - 2026-11-07 (user): translation does not need to be source-agnostic. Datadog is the only P0 source. Each source provider owns its parsing, mapping, and translation; the requirement is one `SourceProvider` interface with a static table selected by `--source`, plus shared output types (Perses dashboards, PromQL check conditions, diagnostics, outcomes). If a shared contract would limit Datadog functionality, discuss it with the user before compromising features. Contract: `src/migrator/source/provider.py`; decision D1 in `handoff/00-context.md`.
+- 2026-11-07 (user): remaining work runs as an orchestrated, parallel handoff (`handoff/README.md`, epic #104); live Datadog is a feature horizon (#122), not scheduled.
 - 2026-11-07 (user): the LLM triage of oracle expectations (Agent0 judge, Haiku cross-check, lint, mutations, `TRIAGE.md`, `verified.json`) is removed. An expectation counts only after a human review.
 
 ## Known blockers
 
 - **B2 demo telemetry owner** (#4): `default` data exists only while one machine runs the OTel Demo stack.
 - **No controlled threshold crossing.** Postgres connection usage is about 0.08 against thresholds 0.8 and 0.9; `scripts/hold-pg-connections.sh` exists, the live run needs B2 and an enabled demo check.
-- **B3 Datadog account** (#5): only the live `fetch` round trip needs it.
+- **B3 Datadog account:** feature horizon (#122): the live `fetch` round trip and numeric spot checks need it.
 - **Starter/fork relationship** (#2) unresolved; settle before submission.
-- **Mapping review:** every entry is `reviewed: null`; goldens for Kafka, Redis, nginx and Docker wait for it.
+- **Mapping review:** every entry is `reviewed: null`; evidence and goldens per service are #111–#115, the sign-off is human.
 - **Target labels** follow the data (postgresqlreceiver 0.160.0, legacy `postgresql_database_name`, `postgresql_table_name`); the user still has to confirm them.
 - **Series deduplication:** resource-hash churn after a collector restart makes `sum` double-count; mappings deduplicate with `grain` (`max by (service_instance_id, …)`), see [DASH0_INVENTORY.md caveat 2](DASH0_INVENTORY.md#caveats).
 - Semantics, manual read-only check (2026-11-07, dataset `default`): Connections `astronomy_db` = 5, `postgres` = 3; `percent_usage_connections` ≈ 0.08; widget 0 `rate(postgresql.tup_fetched)` ≈ 84.7/s; I/O wait ≈ 0.47 %; network receive ≈ 886 kB/s. Not recorded in `report.validation.semantics`.
