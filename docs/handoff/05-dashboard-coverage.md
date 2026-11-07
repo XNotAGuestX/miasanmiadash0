@@ -117,7 +117,7 @@ This collapses target series to the Datadog series grain. It handles both resour
   - Group labels come first; then grain labels not already in the group, in mapping order.
   - With `rate`, the inner expression is the `rate(...)`.
 - [ ] **Step 3: Set grains in the mapping.**
-  - `postgresql.connections`: `{labels: ["service_instance_id"], aggregation: "max"}`.
+  - `postgresql.connections`: `{labels: ["service_instance_id"], aggregation: "max"}`. Changed in PR #85 (unreviewed assumption) to `["service_instance_id", "postgresql_database_name"]`, and the same grain was added to `postgresql.rows_*`. With `service_instance_id` alone, a query without `by {db}` takes the max over databases instead of their sum or average. With `by {db}`, the output is unchanged.
   - The CPU entries: `{labels: ["host_name"], aggregation: "avg"}`.
 - [ ] **Step 4: Verify.** Run `uv run migrator test`; it must PASS. Request a human review. Commit.
 
@@ -154,12 +154,12 @@ This collapses target series to the Datadog series grain. It handles both resour
 
 - A variable with a non-null `prefix` whose prefix tag has a label mapping in **every** query that uses it becomes:
   `{kind: "ListVariable", spec: {name, display: {name}, allowAllValue: true, allowMultiple: true, defaultValue: "$__all", plugin: {kind: "PrometheusLabelValuesVariable", spec: {labelName: <label>}}}}`.
-- The query then gets the matcher `<label>=~"$<name>"`.
+- The query then gets the matcher `<label>=~"^($<name>)$"`. The anchors give whole-value (Datadog exact-tag) matching, because Dash0 does not anchor `=~` ([Dash0: bind variables to queries](https://www.dash0.com/docs/dash0/dashboards/bind-variables-to-queries)). Values are not regex-escaped; see the comment in `compile_query.py`.
 - Variables with no prefix (`$scope`) stay dropped with a warning.
 
 - [ ] **Step 1: Write the failing test `maps prefixed variables to ListVariable`.**
   - Input: a synthetic dashboard with `{name: "db", prefix: "db", default: "*"}` and query `avg:postgresql.connections{$db}`.
-  - Expected: `spec.variables[0].spec.plugin.spec.labelName === "postgresql_database_name"`, and the query contains `postgresql_database_name=~"$db"`.
+  - Expected: `spec.variables[0].spec.plugin.spec.labelName === "postgresql_database_name"`, and the query contains `postgresql_database_name=~"^($db)$"`.
 - [ ] **Step 2: Implement it.** Then **Step 3:** run `uv run migrator test`; it must PASS.
 - [ ] **Step 4: Gate.** Until plan 07 Task 1 confirms that Dash0 renders `ListVariable`, record it in the report as an info `OPTION_IGNORED` note: "variable rendering unverified in Dash0". Commit.
 
