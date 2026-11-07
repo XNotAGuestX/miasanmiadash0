@@ -34,7 +34,8 @@ def convert(out: Path) -> int:
         ConvertOptions(
             source="datadog",
             inputs=["fixtures/datadog/integrations-core/postgres/dashboards"],
-            mapping="mappings/datadog/postgres.json",
+            # Frozen copy, so edits to mappings/datadog/postgres.json do not churn the golden.
+            mapping="fixtures/mappings/postgres.json",
             out=str(out),
             format="json",
             project="datadog-migration",
