@@ -20,6 +20,21 @@ def test_rejects_dotted_label_names() -> None:
     assert any(e.startswith("metrics.postgresql.connections.labels.db:") for e in errs)
 
 
+def test_expression_without_filters_placeholder_is_rejected() -> None:
+    expr = entry(
+        kind="expression",
+        expression="sum(foo)",
+        outputLabels=[],
+        sourceUnit="1",
+        targetUnit="1",
+    )
+    for key in ("target", "matchers", "grain"):
+        expr.pop(key, None)
+    errs = errors(raw_mapping(**{"postgresql.expr": expr}))
+    prefix = "metrics.postgresql.expr.expression:"
+    assert any(e.startswith(prefix) and "$filters" in e for e in errs)
+
+
 def test_rejects_unknown_kind() -> None:
     assert errors(raw_mapping(x=entry(kind="histogram")))
 

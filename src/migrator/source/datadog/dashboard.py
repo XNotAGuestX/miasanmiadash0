@@ -148,7 +148,8 @@ def _str(value: Any) -> str:
 
 def read_template_variables(body: dict[str, Any]) -> list[TemplateVariable]:
     out: list[TemplateVariable] = []
-    for tv in body.get("template_variables") or []:
+    raw = body.get("template_variables")
+    for tv in raw if isinstance(raw, list) else []:
         if not isinstance(tv, dict) or not isinstance(tv.get("name"), str):
             continue
         prefix = tv.get("prefix") if isinstance(tv.get("prefix"), str) else None
@@ -183,7 +184,8 @@ def _all_query_strings(widgets: Any) -> list[str]:
                 continue
             if isinstance(r.get("q"), str):
                 found.append(r["q"])
-            for q in r.get("queries") or []:
+            queries = r.get("queries")
+            for q in queries if isinstance(queries, list) else []:
                 if isinstance(q, dict) and isinstance(q.get("query"), str):
                     found.append(q["query"])
     return found
@@ -442,7 +444,7 @@ def _compile_widget(
     title = _str(definition.get("title"))
     wtype = definition.get("type")
     dpath = f"{path}.definition"
-    if wtype not in _DEF_KEYS:
+    if not isinstance(wtype, str) or wtype not in _DEF_KEYS:
         c.error(
             "UNSUPPORTED_WIDGET",
             f"{dpath}.type",
@@ -491,14 +493,19 @@ def _stat_calculation(requests: list[_Request], dpath: str, c: _Collector) -> st
             "Migrate this widget manually.",
         )
         return ""
-    aggs = {requests[0].aggregators.get(n) for n in displayed[0].query_names}
-    agg = next(iter(aggs)) if len(aggs) == 1 else None
+    aggs = [requests[0].aggregators.get(n) for n in displayed[0].query_names]
+    agg = aggs[0] if all(a == aggs[0] for a in aggs) else None
     calc = _CALCULATIONS.get(agg) if isinstance(agg, str) else None
     if calc is None:
+        message = (
+            "Query value widget has no aggregator."
+            if all(a is None for a in aggs)
+            else f"Query value aggregator '{agg}' is not supported."
+        )
         c.error(
             "UNSUPPORTED_WIDGET",
             f"{dpath}.requests[0]",
-            f"Query value aggregator '{agg}' is not supported.",
+            message,
             "Use one of avg, last, max, min or sum in the source widget.",
         )
         return ""
@@ -674,6 +681,14 @@ def compile_dashboard(
             b.record(f"widget-{i}", path, widget, b.top)
     b.flush_top()
 
+    if not b.items:
+        c.error(
+            "UNSUPPORTED_WIDGET",
+            "widgets",
+            "Dashboard has no convertible widgets.",
+            "Add widgets to the source dashboard or migrate it manually.",
+        )
+
     translated = sum(1 for it in b.items if it.outcome == "translated")
     outcome: Outcome
     if translated and translated == len(b.items):
@@ -710,7 +725,23 @@ def compile_dashboard(
             dashboard, outcome = None, "blocked"
 
     items = [ItemResult(sid, "", "dashboard", asset.title, outcome), *b.items]
-    return DashboardCompilation(dashboard=dashboard, items=items, diagnostics=c.items)
+    return DashboardCompilation(
+        dashboard=dashboard, items=items, diagnostics=_ordered(c.items, b.items)
+    )
+
+
+def _ordered(diagnostics: list[Diagnostic], items: list[ItemResult]) -> list[Diagnostic]:
+    """Item order, then source path; the stable sort keeps emission order for ties."""
+
+    def key(d: Diagnostic) -> tuple[int, str]:
+        for index, item in enumerate(items, start=1):
+            if d.source_path == item.source_path or d.source_path.startswith(
+                item.source_path + "."
+            ):
+                return index, d.source_path
+        return 0, d.source_path
+
+    return sorted(diagnostics, key=key)
 
 
 def _validate(dashboard: PersesDashboard) -> list[str]:

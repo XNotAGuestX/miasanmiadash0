@@ -3,6 +3,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from migrator.source.asset import CompileOptions, SourceAsset
 from migrator.source.datadog.compile_query import TemplateVariable
 from migrator.source.datadog.dashboard import (
@@ -210,6 +212,12 @@ def test_free_layout_dashboard_uses_auto_layout() -> None:
     assert _positions(c) == [(0, 0, 12, 8), (12, 0, 12, 8)]
 
 
+def test_free_layout_dashboard_with_fitting_layouts_uses_auto_layout() -> None:
+    c = compile_body(_laid_out(0, 4, "free"))
+    assert c.items[0].outcome == "translated"
+    assert _positions(c) == [(0, 0, 12, 8), (12, 0, 12, 8)]
+
+
 def test_ordered_layout_overflowing_twelve_columns_uses_auto_layout() -> None:
     c = compile_body(_laid_out(8, 8, "ordered"))
     assert c.items[0].outcome == "translated"
@@ -338,3 +346,65 @@ def test_all_blocked_dashboard_has_no_artifact() -> None:
     assert c.dashboard is None and c.items[0].outcome == "blocked"
     c = compile_body(body())
     assert c.dashboard is None and c.items[0].outcome == "blocked"
+    assert any(
+        d.severity == "error"
+        and d.code == "UNSUPPORTED_WIDGET"
+        and d.source_path == "widgets"
+        and d.message == "Dashboard has no convertible widgets."
+        for d in c.diagnostics
+    )
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda b: b.update(template_variables=5),
+        lambda b: b["widgets"][0]["definition"]["requests"][0].update(queries=5),
+        lambda b: b["widgets"][0]["definition"].update(type=["x"]),
+        lambda b: b["widgets"][0]["definition"]["requests"][0]["queries"][0].update(
+            aggregator=["avg"]
+        ),
+    ],
+)
+def test_malformed_shapes_block_instead_of_raising(mutate: Any) -> None:
+    widget = {
+        "definition": {
+            "type": "query_value",
+            "title": "Q",
+            "requests": [
+                {
+                    "queries": [
+                        {
+                            "data_source": "metrics",
+                            "name": "query1",
+                            "query": "avg:postgresql.connections{*}",
+                            "aggregator": "avg",
+                        }
+                    ]
+                }
+            ],
+        }
+    }
+    b = body(widget)
+    mutate(b)
+    c = compile_body(b)
+    if b["template_variables"] == 5:
+        return
+    assert c.items[1].outcome == "blocked"
+    assert any(d.code == "UNSUPPORTED_WIDGET" for d in c.diagnostics)
+
+
+def test_diagnostics_are_ordered_by_item_then_source_path() -> None:
+    c = compile_body(
+        body(ts({"q": "avg:postgresql.connections{*}"}, style={}), ts({"q": "bad("}, yaxis={}))
+    )
+    assert len(c.diagnostics) > 2
+
+    def key(d: Any) -> tuple[int, str]:
+        path = d.source_path
+        for n in (1, 0):
+            if path == f"widgets[{n}]" or path.startswith(f"widgets[{n}]."):
+                return (n + 1, path)
+        return (0, path)
+
+    assert c.diagnostics == sorted(c.diagnostics, key=key)

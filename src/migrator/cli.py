@@ -16,8 +16,6 @@ import sys
 
 from migrator.input import InputError
 
-_DEV_TOOLS_HINT = "dev tools missing; run `uv sync` first"
-
 
 def _cmd_convert(args: argparse.Namespace) -> int:
     from migrator.convert import ConvertOptions, run_convert
@@ -42,11 +40,7 @@ def _cmd_convert(args: argparse.Namespace) -> int:
 
 
 def _run_tool(argv: list[str]) -> int:
-    try:
-        return subprocess.call([sys.executable, "-m", *argv])
-    except FileNotFoundError:
-        print(f"error: {_DEV_TOOLS_HINT}", file=sys.stderr)
-        return 1
+    return subprocess.call([sys.executable, "-m", *argv])
 
 
 def _cmd_test(args: argparse.Namespace, extra: list[str]) -> int:

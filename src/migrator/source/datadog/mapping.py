@@ -9,7 +9,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, ValidationError
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    ValidationError,
+    field_validator,
+)
 
 Label = Annotated[str, StringConstraints(pattern=r"^[a-zA-Z_][a-zA-Z0-9_]*$")]
 NonEmpty = Annotated[str, StringConstraints(min_length=1)]
@@ -77,6 +84,13 @@ class ExpressionMapping(_Strict):
     scale: Scale
     ref: NonEmpty
     reviewed: Reviewed | None
+
+    @field_validator("expression")
+    @classmethod
+    def _requires_filters_placeholder(cls, value: str) -> str:
+        if "$filters" not in value:
+            raise ValueError("expression must contain the literal $filters placeholder")
+        return value
 
 
 MetricMapping = GaugeMapping | RateMapping | ExpressionMapping

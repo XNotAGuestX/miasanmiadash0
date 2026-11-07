@@ -160,10 +160,11 @@ def compile_metric_query(
         ):
             matchers.append(Matcher(promoted, f"${var.name}", "=~"))
         elif var.default is None or var.default == "*":
+            default_note = "default '*'" if var.default == "*" else "no default"
             d.add(
                 "TEMPLATE_VARIABLE_DROPPED",
                 "warning",
-                f"Template variable '${var.name}' (default '*') dropped; "
+                f"Template variable '${var.name}' ({default_note}) dropped; "
                 "the converted panel shows all series.",
                 "Add a label mapping for the variable's prefix tag to filter by it.",
             )
