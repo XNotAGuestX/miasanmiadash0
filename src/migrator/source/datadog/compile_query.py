@@ -158,6 +158,18 @@ def compile_metric_query(
             and var.prefix is not None
             and entry.labels.get(var.prefix) == promoted
         ):
+            # Known limitation (left open deliberately; see PR #85 review): the dashboard
+            # substitutes `$name` at view time, so the converter never sees the value and
+            # cannot regex-escape it. A selected `a.b` therefore also matches `aXb`.
+            # - Perses documents `${name:regex}`, but it escapes with one backslash
+            #   (`(a\.b)`), an invalid escape inside a double-quoted PromQL string, and
+            #   promql-parser rejects it in backtick strings too. Perses' source also has
+            #   an undocumented `regexliteral` format (double backslash); Dash0's docs
+            #   document neither (dash0.com/docs/dash0/dashboards/bind-variables-to-queries).
+            # - Dash0 also says it does not anchor `=~` and suggests `=~"^($name)$"`.
+            #   What Dash0 substitutes for the "All" default is undocumented, so anchoring
+            #   is not applied blind either.
+            # Decide both with the Dash0 render check of ListVariable (plan 07 Task 1).
             matchers.append(Matcher(promoted, f"${var.name}", "=~"))
         elif var.default is None or var.default == "*":
             default_note = "default '*'" if var.default == "*" else "no default"

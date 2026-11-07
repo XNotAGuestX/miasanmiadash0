@@ -667,7 +667,9 @@ def compile_dashboard(
                 "info",
                 f"template_variables[{i}]",
                 f"Template variable '${var.name}' became a Perses ListVariable on label "
-                f"'{promoted[var.name]}'; variable rendering unverified in Dash0.",
+                f"'{promoted[var.name]}'; variable rendering unverified in Dash0. "
+                "Selected values are matched as a regex (=~) without escaping, so values "
+                "containing regex characters such as '.' can match more series.",
                 "Check the variable in Dash0 after publishing.",
             )
     c.add(

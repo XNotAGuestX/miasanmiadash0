@@ -277,6 +277,7 @@ def test_maps_prefixed_variables_to_list_variable() -> None:
     infos = [d for d in c.diagnostics if d.source_path == "template_variables[0]"]
     assert [d.code for d in infos] == ["OPTION_IGNORED"]
     assert "unverified in Dash0" in infos[0].message
+    assert "without escaping" in infos[0].message
     assert validate_dashboard(c.dashboard) == []
 
 
