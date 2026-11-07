@@ -118,3 +118,42 @@ def test_overview_is_partial_with_reviewed_counts(run: tuple[int, Path]) -> None
     counts = Counter(i["outcome"] for i in items if i["kind"] == "widget")
     assert counts == {"translated": 8, "blocked": 22}
     assert (run[1] / "dashboards/postgres-overview.json").exists()
+
+
+def test_cpu_widget_stays_blocked_on_guest(run: tuple[int, Path], tmp_path: Path) -> None:
+    """Issue #41's `cpu widget stays blocked on guest`, adjusted for 05.T1 being skipped.
+
+    Today widgets[5] ("CPU usage (%)") is blocked earlier: its six queries have no
+    space aggregator, so each gets MISSING_AGGREGATOR before any mapping lookup.
+    Giving them an aggregator (what 05.T1 would do) leaves exactly one block:
+    system.cpu.guest has no mapping, while idle/system/iowait/user/stolen do.
+    """
+    rep = report(run[1])
+    assert widget_errors(rep, METRICS, "widgets[5]") == ["MISSING_AGGREGATOR"] * 6
+
+    source = json.loads(Path("fixtures/datadog/integrations-core/postgres", METRICS).read_text())
+    for request in source["widgets"][5]["definition"]["requests"]:
+        for query in request["queries"]:
+            query["query"] = "avg:" + query["query"]
+    (tmp_path / "in").mkdir()
+    (tmp_path / "in" / "postgresql_dashboard.json").write_text(json.dumps(source))
+    out = tmp_path / "out"
+    run_convert(
+        ConvertOptions(
+            source="datadog",
+            inputs=[str(tmp_path / "in")],
+            mapping="fixtures/mappings/postgres.json",
+            out=str(out),
+        )
+    )
+    rep = report(out)
+    (sid,) = {i["sourceId"] for i in rep["items"]}
+    assert widget_errors(rep, sid, "widgets[5]") == ["MISSING_METRIC_MAPPING"]
+    (guest,) = [
+        d
+        for d in rep["diagnostics"]
+        if d["severity"] == "error" and "widgets[5]" in d["sourcePath"]
+    ]
+    assert "system.cpu.guest" in guest["message"]
+    outcome = {i["sourcePath"]: i["outcome"] for i in rep["items"]}
+    assert outcome["widgets[5]"] == "blocked"
