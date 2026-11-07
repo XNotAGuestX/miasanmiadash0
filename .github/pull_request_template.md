@@ -10,7 +10,7 @@ Closes #
 
 ## Checks
 
-- [ ] `npm test` and `npm run typecheck` pass (paste the summary lines)
+- [ ] `uv run migrator check` passes (ruff, mypy --strict, pytest) (paste the summary lines)
 - [ ] Expected trees changed? Regenerated in this PR, and the other track reviewed the diff
 - [ ] New mapping entries have `reviewed: null`; the reviewer sets it
 - [ ] No secrets, raw live responses or run artifacts

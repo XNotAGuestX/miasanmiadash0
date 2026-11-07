@@ -25,11 +25,11 @@ The hackathon duration is not specified. Allocate the remaining engineering time
 
 ## 1. Bootstrap the smallest executable slice
 
-- Initialize one TypeScript CLI package with the proposed dependencies and a lockfile.
+- Initialize one Python 3.13 CLI package with uv (`pyproject.toml`, committed `uv.lock`) and the proposed dependencies.
 - Define the `SourceProvider` interface, shared output types, and static provider table with Datadog as the only entry. Make `--source` required for `fetch` and `compile`; see [the handoff](PROJECT_HANDOFF.md#source-provider-interface).
 - Add `dev`, `build`, `typecheck`, and `test` scripts; document the exact working commands and tested runtime in README.
 - Add synthetic dashboard, monitor, and mapping JSON fixtures matching the first supported example.
-- Add the minimum types and Zod boundary schemas needed for those fixtures.
+- Add the minimum types and pydantic boundary models needed for those fixtures.
 - Wire `compile` through the selected provider so it reads fixtures, emits one dashboard/check-rule artifact plus a report/manifest, and never calls a network service.
 
 **Gate:** a fresh install can run the offline command and produce reviewable outputs. At this stage, hard-coded example output is only scaffolding; it does not satisfy the translation gate.
