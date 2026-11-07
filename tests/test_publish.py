@@ -191,3 +191,59 @@ def test_cli_dry_run(
     out = capsys.readouterr().out
     assert code == 2
     assert "DRY-RUN POST" in out and TOKEN not in out
+
+
+def test_name_prefix_renames_sent_bodies_not_files(run_dir: Path) -> None:
+    before = {p: (run_dir / p).read_bytes() for p in (CHECK, DASH_METRICS, DASH_OVERVIEW)}
+    send = FakeSend(rule_ok("r1"), dashboard_ok("d1"), dashboard_ok("d2"))
+    run = run_publish(
+        PublishOptions(str(run_dir), allow_partial=True, name_prefix="demo-"), ENV, send
+    )
+    assert run.exit_code == 2, run.lines  # replication_delay is still blocked
+    bodies = [json.loads(r.body or b"{}") for r in send.requests]
+    assert bodies[0]["name"].startswith("demo-[Postgres] Number of connections")
+    assert bodies[1]["metadata"]["name"] == "demo-postgres-metrics"
+    assert bodies[1]["spec"]["display"]["name"] == "demo-Postgres - Metrics"
+    assert bodies[2]["spec"]["display"]["name"] == "demo-Postgres - Overview"
+    # The artifacts on disk (and so their sha256) are unchanged.
+    assert {p: (run_dir / p).read_bytes() for p in before} == before
+    assert all(r.name_prefix == "demo-" for r in run.receipts)
+    saved = json.loads((run_dir / "import-results.json").read_text())
+    assert {r["namePrefix"] for r in saved} == {"demo-"}
+
+
+def test_name_prefix_shows_in_dry_run(run_dir: Path) -> None:
+    run = run_publish(
+        PublishOptions(str(run_dir), dry_run=True, name_prefix="demo-"), ENV, FakeSend()
+    )
+    assert any("demo-[Postgres] Number of connections" in line for line in run.lines)
+
+
+def test_rerun_with_same_prefix_is_unchanged_other_prefix_refused(run_dir: Path) -> None:
+    opts = PublishOptions(str(run_dir), name_prefix="demo-")
+    run_publish(opts, ENV, FakeSend(rule_ok("r1")))
+    again = run_publish(opts, ENV, FakeSend())
+    assert any(line.startswith("UNCHANGED") for line in again.lines)
+    for other in (None, "demo2-"):
+        send = FakeSend()
+        run = run_publish(PublishOptions(str(run_dir), name_prefix=other), ENV, send)
+        assert run.exit_code == 1
+        assert any("another --name-prefix" in line for line in run.lines)
+        assert send.requests == []
+
+
+@pytest.mark.parametrize("prefix", ["", "Demo-", "demo_", "-demo", "{{x}}", "a" * 33, "demo "])
+def test_rejects_invalid_name_prefix(run_dir: Path, prefix: str) -> None:
+    with pytest.raises(InputError, match="--name-prefix"):
+        run_publish(PublishOptions(str(run_dir), name_prefix=prefix), ENV, FakeSend())
+
+
+def test_cli_name_prefix(
+    run_dir: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    for k, v in ENV.items():
+        monkeypatch.setenv(k, v)
+    code = main(["publish", "--from", str(run_dir), "--dry-run", "--name-prefix", "demo-"])
+    assert code == 2
+    assert "demo-[Postgres]" in capsys.readouterr().out
+    assert main(["publish", "--from", str(run_dir), "--dry-run", "--name-prefix", "BAD"]) == 1

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -33,6 +34,9 @@ PUBLISHABLE: dict[str, Literal["dashboard", "check-rule"]] = {
     "check-rule": "check-rule",
 }
 AUTH_STOP_STATUSES = frozenset({401, 403})
+# Lowercase, digits and hyphens only, so the same prefix is valid in a Perses
+# metadata.name (^[a-z0-9-]+$) and can never inject a {{...}} template into a name.
+NAME_PREFIX_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,31}$")
 
 
 @dataclass(frozen=True)
@@ -40,6 +44,10 @@ class PublishOptions:
     source_dir: str
     dry_run: bool = False
     allow_partial: bool = False
+    # Prepended to each published dashboard's metadata.name and display name and to
+    # each check rule's name, e.g. "demo-". Applied at send time: the artifacts on
+    # disk, their sha256 and the manifest stay as convert wrote them.
+    name_prefix: str | None = None
 
 
 @dataclass
@@ -121,6 +129,27 @@ def _load_selected(
     return _Selected(rel, kind, entry["sha256"], name, body)
 
 
+def _with_prefix(item: _Selected, prefix: str | None) -> _Selected:
+    """Return the item renamed with the prefix; the result is validated again."""
+    if prefix is None:
+        return item
+    body = json.loads(json.dumps(item.body))  # deep copy; the on-disk body is untouched
+    if item.kind == "dashboard":
+        body["metadata"]["name"] = prefix + body["metadata"]["name"]
+        body["spec"]["display"]["name"] = prefix + body["spec"]["display"]["name"]
+        name = str(body["spec"]["display"]["name"])
+        problems = validate_dashboard(body)
+    else:
+        body["name"] = prefix + body["name"]
+        name = str(body["name"])
+        problems = validate_check_rule(body)
+    if problems:
+        raise InputError(
+            f"{item.path} with --name-prefix failed validation: " + "; ".join(problems)
+        )
+    return _Selected(item.path, item.kind, item.sha256, name, body)
+
+
 def _plan(root: Path, allow_partial: bool) -> tuple[list[_Selected], list[str]]:
     selected: list[_Selected] = []
     excluded: list[str] = []
@@ -151,11 +180,18 @@ def run_publish(
     """Exit 0: all imported or unchanged; 2: something excluded; 1: any failure,
     unknown result, refusal or validation error. Missing env raises InputError."""
     cfg = read_dash0_config(env)
+    prefix = opts.name_prefix
+    if prefix is not None and not NAME_PREFIX_RE.fullmatch(prefix):
+        raise InputError(
+            "--name-prefix must be 1-32 characters of a-z, 0-9 and '-', starting with a "
+            "letter or digit"
+        )
     root = Path(opts.source_dir).resolve()
     if not root.is_dir():
         raise InputError(f"--from is not a directory: {opts.source_dir}")
     try:
         selected, excluded = _plan(root, opts.allow_partial)
+        selected = [_with_prefix(item, prefix) for item in selected]
     except InputError as err:
         return PublishRun(exit_code=1, lines=[f"error: {err}"])
 
@@ -163,7 +199,7 @@ def run_publish(
     lines = list(excluded)
     failed = False
     for item in selected:
-        decision = decide(receipts, item.path, item.sha256, cfg.api_url, cfg.dataset)
+        decision = decide(receipts, item.path, item.sha256, cfg.api_url, cfg.dataset, prefix)
         if opts.dry_run:
             lines.append(
                 f"DRY-RUN POST {cfg.api_url}/api/import/{item.kind}?dataset={cfg.dataset}"
@@ -183,7 +219,8 @@ def run_publish(
         if decision == "reject-changed":
             failed = True
             lines.append(
-                f"REFUSED {item.path}  (changed since it was imported; there is no update flow)"
+                f"REFUSED {item.path}  (changed since it was imported, or imported with "
+                f"another --name-prefix; there is no update flow)"
             )
             continue
 
@@ -197,6 +234,7 @@ def run_publish(
             id=outcome.id if isinstance(outcome, Imported) else None,
             httpStatus=outcome.http_status if isinstance(outcome, Imported | Failed) else None,
             message=None if isinstance(outcome, Imported) else outcome.message,
+            namePrefix=prefix,
         )
         receipts = record_receipt(receipts, receipt)
         save_receipts(root, receipts)  # after every asset, so a crash keeps what happened
