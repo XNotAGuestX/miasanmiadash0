@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
+from migrator.http import HttpSend, urllib_send
 from migrator.input import InputError, InputFile
 from migrator.source.asset import (
     CompileOptions,
@@ -29,8 +30,14 @@ class DatadogProvider:
         assets, diagnostics = recognize_assets(files)
         return ProviderLoadResult(assets=assets, diagnostics=diagnostics)
 
-    def fetch(self, sel: FetchSelection, env: Mapping[str, str | None], out: str) -> list[str]:
-        return fetch_datadog_assets(sel, env, out)
+    def fetch(
+        self,
+        sel: FetchSelection,
+        env: Mapping[str, str | None],
+        out: str,
+        send: HttpSend = urllib_send,
+    ) -> list[str]:
+        return fetch_datadog_assets(sel, env, out, send)
 
     def compile(
         self, assets: list[SourceAsset], mapping: Any, options: CompileOptions

@@ -6,8 +6,14 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 
+from migrator.http import HttpSend, urllib_send
 from migrator.input import InputFile
 from migrator.target import CompileResult, Diagnostic
+
+
+class SourceFetchError(Exception):
+    """A provider's API request failed. Providers raise it from fetch(); the shared
+    CLI maps it to exit code 1 without knowing which source raised it."""
 
 
 @dataclass(frozen=True)
@@ -52,4 +58,10 @@ class SourceProvider(Protocol):
 class FetchingProvider(SourceProvider, Protocol):
     """A provider that can also fetch assets from its API by explicit ID (optional)."""
 
-    def fetch(self, sel: FetchSelection, env: Mapping[str, str | None], out: str) -> list[str]: ...
+    def fetch(
+        self,
+        sel: FetchSelection,
+        env: Mapping[str, str | None],
+        out: str,
+        send: HttpSend = urllib_send,
+    ) -> list[str]: ...
