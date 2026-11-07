@@ -18,6 +18,28 @@ DASHBOARD = cast(PersesDashboard, {"kind": "Dashboard", "metadata": {"name": "d"
 Handler = Callable[[socket.socket], None]
 
 
+def read_request(conn: socket.socket) -> None:
+    """Read the whole request (headers and Content-Length body) before replying;
+    unread bytes would turn the server's close into a TCP reset."""
+    data = b""
+    while b"\r\n\r\n" not in data:
+        chunk = conn.recv(65536)
+        if not chunk:
+            return
+        data += chunk
+    head, _, body = data.partition(b"\r\n\r\n")
+    length = 0
+    for line in head.split(b"\r\n")[1:]:
+        name, _, value = line.partition(b":")
+        if name.strip().lower() == b"content-length":
+            length = int(value.strip())
+    while len(body) < length:
+        chunk = conn.recv(65536)
+        if not chunk:
+            return
+        body += chunk
+
+
 @contextmanager
 def raw_server(handle: Handler) -> Iterator[str]:
     """Serve one connection with a hand-written HTTP response."""
@@ -29,8 +51,16 @@ def raw_server(handle: Handler) -> Iterator[str]:
     def run() -> None:
         conn, _ = srv.accept()
         with conn:
-            conn.recv(65536)
+            read_request(conn)
             handle(conn)
+            # Half-close and drain, so the client sees EOF rather than a reset.
+            conn.shutdown(socket.SHUT_WR)
+            conn.settimeout(2)
+            try:
+                while conn.recv(65536):
+                    pass
+            except OSError:
+                pass
 
     thread = threading.Thread(target=run, daemon=True)
     thread.start()
