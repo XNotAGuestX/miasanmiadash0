@@ -14,10 +14,10 @@ Highest-priority requirement: deterministic conversion before all other objectiv
 | Shared Codex/Claude rules | Written | Root `AGENTS.md`; `CLAUDE.md` refers to it |
 | Local configuration template | Written | Root `.env.example` and `.gitignore` |
 | Starter/fork relationship | Unresolved | Current remote is `XNotAGuestX/thinchackdash`; required starter differs |
-| CLI/runtime/package | `convert` working offline; `fetch` implemented (read-only); `publish` in PR #81 | Python ≥ 3.13 + uv; single entry point `uv run migrator {convert,fetch,test,typecheck,lint,check}` (`pyproject.toml`, `uv.lock`) |
+| CLI/runtime/package | `convert` (offline), `publish` (run live 2026-11-07) and `fetch` (not run live, B3) | Python ≥ 3.13 + uv; single entry point `uv run migrator {convert,publish,fetch,test,typecheck,lint,check}` (`pyproject.toml`, `uv.lock`) |
 | Fixtures/parser/compiler | Dashboards done (plans 02–04, 05.T2–T8, 06.T3); monitors done in review (plan 06 T1–T2, T4–T5, PRs #77–#80): golden `fixtures/expected/postgres-monitors/`, `percent_usage_connections` translated, `replication_delay` blocked | Pinned integrations-core postgres, kafka, docker_daemon at `a9b9e42`; synthetic fixtures; mappings `postgres.json`, `kafka.json`, `docker.json`, all `reviewed: null` |
-| Datadog API integration | Implemented, not run live | Read-only client (plan 10.T1, PR #74) and `fetch` CLI (10.T2, PR #83), tested with recorded fake responses; no Datadog credentials yet, so no live fetch |
-| Dash0 API/schema spike | Docs researched | API, PromQL naming, and CLI facts in `PLANNING_HANDOFF.md` §5.3; no live request made |
+| Datadog API integration | Implemented, not run live | Read-only client (#74) and `fetch` CLI (#83), tested with recorded fake responses; no Datadog account yet (B3) |
+| Dash0 API/schema spike | Done live (plan 07 Task 1, 2026-11-07) | Two demo imports to `default` with a scoped token; see "Dash0 import contract (live)" below. Sanitized responses in `fixtures/dash0/live-2026-11-07/` |
 | Telemetry and semantic validation | Data present, not durable | `default` has data since 2026-11-07 14:06 UTC from one `docker-desktop` host. Connection usage is about 0.08; no controlled threshold crossing exists yet |
 | Automated checks | Green | `uv run migrator check`: ruff clean, mypy --strict clean, pytest unit tests passing. Oracle suite (`tests/unit`, unreviewed cases skipped) runs against the converter; see "Oracle test suite handoff". Golden: `fixtures/expected/postgres-p1/` (Postgres dashboards, byte-equal and determinism tests), in review |
 | Submission | Not started | No commit, push, fork, or PR created by the handoff task |
@@ -73,15 +73,60 @@ The starter/fork workflow is still unresolved; settle it before the first implem
 - **Demo telemetry isn't durable** (M0). `default` data exists only while one machine (`docker-desktop`) runs the OTel Demo stack. It needs an owner or an always-on host.
 - **No controlled threshold crossing.** Postgres connection usage is about 0.08, against thresholds of 0.8 and 0.9. It needs a connection-holder script; changing the thresholds isn't allowed.
 - **Series deduplication.** Resource-hash churn after a collector restart makes `sum` double-count. The reviewed ratio must deduplicate (`PLANNING_HANDOFF.md` §6).
-- **Dash0 token missing.** The `dash0` MCP tools load but are read-only: they can't export a dashboard, list or import check rules, or import anything. A `DASH0_AUTH_TOKEN` (or a manual UI export, for the emitter reference only) is needed. The `dash0` CLI isn't installed.
+- ~~**Dash0 token missing.**~~ Resolved 2026-11-07 (B1): the user created a token, kept only in the gitignored `.env`.
 - **Datadog credentials unset.** P0 uses integrations-core files pinned to `a9b9e42b7e484861ecbd1f5919da7c52a694b74d`. API fetch stays at M4+.
 - Target labels are settled by the data: postgresqlreceiver 0.160.0, legacy `postgresql_database_name` and `postgresql_table_name`. The user still needs to confirm this (`PLANNING_HANDOFF.md` §7.1).
 - This branch is 2 `.gitignore` commits behind `main`. Reconcile it before implementation.
 - Stack changed to Python + uv (user instruction, 2026-11-07). The handoff's TypeScript names map to Python modules; pydantic replaces Zod, `promql-parser` replaces Lezer PromQL. `00-context.md` §5 still describes TypeScript.
 - `AGENTS.md` Definition of Done still says `npm test` / `npm run typecheck`; with the Python stack the equivalent is `uv run migrator check` (ruff + mypy --strict + pytest).
 - Semantics, manual read-only check (2026-11-07, dataset `default`, data until ~15:10 UTC): the converted Connections query (with grain) returned `astronomy_db` ≈ 5 and `postgres` ≈ 3–4; the `percent_usage_connections` ratio returned ≈ 0.08. Not recorded in `report.validation.semantics`. Second check for the P1 golden (2026-11-07 ~17:54 UTC): Connections `astronomy_db` = 5, `postgres` = 3; widget 0 `rate(postgresql.tup_fetched)` ≈ 84.7/s; widget 6 I/O wait ≈ 0.47 %; widget 8 network receive ≈ 886 kB/s. Semantics: manual check.
-- Every mapping entry (`postgres.json`, `kafka.json`, `docker.json`) has `reviewed: null` and needs a human review before goldens are frozen.
-- The official check-rule documentation has differing ID references in prose and schema; verify the actual request shape during the destination spike.
+- Every mapping entry (`postgres.json`, `kafka.json`, `docker.json`, `redis.json`, `nginx.json`) has `reviewed: null` and needs a human review before goldens are frozen. Redis and nginx review notes: `mappings/datadog/REVIEW-redis-nginx.md` (#76).
+- ~~The official check-rule documentation has differing ID references in prose and schema.~~ Settled live: the import response carries the new id at `id` (see below).
+
+## Dash0 import contract (live, plan 07 Task 1, 2026-11-07)
+
+Run by Claude with the user's go-ahead, one POST each, no retry, dataset `default`. Read-only calls before that: `GET /api/dashboards` (list of `{id, name, dataset}`, `name` = `metadata.name`), `GET /api/dashboards/{id}`, `GET /api/alerting/check-rules` (empty).
+
+| Asset | Request | Response | Id | Read-back |
+|---|---|---|---|---|
+| Dashboard `demo-postgres-metrics` ("demo-Postgres - Metrics", P1 golden, 4 `TimeSeriesChart` panels) | `POST /api/import/dashboard?dataset=default` | 200, the stored dashboard (`kind`, `metadata`, `spec`) with **no id anywhere** and no `Location` header | `eebfaf39-969d-4fe3-b379-9234d77e1937`, found only by listing | `GET /api/dashboards/{id}` 200; `spec` byte-equal to what was sent |
+| Check rule `demo-[Postgres] Number of connections … {{host.name}}`, `enabled: false` | `POST /api/import/check-rule?dataset=default` | 200, the rule with `id` | `987f6f55-cda3-4afe-b742-71d68b42e267` at `id` | `GET /api/alerting/check-rules/{id}` 200; read-back has no `id` field |
+
+Findings:
+
+- **Dashboard id:** the old `DASHBOARD_ID_PATH = metadata.dash0Extensions.id` was wrong; every dashboard import would have been `unknown`. Fixed on `48-dash0-client`: `publish_dashboard` lists before and after the import and takes the one new id with the dashboard's `metadata.name` (exactly one, else `unknown`).
+- **`metadata.project`** is accepted: `datadog-migration` is kept, and Dash0 files the dashboard in folder `/datadog-migration` (annotation `dash0.com/folder-path`). Dash0 adds `labels: {dash0.com/source: ui}`, `dash0Extensions: {dataset}`, `version: 1` and timestamps.
+- **Check rule normalization:** `interval` `1m` → `1m0s`; defaults added: `keep_firing_for: 0s`, `dataset`, `metadata.labels`. `name`, `expression` (with `[15m:1m]` and `$__threshold`), `thresholds`, `for`, `annotations` and `enabled: false` come back unchanged. The `{{host.name}}` in the name is stored verbatim; whether it is rendered can only be seen once the rule evaluates.
+- **Panel kinds** seen in existing UI dashboards: `Markdown`, `PieChart`, `StatChart`, `TimeSeriesChart` (Grid layout, `PrometheusTimeSeriesQuery`), so `StatChart` and `Markdown` from plan 05 are known kinds. Not yet checked visually: that the imported panels render with data, and `ListVariable`.
+- **Cleanup (user-approved, 2026-11-07 20:08 UTC):** `DELETE /api/dashboards/{id}` and `DELETE /api/alerting/check-rules/{id}` (with `?dataset=default`) both returned 200. Deletion is soft: a GET by id still returns 200 with the annotation `dash0.com/deleted-at`, but both list endpoints leave the assets out (dashboards back to the two `telemetry-inventory-*`, check rules back to 0). So the before/after listing in `publish_dashboard` doesn't see deleted dashboards.
+
+## Live publish (plan 07 Task 5, 2026-11-07 ~20:10 UTC)
+
+Run by Claude with the user's go-ahead ("Yes, publish all 3"), from a fresh `convert` of the pinned Postgres fixtures:
+
+```bash
+uv run migrator publish --from <run> --allow-partial --name-prefix demo-
+```
+
+Output (exit 2, because `replication_delay` stays blocked in convert):
+
+```text
+SKIP monitor postgres/monitors/replication_delay.json  (blocked in convert)
+IMPORTED check-rules/postgres-number-of-connections-is-approaching-connection-limit-o.json  id=e9092eac-9faf-422f-8092-64996413ef51
+IMPORTED dashboards/postgres-metrics.json  id=73d981c4-15e7-4ca9-b3d1-fa43534490e3
+IMPORTED dashboards/postgres-overview.json  id=8a2ac1bb-7bee-4bc3-8323-4bbe34224baa
+```
+
+- **Receipts:** `import-results.json` has all three as `imported`, HTTP 200, `namePrefix: demo-`, with the ids above (the dashboard ids found by the before/after listing).
+- **Read-back:** both dashboards (`demo-Postgres - Metrics`, 4 panels; `demo-Postgres - Overview`, 8 panels) return a `spec` equal to what was sent, project `datadog-migration`. The check rule reads back `enabled: false`, thresholds 0.8 / 0.9; only the known normalizations differ (`interval` `1m0s`, `keep_firing_for`, `dataset`, `metadata`).
+- **Rerun:** the same command again reports all three `UNCHANGED (already imported)` and sends nothing.
+- **Live data:** the Connections panel's query returned `astronomy_db` = 5, `postgres` = 3 at 20:11 UTC (Dash0 MCP, read-only).
+- **UI check (2026-11-07 ~20:15 UTC, Dash0 app, signed in by the user; screenshots kept locally, not committed):**
+  - *Check rule:* listed under "Disabled check rules" as `demo-[Postgres] Number of connections … on {{host.name}}`; preview chart shows the ratio ≈ 0.08 under the 0.8 and 0.9 lines; Thresholds field shows critical 0.9 and degraded 0.8. The list subtitle shows the escaped Datadog description literally (`{{ "{{" }}#is_alert{{ "}}" }} …`), as intended (Datadog templates are not executed). Dash0 notes that no notification channel receives the rule, as expected.
+  - *demo-Postgres - Metrics:* 3 of 4 panels show live data (Rows fetched/returned/inserted/updated, Connections `astronomy_db`/`postgres`, I/O wait). **Network traffic shows "No data"**, with a Dash0 warning: "The queried metrics have gaps, causing rate, increase, and similar functions to return potentially wrong results. Consider changing the range to at least 120s." The same query with `[5m]` returns ≈ 904 kB/s, so `system.network.io` is too sparse for `[$__rate_interval]`. Follow-up: [#90](https://github.com/XNotAGuestX/thinchackdash/issues/90) (a reviewed per-entry rate window in the mapping).
+  - *demo-Postgres - Overview:* groups and panels render, but every panel is only 1–2 grid rows tall, so the charts are squashed to a title and legend. Cause: plan 04 copies Datadog's `height` unchanged (`height = height`) while scaling only `x`/`width` by 2; Dash0's own dashboards use heights of 5–8. Follow-up: [#89](https://github.com/XNotAGuestX/thinchackdash/issues/89) (a reviewed height scale in plan 04; Track A code, `_GridBuilder.place`).
+- **Not yet done:** enabling the check and the threshold crossing (blocker B2, `scripts/hold-pg-connections.sh`); whether `{{host.name}}` renders in a firing check's name.
+- **Cleanup:** the three assets stay for the demo. Deleting them is a separate, explicit action (ids above).
 
 ## Handoff entry template
 

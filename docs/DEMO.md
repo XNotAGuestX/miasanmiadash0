@@ -1,74 +1,160 @@
-# Technical demo and acceptance runbook
+# Demo runbook: Postgres, Datadog → Dash0
 
 **First acceptance gate: conversion is fully deterministic, with no LLM involved in source-to-Perses or query/alert translation.** Optional model-based conversion, repair, and fallback paths also fail this gate. Demo speed or appearance cannot override it.
 
-This is a planned runbook. No commands or live migrations have been implemented or executed yet. Replace the proposed commands with tested ones during implementation.
+The demo migrates the pinned DataDog/integrations-core Postgres assets (commit `a9b9e42`) into the Dash0 dataset `default`. It shows one dashboard, one monitor turned into a check rule, and an honest list of everything that was blocked.
 
-## Prepare once
+**What has actually been run (2026-11-07), and what hasn't:**
 
-- Use a dedicated demo dataset and demo-prefixed resource names.
-- Have one Datadog dashboard with a supported timeseries widget and one metric monitor matching the supported grammar.
-- Keep a separate incompatibility fixture with an unsupported function/widget so it cannot disrupt the clean happy-path import.
-- Keep the mapping file explicit: actual target metric, gauge type, matching units, and exact label mapping.
-- Confirm the target dataset contains the demo telemetry. Prefer a small controlled feed with values below and above the chosen threshold. If possible, feed the same samples into both platforms.
-- Store source exports, API responses, receipts, and screenshots locally under ignored directories. Sanitize anything shared in the PR.
-- Ensure a known successful destination import is available before the live presentation. Reuse its receipt/read-back evidence rather than blindly recreating assets.
+| Step | State |
+|---|---|
+| `convert` on the Postgres fixtures | Run. Output below is real. Its dashboard, check-rule and Prometheus rule files match the goldens `fixtures/expected/postgres-p1/` and `fixtures/expected/postgres-monitors/`; `report.json` and `manifest.json` differ, because each golden converts only its own folder |
+| `publish --dry-run` | Run, with placeholder credentials (a dry run sends nothing) |
+| Dash0 import API (live) | Run 2026-11-07 (plan 07 Task 1): `demo-Postgres - Metrics` and the disabled `demo-[Postgres] …` check rule were imported and read back; see `docs/STATUS.md` |
+| `publish` (live) | Run 2026-11-07 ~20:10 UTC (plan 07 Task 5): the check rule and both dashboards imported with `demo-` names, read back equal, rerun `UNCHANGED`; ids and output in `docs/STATUS.md`. UI checked: the Metrics dashboard shows live data except Network traffic (rate window too short for sparse data); the Overview panels render too short (layout height not scaled) |
+| Converted queries in Dash0 | Checked read-only through the Dash0 MCP server (dataset `default`); results in `docs/STATUS.md` |
+| `fetch` (live) | **Not run.** Needs blocker B3, a Datadog account. Only tested against a fake API |
+| Threshold crossing with `scripts/hold-pg-connections.sh` | **Not run.** Tested against a stub `docker` only. Needs blocker B2, the demo telemetry owner |
 
-## Show the migration in about five minutes
+Update this table as the live steps happen. Never present generated JSON as a migrated dashboard: the evidence for a live import is returned IDs, read-back output and UI screenshots.
 
-1. **Show the source.** Open the selected Datadog dashboard and monitor. Point to one query, its lookback, critical threshold, and unit.
-2. **Fetch and compile.** Run selected-ID fetching, then offline compilation. Show the original query, explicit mapping, generated PromQL, Perses payload, and check-rule payload.
-3. **Show accountability.** Open the JSON/terminal report. Distinguish translated coverage from destination imports. Run the separate unsupported fixture and show the source path and suggested manual action.
-4. **Import.** Show the dry-run plan with the target dataset, then explicitly import the clean bundle. Show the returned destination IDs or the receipt for an unchanged prior import.
-5. **Verify in Dash0.** Open the actual destination dashboard and check rule. Show chart data and the check's query/window/threshold. Enable only the demo check as part of the requested demo, and show a controlled threshold crossing or previously captured verified evaluations if the lookback requires more time.
-6. **State the boundary.** Name the supported subset and the remaining behaviors requiring manual review. Keep business messaging with the separate business owner.
+## Prepare (at least 30 minutes before)
 
-Do not spend the presentation waiting for an entire five-minute window to elapse. Seed the series and capture evaluation evidence in advance; explain the timing. Never substitute generated JSON for a rendered destination dashboard.
+1. **Telemetry is flowing.** `default` has Postgres data only while the OTel Demo stack runs on its host (`docker-desktop`); see [DASH0_INVENTORY.md caveat 1](DASH0_INVENTORY.md#caveats). In Dash0, check that `postgresql.backends` has fresh points.
+2. **Credentials in the shell, never in arguments or files you share:**
 
-## Reproduction sequence
+   ```bash
+   export DASH0_API_URL='<your API URL>'   # e.g. https://api.eu-west-1.aws.dash0.com
+   export DASH0_DATASET=default
+   read -rs DASH0_AUTH_TOKEN; export DASH0_AUTH_TOKEN   # paste the token (scoped to dataset default); it isn't echoed
+   ```
 
-Use the proposed CLI sequence in [the handoff](PROJECT_HANDOFF.md#cli-and-artifact-contract) until README contains executable setup/usage instructions. For offline review, the final project should provide:
+   Or keep all three in a local `.env` (copied from `.env.example`, never committed) and load it with `set -a; . ./.env; set +a`.
 
-```sh
-uv sync
-uv run migrator typecheck
-uv run migrator test
-uv build
-uv run migrator compile --source datadog --dashboard fixtures/datadog/dashboard.json --monitor fixtures/datadog/monitor.json --mapping fixtures/mappings/demo.json --out artifacts/review
+3. **Start the threshold crossing early.** The check's window is 15 minutes, so a crossing shows up only after at least 15 minutes of held connections. Current usage is about 0.08 against thresholds of 0.8 (degraded) and 0.9 (failed). The holder script adds idle sessions and refuses to exceed `max_connections`:
+
+   ```bash
+   export PG_CONTAINER=<postgres container> PGUSER=… PGDATABASE=… PGPASSWORD=…
+   scripts/hold-pg-connections.sh <count> 1800 --dry-run   # check the plan first
+   scripts/hold-pg-connections.sh <count> 1800             # Ctrl-C releases every session
+   ```
+
+   Pick `<count>` so that (current + count) / max_connections lands between 0.8 and 0.9 for "degraded", or above 0.9 for "failed". The script refuses to go past `max_connections` − `superuser_reserved_connections`. Capture screenshots of both states as they happen. They are the evidence for step 6 if the live crossing isn't finished in time.
+
+   **Planned numbers (not yet run live; blocker B2).** A read-only Dash0 check on 2026-11-07 showed about 8 backends (ratio ≈ 0.08), so `max_connections` ≈ 100:
+
+   | `<count>` | Usage | State |
+   |---|---|---|
+   | 75 | (8 + 75) / 100 ≈ 0.83 | degraded |
+   | 85 | (8 + 85) / 100 ≈ 0.93 | failed |
+
+   The `--dry-run` line prints the measured `max_connections` and current count. That count includes background workers (autovacuum, walwriter, …), so it reads a little higher than the client connections Dash0 shows. Record the live values here after the run.
+
+4. **Have the fallback ready** (see "Fallback" below).
+
+## Show the migration (about five minutes)
+
+### 1. The source
+
+Open `fixtures/datadog/integrations-core/postgres/`:
+
+- `dashboards/postgresql_dashboard.json` ("Postgres - Metrics", 9 timeseries widgets);
+- `monitors/percent_usage_connections.json`: `avg(last_15m):avg:postgresql.percent_usage_connections{*} > 0.9`, warning 0.8.
+
+Point at one query, its 15-minute lookback and both thresholds.
+
+### 2. Convert (offline, deterministic)
+
+```bash
+uv run migrator convert --source datadog \
+  --input fixtures/datadog/integrations-core/postgres \
+  --mapping mappings/datadog/postgres.json --out /tmp/pg-demo
 ```
 
-These scripts and fixtures must be created and verified before this sequence is marked usable. The offline path must not need Datadog, Dash0, Codex, Claude, or model API credentials.
+Real output:
 
-For the live path, document required environment variables, selected source IDs, the destination API host/dataset, and how to inspect returned assets. Keep secrets out of command arguments and examples. Use the fetched copies as compiler inputs; do not silently swap in pretranslated fixtures.
+```text
+PARTIAL    postgres-metrics 4/9 widgets
+PARTIAL    postgres-overview 8/30 widgets
+TRANSLATED postgres/monitors/percent_usage_connections.json monitor
+BLOCKED    postgres/monitors/replication_delay.json monitor
+total: dashboards 0 translated/2 partial/0 blocked, widgets 12 translated/0 partial/27 blocked, monitors 1 translated/0 partial/1 blocked, skipped files 0
+```
 
-## Evidence to retain
+Exit code `2`, because something is partial or blocked. Show:
 
-| Acceptance claim | Required evidence |
-| --- | --- |
-| Real source ingestion | Selected IDs and sanitized fetched source shapes |
-| Deterministic compilation | Reviewed expected outputs and repeated-run comparison |
-| Correct supported query | Parsed structure, mapping, PromQL, focused tests |
-| Functional destination dashboard | Returned ID/read-back plus chart showing actual telemetry |
-| Functional destination check | Returned ID/read-back plus verified controlled evaluation |
-| Transparent incompatibilities | Unsupported fixture, report diagnostic, import exclusion |
-| Partial import handling | Per-asset result when one request fails; no all-success claim |
-| Reproducibility | Exact runtime, commands, check results, and known limitations |
+- `mappings/datadog/postgres.json`: the explicit Datadog → OTel pairs, each with its evidence `ref` and `reviewed`;
+- `dashboards/postgres-metrics.json`: the Connections panel, `avg by (postgresql_database_name) (max by (postgresql_database_name, service_instance_id) ({otel_metric_name="postgresql.backends", otel_metric_type="sum"}))` (the inner `max` deduplicates series after a collector restart);
+- `check-rules/<slug>.json`: `avg_over_time((<connection ratio>)[15m:1m]) > $__threshold`, thresholds `{degraded: 0.8, failed: 0.9}`, `enabled: false`, no `id`;
+- `rules/<slug>.prometheus.json`: the same condition as warning and critical Prometheus rules.
 
-Separate evidence of syntax, schema, API acceptance, and runtime semantics. Record validation failures and untested cases explicitly. A dashboard/check existing in the UI proves import, but does not by itself prove preserved behavior.
+Running it twice produces identical bytes; `tests/test_golden_dashboards.py` checks this.
 
-## Fallback and cleanup
+### 3. What didn't translate, and why
 
-- If the live network fails, show previously verified destination assets/evidence and rerun the offline compiler. Label historical evidence clearly; do not claim the current live attempt succeeded.
-- If no live import has ever succeeded, show the offline result and state that live acceptance remains incomplete.
-- On an ambiguous creation timeout, inspect the dataset and reconcile IDs before retrying. Keep uncertain outcomes marked `unknown`.
-- After the demo, disable only the check created for it if needed. Resource deletion is a separate explicit action; keep recorded IDs available for deliberate cleanup.
+Open `report.json`. Every widget and monitor has an outcome and, if blocked, a diagnostic with a source path and a suggested action:
 
-## Technical PR checklist
+- `replication_delay` is blocked with `UNSUPPORTED_QUERY_FUNCTION`: `Function 'anomalies' is not supported.`
+- In "Postgres - Metrics" (zero-based paths, as in `report.json`), `widgets[2]`, `widgets[4]` and `widgets[5]` are blocked with `MISSING_AGGREGATOR` (Datadog documents no default space aggregator), and `widgets[3]` and `widgets[7]` with `MISSING_METRIC_MAPPING` (`system.io.util`, `system.mem.*`).
+- "Postgres - Overview" blocks 22 of 30 widgets: `toplist`, `query_table` and `log_stream` widgets (`UNSUPPORTED_WIDGET`); unmapped metrics such as `postgresql.dead_rows` (`MISSING_METRIC_MAPPING`); formulas such as `week_before(...)` (`UNSUPPORTED_FORMULA`); and the query functions `.as_count()` and `.rollup()` (`UNSUPPORTED_QUERY_FUNCTION`).
 
-- [ ] Feature branch belongs to a fork of the required starter and targets upstream `main`.
-- [ ] PR explains the supported end-to-end behavior and exact limitations.
-- [ ] Setup, environment variables, offline examples, and live examples are tested.
-- [ ] Deterministic parsing/mapping and unsupported-feature behavior are easy to inspect.
-- [ ] Tests, type check, build, and live evidence are reported accurately.
-- [ ] Private exports, real credentials, generated run artifacts, and model/runtime secrets are excluded.
-- [ ] No LLM participates in conversion, including optional mapping inference, repair, or fallback paths; identical inputs/configuration/version produce identical target artifacts and diagnostics.
+Nothing is silently dropped. A widget is all or nothing.
+
+### 4. Publish
+
+Demo resources carry a `demo-` prefix (AGENTS.md, plan 09), so every publish in this runbook passes `--name-prefix demo-`. The prefix is added to each dashboard's `metadata.name` and display name and to the check rule's name at send time; the files in `/tmp/pg-demo`, their sha256 and the manifest stay as `convert` wrote them.
+
+```bash
+uv run migrator publish --from /tmp/pg-demo --dry-run --allow-partial --name-prefix demo-
+```
+
+Real output (with a placeholder URL):
+
+```text
+SKIP monitor postgres/monitors/replication_delay.json  (blocked in convert)
+DRY-RUN POST https://api.eu-west-1.aws.dash0.com/api/import/check-rule?dataset=default  demo-[Postgres] Number of connections is approaching connection limit on {{host.name}}  (publish)
+DRY-RUN POST https://api.eu-west-1.aws.dash0.com/api/import/dashboard?dataset=default  demo-Postgres - Metrics  (publish)
+DRY-RUN POST https://api.eu-west-1.aws.dash0.com/api/import/dashboard?dataset=default  demo-Postgres - Overview  (publish)
+```
+
+Without `--allow-partial`, the two partial dashboards are skipped too. `publish` reads JSON, so convert without `--format yaml` for a run you'll publish. Then, with the user's explicit go-ahead, run it without `--dry-run` (keep `--name-prefix demo-`). Show the `IMPORTED … id=…` lines and `/tmp/pg-demo/import-results.json`, whose receipts record `"namePrefix": "demo-"`. A second run with the same prefix reports `UNCHANGED`; a run with another prefix, or none, is refused. Publishing is create-only and never overwrites.
+
+### 5. The dashboard in Dash0
+
+Open "demo-Postgres - Metrics" in Dash0. The Connections chart shows two series, `astronomy_db` and `postgres`. A read-only check on 2026-11-07 returned 5 and 3. Point out the blocked widgets are absent, as the report said.
+
+### 6. The check rule
+
+Open the imported check rule, "demo-[Postgres] Number of connections …". It shows the expression, the 15-minute window inside the expression, and thresholds 0.8 / 0.9, and it's disabled. Enable **only this demo check**, as part of the requested demo. Show it go degraded and then failed while the holder script runs, live or from the screenshots captured in "Prepare". Afterwards, stop the script (Ctrl-C releases every session) and disable the check again.
+
+### 7. The limits
+
+Close with the supported subset and the known limits from the [README](../README.md#known-limits). They include:
+
+- only metric queries and metric monitors;
+- no query functions;
+- mappings that a human must review;
+- notifications that are not migrated.
+
+## Fallback
+
+- **Telemetry stopped, or the network fails:** rerun `convert` live (it's offline), then show earlier evidence. Label it on screen as **earlier evidence, captured on <date>**: returned IDs, read-back JSON and screenshots of the dashboard and the check states. Never claim the current attempt succeeded.
+- **No live import has ever succeeded:** show `convert`, the dry run and the read-only query checks recorded in `docs/STATUS.md`, and say plainly that live acceptance is incomplete.
+- **An import timed out:** its receipt says `unknown`, and `publish` refuses to send it again. Look in Dash0 for the asset, reconcile `import-results.json` by hand, then retry.
+
+## Evidence to keep
+
+| Claim | Evidence |
+|---|---|
+| Deterministic conversion | Goldens and the determinism test; `uv run migrator check` output |
+| Correct queries | The mapping `ref`s, the generated PromQL, read-only Dash0 query results |
+| Dashboard imported | The returned ID, read-back JSON, a screenshot with live data |
+| Check rule imported and working | The returned ID, read-back JSON, screenshots of degraded and failed |
+| Honest incompatibilities | `report.json` diagnostics; skipped entries in the publish output |
+| Partial failure handling | Per-asset receipts in `import-results.json` |
+
+Keep source exports, API responses, receipts and screenshots in ignored local directories. Sanitize anything that goes into the PR.
+
+## Cleanup
+
+Disable the demo check after the demo. Deleting imported resources is a separate, explicit action; keep the IDs from `import-results.json` for it.
