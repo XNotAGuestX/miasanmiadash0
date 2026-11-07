@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Datadog nginx.net.request_per_s measures HTTP requests per second, but the candidate uses nginx.connections_accepted, which counts accepted connections. That is a different quantity.",
+      "Unit differs: requests/s in the source versus connections (a count of accepted connections, converted to a rate) in the candidate.",
+      "Grouping uses label host_name, which is not among the observed dataset labels (only state is observed). The Datadog grouping is by host, and the host template variable matcher (host_name/host =~ \"$Host\") is missing.",
+      "No OTel metric in the provided definitions measures request counts, so the request should be blocked with MISSING_METRIC_MAPPING rather than translated."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

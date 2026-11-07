@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The numerator selects postgresql.tup_fetched with otel_metric_type=\"gauge\", but the definition is a monotonic sum and the dataset only has dataset_types sum. The selector matches no series, and rate() is applied to it, which the rules forbid for non-sum types.",
+      "The Datadog request scopes by {$scope,$host}. $host has prefix host, so it should become host_name=~\"$host\" (host_name is the observed label). The candidate drops it, so it covers all hosts instead of the filtered set.",
+      "The metric mapping (rows_fetched to tup_fetched, rows_returned to tup_returned) and the percent-of-total formula structure are reasonable, and the *100 is present in the source.",
+      "Both the numerator and denominator should use the same sum selector and rate() treatment, and the $host matcher should be applied to every selector."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

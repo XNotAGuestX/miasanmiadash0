@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The Datadog query sum:system.net.bytes_rcvd measures bytes received, but the candidate uses system.network.packets, which counts packets ({packets}). Different quantity and unit.",
+      "The candidate selects system_network_direction=\"receive\" on the packets metric. Filtering packets by direction does not produce received bytes.",
+      "A byte-based OTel counterpart (system.network.io filtered to receive) would be the expected mapping if it is defined and present in the dataset; it is not among the supplied definitions, so the correct metric should be verified before translating.",
+      "Aggregation (sum with no grouping) and the rate over a monotonic sum match the Datadog intent, but they do not rescue the wrong metric."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

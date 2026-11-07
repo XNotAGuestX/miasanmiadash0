@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "differs",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Aggregation differs: Datadog uses avg by {host}, but the candidate uses sum, which over-counts whenever a host has more than one series of this metric.",
+      "Grouping label is unverified: the candidate groups by host_name, but the dataset observes only the label 'state' for nginx.requests and lists no host label, so the PromQL would not group by host as Datadog does.",
+      "The Host template variable (prefix host, default *) should become a matcher on the host label (host_name=~\"$Host\" or the observed equivalent). The candidate drops it entirely.",
+      "Quantity and unit are consistent: nginx.requests is a monotonic sum of requests, so rate() gives requests per second, matching nginx.net.request_per_s.",
+      "Outcome should not be translated while the aggregation and grouping differ from the source; the request needs a corrected translation or a block."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

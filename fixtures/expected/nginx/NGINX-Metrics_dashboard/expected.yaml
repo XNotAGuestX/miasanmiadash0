@@ -14,14 +14,13 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/NGINX-Metrics_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series in the last 1h (until 2026-11-07T16:23Z). The same query with [5m] returned 1 series (value 0) between 14:24 and 15:24 UTC today.
+    agent0: not run
   expected:
-    outcome: translated
-    promql:
-    - sum(rate({otel_metric_name="nginx.connections_accepted", otel_metric_type="sum"}[$__rate_interval])) - sum(rate({otel_metric_name="nginx.connections_handled", otel_metric_type="sum"}[$__rate_interval]))
-    errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
+    outcome: blocked
+    errors:
+    - MISSING_METRIC_MAPPING
+  notes:
+  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
 - source_path: widgets[1].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -29,7 +28,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/NGINX-Metrics_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series (no candidate metric exists)
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -43,7 +42,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/NGINX-Metrics_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series in the last 1h (until 2026-11-07T16:23Z). The same query with [5m] returned 1 series (about 1.7-4.2 req/s) between 14:24 and 15:24 UTC today.
+    agent0: yes, 1 series (about 2.5–4.2 req/s over 14:05–15:21Z)
   expected:
     outcome: translated
     promql:
@@ -58,7 +57,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/NGINX-Metrics_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series in the last 1h (until 2026-11-07T16:23Z). Returned 1 series (51-119) between 14:24 and 15:24 UTC today.
+    agent0: yes, 1 series (21–26 connections)
   expected:
     outcome: translated
     promql:
@@ -73,7 +72,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/NGINX-Metrics_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series in the last 1h (until 2026-11-07T16:23Z). Returned 1 series between 14:24 and 15:24 UTC today.
+    agent0: yes, 1 series (value 0 throughout)
   expected:
     outcome: translated
     promql:
@@ -88,7 +87,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/NGINX-Metrics_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series in the last 1h (until 2026-11-07T16:23Z). Returned 1 series between 14:24 and 15:24 UTC today.
+    agent0: yes, 1 series (value 1 throughout)
   expected:
     outcome: translated
     promql:
@@ -103,7 +102,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/NGINX-Metrics_dashboard/answer.yaml
   live_check:
-    agent0: no, 0 series in the last 1h (until 2026-11-07T16:23Z). Returned 1 series between 14:24 and 15:24 UTC today.
+    agent0: yes, 1 series (20–25 connections)
   expected:
     outcome: translated
     promql:
@@ -117,15 +116,9 @@ widgets:
   milestone: p2
   reviewed: false
   expected:
-    outcome: translated
-    panel_key: widget-0
-    title: Dropped connections per second
-    panel_plugin: TimeSeriesChart
-    promql: &id001
-    - sum(rate({otel_metric_name="nginx.connections_accepted", otel_metric_type="sum"}[$__rate_interval])) - sum(rate({otel_metric_name="nginx.connections_handled", otel_metric_type="sum"}[$__rate_interval]))
-    errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
+    outcome: blocked
+    errors:
+    - MISSING_METRIC_MAPPING
 - source_path: widgets[1]
   type: timeseries
   milestone: p2
@@ -143,7 +136,7 @@ widgets:
     panel_key: widget-2
     title: Requests per second
     panel_plugin: TimeSeriesChart
-    promql: &id002
+    promql: &id001
     - sum(rate({otel_metric_name="nginx.requests", otel_metric_type="sum"}[$__rate_interval]))
     errors: []
     warnings:
@@ -157,7 +150,7 @@ widgets:
     panel_key: widget-3
     title: Active connections per second
     panel_plugin: TimeSeriesChart
-    promql: &id003
+    promql: &id002
     - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="active"})
     errors: []
     warnings:
@@ -171,7 +164,7 @@ widgets:
     panel_key: widget-4
     title: 'Connections: reading,writing,waiting'
     panel_plugin: TimeSeriesChart
-    promql: &id004
+    promql: &id003
     - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="reading"})
     - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="writing"})
     - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting"})
@@ -185,20 +178,18 @@ dashboard:
     outcome: partial
     widgets:
     - source_path: widgets[0]
-      outcome: translated
-      panel_key: widget-0
-      promql: *id001
+      outcome: blocked
     - source_path: widgets[1]
       outcome: blocked
     - source_path: widgets[2]
       outcome: translated
       panel_key: widget-2
-      promql: *id002
+      promql: *id001
     - source_path: widgets[3]
       outcome: translated
       panel_key: widget-3
-      promql: *id003
+      promql: *id002
     - source_path: widgets[4]
       outcome: translated
       panel_key: widget-4
-      promql: *id004
+      promql: *id003

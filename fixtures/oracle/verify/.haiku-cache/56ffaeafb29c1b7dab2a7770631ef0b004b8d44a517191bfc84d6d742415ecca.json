@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The selector uses otel_metric_type=\"gauge\", but nginx.requests is defined as a monotonic sum and the dataset only has dataset_types [sum]. The selector matches nothing in the target dataset, so the PromQL cannot return the requested series.",
+      "The quantity matches: rate() of the cumulative nginx.requests counter gives requests per second, which is what nginx.net.request_per_s reports, so the rate() on a monotonic sum is valid once the type matcher is fixed to sum.",
+      "Grouping by host_name is not confirmed. The observed dataset labels for nginx.requests are only [state], and host_name is not listed, so the label name needs verification before the by-clause is accepted.",
+      "Outcome translated is the right choice because an exact translation exists; the defect is in the PromQL, not the outcome."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

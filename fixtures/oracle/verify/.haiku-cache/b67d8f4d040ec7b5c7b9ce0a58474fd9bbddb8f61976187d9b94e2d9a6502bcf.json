@@ -1,0 +1,23 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Range uses fixed window [5m]; the converter may only use [$__rate_interval], so the translation violates the hard rules.",
+      "Avg is taken over all device_major/device_minor series per image, not over containers. Datadog averages per-container values, so the averaged set differs.",
+      "The operation=\"read\" matcher is a constant filter that is not in the Datadog source; the Datadog query reads all bytes for the image.",
+      "Grouping by container_image_name matches the observed dataset label and the Datadog docker_image grouping, so grouping is ok.",
+      "Whether docker.io.read_bytes is a cumulative counter or a rate needs confirming before rate() is applied; if it is a gauge of bytes, rate() is not allowed.",
+      "Because the range and filter are not allowed, the outcome should be re-derived by the converter, not accepted as translated."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

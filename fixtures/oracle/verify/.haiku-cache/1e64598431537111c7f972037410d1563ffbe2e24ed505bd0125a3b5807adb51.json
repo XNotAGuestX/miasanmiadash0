@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Datadog query uses avg: over the fragmentation ratio gauge, but the candidate uses sum(), which adds ratios across series and produces a different number.",
+      "The candidate drops the $host template variable (tag prefix host, default *), which should become a host matcher such as host=~\"$host\" when the label exists in the dataset. Neither host nor key matchers appear; the observed dataset labels only show redis_version, so the label mapping needs confirmation before the matcher is written.",
+      "Quantity and unit match: redis.memory.fragmentation_ratio is a gauge in unit 1, the same ratio the Datadog metric reports. The translated outcome is correct since no function or blocking rule applies."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Candidate wraps the monotonic sum in rate(), but the Datadog query has no rate function and reads the raw count, so the quantity and unit differ (rows/s vs rows).",
+      "Datadog groups by {db}; the candidate has no by-clause, so the series are collapsed into one global average instead of one series per database. Grouping should use the observed label postgresql_database_name.",
+      "Template variables are dropped: $db (prefix db) should become postgresql_database_name=~\"$db\" and $host (prefix host) should become host_name=~\"$host\", which are observed labels. The candidate applies no matchers, so the series set differs.",
+      "The aggregation avg() over all series differs from the per-db average in the Datadog request.",
+      "Outcome translated is correct because the metric mapping exists (postgresql.tup_updated measures rows updated), so only the PromQL needs fixing."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

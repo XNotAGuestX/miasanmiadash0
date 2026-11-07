@@ -1,0 +1,23 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Datadog system.net.bytes_rcvd is bytes received per second summed across devices and hosts; rate() over the monotonic byte counter system.network.io with direction=receive yields the same bytes/s quantity.",
+      "Unit matches: the OTel metric is in By and rate() gives bytes per second, matching the Datadog per-sec widget.",
+      "Aggregation and grouping match: the Datadog query is a plain sum with no by-clause, and the candidate is a plain sum.",
+      "The unprefixed $scope variable with default * is correctly dropped.",
+      "The label system_network_direction is in the observed dataset labels, while the catalog's direction and network.io.direction are not used, so the label name is correct for the dataset.",
+      "Outcome translated is correct, since no function is involved and an exact translation exists."
+    ],
+    "verdict": "pass"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

@@ -32,6 +32,15 @@ DD_API_KEY=… DD_APP_KEY=… DD_SITE=datadoghq.eu \
 
 It needs an application key with `dashboards_read` / `monitors_read`, validates every ID and the empty `--out` before any request, writes nothing unless every request succeeded, and exits `0` or `1`. It is tested against a fake transport only; no live Datadog run yet (blocker B3).
 
+To view the converted dashboards in a local Perses (Docker, bound to `127.0.0.1`; queries go to Dash0 through its proxy, so set `DASH0_AUTH_TOKEN` to see data, or any placeholder to see the layout only):
+
+```bash
+DASH0_AUTH_TOKEN=... docker compose -f scripts/review/docker-compose.yaml up -d
+uv run scripts/review/load_local.py /tmp/pg-out    # prints each dashboard's URL
+```
+
+See [scripts/review/README.md](scripts/review/README.md).
+
 ## Start here
 
 1. Read [AGENTS.md](AGENTS.md), the shared working rules for humans, Codex, and Claude.

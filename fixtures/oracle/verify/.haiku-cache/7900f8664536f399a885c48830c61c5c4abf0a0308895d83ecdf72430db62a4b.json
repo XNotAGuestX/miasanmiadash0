@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "n/a",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "otel_metric_definitions is empty, so no OTel metric is shown to measure rows inserted, updated or deleted, and blocking with MISSING_METRIC_MAPPING is consistent with the supplied evidence.",
+      "Possible exact mapping not in the provided catalog: the OTel PostgreSQL receiver's postgresql.operations sum (monotonic, attribute operation with ins/upd/del values) may count the same row operations. If it is defined and in the dataset, the three queries could translate to rate() over postgresql.operations filtered by operation, and the block would be wrong.",
+      "Datadog queries are per-second rates over counts; any future translation would need rate(<monotonic sum>[$__rate_interval]) with the scope template variable dropped, since it has no prefix and default '*'."
+    ],
+    "verdict": "nit"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

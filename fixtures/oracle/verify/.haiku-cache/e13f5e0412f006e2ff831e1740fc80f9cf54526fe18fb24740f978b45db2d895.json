@@ -1,0 +1,23 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Same underlying quantity: postgresql.operations with operation=hot_upd counts hot-updated rows, which matches postgresql.rows_hot_updated, so a translated outcome is correct.",
+      "Datadog plots the raw metric with no rate() or rollup, but the candidate wraps it in rate(), changing the unit to rows per second versus the Datadog per-interval value.",
+      "Aggregation differs: Datadog uses avg by {db}, the candidate uses sum by (postgresql_database_name).",
+      "Template filters are dropped: $db (prefix db) should become a matcher on postgresql_database_name=~\"$db\" and $host (prefix host) should become host_name=~\"$host\" (host_name is observed in the dataset). The candidate applies neither, so the series set is wider than the Datadog request.",
+      "$table is not referenced in the Datadog query and is correctly absent; $scope has no prefix and default * so dropping it is correct.",
+      "Grouping by database name matches the Datadog by {db} grouping once the label is mapped to postgresql_database_name."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

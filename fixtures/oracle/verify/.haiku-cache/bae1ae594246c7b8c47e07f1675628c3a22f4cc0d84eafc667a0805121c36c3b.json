@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The candidate uses a fixed range [5m] in rate(); the converter must use only [$__rate_interval].",
+      "The metric choice is sound: postgresql.tup_inserted is a monotonic sum of inserted tuples (rows), so rate() gives rows per second, matching the widget's 'per sec' intent.",
+      "The avg() without by-clause matches the Datadog avg: with no grouping, so one aggregated series in both.",
+      "The $scope variable has no prefix and default '*', so dropping it is correct.",
+      "Outcome translated is correct because an exact OTel mapping exists."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

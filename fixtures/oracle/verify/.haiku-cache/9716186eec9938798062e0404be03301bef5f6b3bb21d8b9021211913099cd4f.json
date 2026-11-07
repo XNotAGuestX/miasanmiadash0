@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "query1 uses a fixed [5m] range; the converter may only use [$__rate_interval], so the first PromQL is non-deterministic and violates the hard rule.",
+      "Template variable filters are dropped: $db (prefix db) should become postgresql_database_name=~\"$db\" and $host (prefix host) should become host_name=~\"$host\" on all three selectors. The candidate returns series the Datadog request excludes.",
+      "$table has prefix table and default *, so it should map to a matcher on postgresql_table_name=~\"$table\" (observed label). The candidate omits it.",
+      "Quantity, unit, aggregation (avg by database over rate of monotonic sums) and grouping by postgresql_database_name match the Datadog request. The metric mapping rows_inserted/updated/deleted to tup_inserted/updated/deleted is a reasonable translation."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

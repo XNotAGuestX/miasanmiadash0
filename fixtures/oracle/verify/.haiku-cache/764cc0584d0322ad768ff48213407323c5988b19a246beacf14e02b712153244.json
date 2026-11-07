@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "ok",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "The candidate blocks the request with MISSING_METRIC_MAPPING, and no OpenTelemetry definitions were supplied (otel_metric_definitions is empty), so no OTel metric can be verified as measuring the same quantity as redis.stats.keyspace_hits or keyspace_misses.",
+      "The block is correct for the supplied evidence. If definitions for a monotonic-sum hits/misses pair were provided, an exact translation would exist: rate(hits)/(rate(hits)+rate(misses))*100, with the *100 taken from the Datadog formula and no other constants.",
+      "The $key template variable is unused by the queries, and the $host and $scope matchers would only apply to a translation that was not produced, so they do not change the outcome."
+    ],
+    "verdict": "pass"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

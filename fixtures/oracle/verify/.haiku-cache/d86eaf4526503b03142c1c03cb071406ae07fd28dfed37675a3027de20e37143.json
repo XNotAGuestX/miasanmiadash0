@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Grouping is lost: the Datadog query is avg by {docker_image}, but the candidate's bare avg(...) collapses all containers into one series. The dataset label for the image is container_image_name, so it should be `avg by (container_image_name) (...)`.",
+      "Quantity/unit differs: Datadog docker.io.write_bytes is a byte total per container, while the candidate applies rate() and yields bytes per second. Either drop the rate (if the OTel sum is a cumulative byte counter queried as a gauge-like value) or note the unit change; the candidate does not justify it.",
+      "The operation=\"write\" matcher is a reasonable filter for the write direction, but it is an attribute selection the candidate must ensure matches the Datadog semantics of docker.io.write_bytes, which is not confirmed by the definitions given.",
+      "Outcome translated is acceptable since an approximate exact-enough mapping exists; the blocking issue is the wrong grouping and quantity."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

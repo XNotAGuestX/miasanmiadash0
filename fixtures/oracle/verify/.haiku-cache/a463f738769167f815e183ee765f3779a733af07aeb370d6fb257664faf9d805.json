@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "ok",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "Datadog redis.expires counts keys with an expiration set; the provided otel_metric_definitions is empty, so no OTel metric measuring the same quantity can be verified and MISSING_METRIC_MAPPING is a defensible block.",
+      "If the catalog later includes a gauge such as redis.db.expires (per db), it would need the db dimension summed to match the unfiltered Datadog series; this is a note for a future re-check, not a reason to translate now.",
+      "The unused key template variable and host/scope variables do not change the blocked outcome."
+    ],
+    "verdict": "pass"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

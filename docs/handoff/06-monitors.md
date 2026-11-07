@@ -20,6 +20,7 @@
 ## Global Constraints
 
 - The rolling window stays in the expression: `last_15m` becomes the subquery `[15m:1m]`. **It never becomes `for: 15m`.**
+- Rule expressions never contain dashboard variables. A `rate`-kind metric renders `rate(...[5m])` (`MONITOR_RATE_RANGE`, four 1m steps) instead of `[$__rate_interval]`, which Prometheus never interpolates; any other `$variable` blocks the monitor with `UNSUPPORTED_QUERY_SYNTAX`. (Added 2026-11-07 after review of #79.)
 - Time aggregator mapping: `avg → avg_over_time`, `max → max_over_time`, `min → min_over_time`, `sum → sum_over_time`. The subquery step is the check interval, `1m`.
 - Check rule:
   - `interval: "1m"`, `for: "0s"`, `enabled: false`, `labels: {}`;

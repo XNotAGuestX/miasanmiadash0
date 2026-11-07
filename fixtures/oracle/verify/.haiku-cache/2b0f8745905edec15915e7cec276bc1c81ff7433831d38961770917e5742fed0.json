@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The candidate uses a fixed range [5m] in rate(); the converter may only use $__rate_interval, so the PromQL must be rate({otel_metric_name=\"postgresql.tup_updated\", otel_metric_type=\"sum\"}[$__rate_interval]).",
+      "postgresql.tup_updated (monotonic sum, rows updated) measures the same quantity as the Datadog postgresql.rows_updated, so the metric mapping is valid and the translated outcome is correct.",
+      "The Datadog query has no rate function and no grouping, and the template variable $scope has no prefix and default *, so it is dropped. avg(...) across all series matches the Datadog avg with no by-clause.",
+      "The widget title says per sec, so a per-second rate of the monotonic sum is the intended unit. The Datadog query itself applies no rate, so this should be noted as a unit caveat rather than silently assumed."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

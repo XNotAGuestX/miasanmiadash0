@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Aggregation differs: Datadog uses avg across the series in each table group, but the candidate uses sum by postgresql_table_name.",
+      "Template variable matchers are dropped: $table (prefix table) should become postgresql_table_name=~\"$table\" and $host (prefix host) should become host_name=~\"$host\". Only the state matcher and the grouping remain, so the series set is wider than the Datadog request.",
+      "The label_replace regex that strips a prefix from postgresql_table_name is not justified by the Datadog request or the dataset labels. It should not be applied without evidence that table values carry a schema/db prefix.",
+      "Metric choice is reasonable: postgresql.rows with state=\"live\" measures live rows per table (unit '1', non-monotonic sum), so the translated outcome itself is valid.",
+      "The state label is listed in the attributes but not among the observed dataset labels; confirm it exists in the dataset before relying on state=\"live\"."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

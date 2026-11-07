@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Aggregation differs: the Datadog query is sum:system.net.bytes_rcvd across all matching hosts, but the candidate wraps the rate in avg(), which divides the total by the series count and gives a per-series mean instead of the total.",
+      "The expected PromQL is sum(rate({otel_metric_name=\"system.network.io\", otel_metric_type=\"sum\", system_network_direction=\"receive\"}[$__rate_interval])). The system_network_direction label is observed in the dataset, so the matcher is valid.",
+      "The rate() on a monotonic sum is appropriate, and the unit (bytes per second, matching the 'per sec' widget title) is consistent.",
+      "The unscoped $scope template variable has no prefix and default '*', so it is correctly dropped, and no matcher is needed.",
+      "The outcome (translated) is correct because an exact translation exists."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

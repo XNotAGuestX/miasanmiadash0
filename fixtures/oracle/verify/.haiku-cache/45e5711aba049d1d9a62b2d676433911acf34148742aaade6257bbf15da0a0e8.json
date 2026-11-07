@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Datadog sums nginx.net.reading across all matching series, but the candidate uses avg(), which returns the average per series instead of the total connections reading.",
+      "The $Host template variable has tag prefix host and default *, so it should become a host label matcher (e.g. host=~\"$host\"). The candidate drops it, so the series set is not filtered the same way.",
+      "The metric is a non-monotonic sum of current connections, so no rate() is needed and the quantity and unit (connections) match.",
+      "Outcome translated is appropriate because no Datadog function is used and an OTel metric measures the same quantity."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Range violates the hard rule: the expand side uses rate(...[5m]) instead of [$__rate_interval].",
+      "The {$env} filter is dropped. The template variable has prefix env and default '*', so the PromQL should carry env=~\"$env\" on both selectors; the candidate selects all series.",
+      "Label name is likely wrong: the candidate matches operation=\"expand\"/\"shrink\", but the dataset's observed labels for kafka.isr.operation.count include 'type' and not 'operation'. Per the dataset-authority rule the label should be 'type' (values unverified).",
+      "Quantity, unit (per-second rate of ISR operation counts) and the max aggregation match the Datadog request; outcome 'translated' is the right outcome since an exact mapping exists."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

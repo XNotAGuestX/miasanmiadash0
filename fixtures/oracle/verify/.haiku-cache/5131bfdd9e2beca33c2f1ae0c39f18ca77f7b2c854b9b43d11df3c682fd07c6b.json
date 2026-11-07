@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The Datadog query groups by {db}, but the candidate PromQL has no by-clause, so it averages across all databases into one series instead of one series per database.",
+      "The grouping label should be postgresql_database_name, the observed dataset label for the database. db_namespace is listed as absent in the dataset, so it cannot be used.",
+      "Quantity, unit and aggregation match: postgresql.backends is the OTel equivalent of postgresql.connections (number of backends, unit 1), and avg is the same aggregation.",
+      "Outcome translated is correct because an exact translation exists; the fix is to add by (postgresql_database_name) to the avg, with the $scope variable correctly dropped."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Grouping is lost: the Datadog query is avg by {db}, but the candidate's avg( ) has no by (postgresql_database_name) clause, so it collapses all databases into one series.",
+      "Template filters are dropped: $db (prefix db) and $host (prefix host) should become matchers postgresql_database_name=~\"$db\" and host_name=~\"$host\", using the observed dataset labels; the candidate applies no matchers at all.",
+      "Unit/quantity: the candidate wraps the monotonic sum in rate(...[$__rate_interval]), yielding a per-second rate, while the Datadog query averages the raw rows_deleted value with no rate; the expression needs verification of the Datadog metric's native type before a rate is applied.",
+      "postgresql.tup_deleted (rows/tuples deleted) is a reasonable quantity match for postgresql.rows_deleted, so the metric choice itself is acceptable.",
+      "The translated outcome is correct because an exact mapping exists, but the produced PromQL does not reproduce the Datadog series set."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

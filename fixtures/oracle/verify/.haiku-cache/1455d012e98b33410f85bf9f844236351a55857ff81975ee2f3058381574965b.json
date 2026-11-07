@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The candidate multiplies the result by the constant 100, which is not in the Datadog source. The rules forbid numeric constants that are not in the request. The Datadog query is a plain sum of redis.net.slaves, so the candidate changes the values by a factor of 100.",
+      "The metric choice is right: redis.slaves.connected is a non-monotonic sum of '{replica}', and the plain sum aggregation matches. No rate() is needed.",
+      "The $host template variable has prefix 'host' and default '*', so it should become a host matcher (for example host_name=~\"$host\"). The candidate drops it without a reason. No host label is observed or defined for this metric, so the matcher cannot be confirmed; the series set may therefore differ from Datadog's.",
+      "The $scope variable has no prefix and default '*', so dropping it is correct. The $key variable is not used in the query and is correctly ignored."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

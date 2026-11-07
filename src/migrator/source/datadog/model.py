@@ -57,3 +57,34 @@ class ParseError:
 
 
 ParseResult = ParseOk | ParseError
+
+
+# --- Monitor query types (plan 06 Task 1; appended by Track B) ----------------
+
+TimeAggregator = Literal["avg", "max", "min", "sum"]
+Comparator = Literal[">", ">=", "<", "<="]
+WindowUnit = Literal["m", "h", "d"]
+
+
+@dataclass(frozen=True)
+class MonitorWindow:
+    amount: int
+    unit: WindowUnit
+
+
+@dataclass(frozen=True)
+class MonitorQuery:
+    time_aggregator: TimeAggregator
+    window: MonitorWindow
+    query: MetricQuery
+    comparator: Comparator
+    threshold: float
+
+
+@dataclass(frozen=True)
+class MonitorParseOk:
+    monitor: MonitorQuery
+    ok: Literal[True] = True
+
+
+MonitorParseResult = MonitorParseOk | ParseError

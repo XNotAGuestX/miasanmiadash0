@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Wrong quantity: container.blockio.io_service_time_recursive measures blkio service time in ns, not bytes written, so it cannot stand in for docker.io.write_bytes.",
+      "Unit mismatch: the candidate's metric is in ns, while the Datadog query is in bytes.",
+      "The operation=\"write\" filter selects a different series set (service time per operation) rather than the bytes-written total.",
+      "No OTel metric in the definitions measures bytes written. The correct outcome is blocked with MISSING_METRIC_MAPPING unless a bytes-written metric is found in the dataset.",
+      "The candidate is translated although no exact mapping exists, so the outcome is wrong. Grouping by container_image_name is plausible but unverified, since no dataset_labels were provided."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}
