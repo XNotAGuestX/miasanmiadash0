@@ -18,8 +18,7 @@ uv run migrator check                    # project DoD: ruff + mypy + pytest (un
 uv run pytest --include-unreviewed       # also run oracle-proposed, not yet reviewed cases
 uv run pytest -m p0                      # only the MVP cases (also: -m p1, -m p2)
 uv run pytest tests/unit/requests        # only request/widget/parser tests
-uv sync --group oracle                   # opt-in: Agent0 MCP client for scripts/run_oracle.py
-uv run pytest tests/scripts              # fixture tooling (the MCP SDK test skips without the group)
+uv run pytest tests/scripts              # fixture tooling (oracle runner, verifiers)
 ```
 
 Tests are offline: an autouse fixture in `conftest.py` replaces `socket.socket` and
