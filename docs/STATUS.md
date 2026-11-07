@@ -98,7 +98,7 @@ Findings:
 - **`metadata.project`** is accepted: `datadog-migration` is kept, and Dash0 files the dashboard in folder `/datadog-migration` (annotation `dash0.com/folder-path`). Dash0 adds `labels: {dash0.com/source: ui}`, `dash0Extensions: {dataset}`, `version: 1` and timestamps.
 - **Check rule normalization:** `interval` `1m` → `1m0s`; defaults added: `keep_firing_for: 0s`, `dataset`, `metadata.labels`. `name`, `expression` (with `[15m:1m]` and `$__threshold`), `thresholds`, `for`, `annotations` and `enabled: false` come back unchanged. The `{{host.name}}` in the name is stored verbatim; whether it is rendered can only be seen once the rule evaluates.
 - **Panel kinds** seen in existing UI dashboards: `Markdown`, `PieChart`, `StatChart`, `TimeSeriesChart` (Grid layout, `PrometheusTimeSeriesQuery`), so `StatChart` and `Markdown` from plan 05 are known kinds. Not yet checked visually: that the imported panels render with data, and `ListVariable`.
-- **Cleanup:** both demo assets still exist (the check stays disabled). Deleting them is a separate, explicit action.
+- **Cleanup (user-approved, 2026-11-07 20:08 UTC):** `DELETE /api/dashboards/{id}` and `DELETE /api/alerting/check-rules/{id}` (with `?dataset=default`) both returned 200. Deletion is soft: a GET by id still returns 200 with the annotation `dash0.com/deleted-at`, but both list endpoints leave the assets out (dashboards back to the two `telemetry-inventory-*`, check rules back to 0). So the before/after listing in `publish_dashboard` doesn't see deleted dashboards.
 
 ## Handoff entry template
 

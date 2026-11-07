@@ -11,7 +11,7 @@ The demo migrates the pinned DataDog/integrations-core Postgres assets (commit `
 | `convert` on the Postgres fixtures | Run. Output below is real. Its dashboard, check-rule and Prometheus rule files match the goldens `fixtures/expected/postgres-p1/` and `fixtures/expected/postgres-monitors/`; `report.json` and `manifest.json` differ, because each golden converts only its own folder |
 | `publish --dry-run` | Run, with placeholder credentials (a dry run sends nothing) |
 | Dash0 import API (live) | Run 2026-11-07 (plan 07 Task 1): `demo-Postgres - Metrics` and the disabled `demo-[Postgres] …` check rule were imported and read back; see `docs/STATUS.md` |
-| `publish` (live) | **Not run.** B1 (token) is resolved; needs the user's go-ahead (plan 07 Task 5). The Task 1 assets already use the `demo-` names, so delete them first or the dashboards will exist twice |
+| `publish` (live) | **Not run.** B1 (token) is resolved; needs the user's go-ahead (plan 07 Task 5). The Task 1 demo assets were deleted afterwards (soft delete; see `docs/STATUS.md`) |
 | Converted queries in Dash0 | Checked read-only through the Dash0 MCP server (dataset `default`); results in `docs/STATUS.md` |
 | `fetch` (live) | **Not run.** Needs blocker B3, a Datadog account. Only tested against a fake API |
 | Threshold crossing with `scripts/hold-pg-connections.sh` | **Not run.** Tested against a stub `docker` only. Needs blocker B2, the demo telemetry owner |
