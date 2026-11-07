@@ -1,10 +1,28 @@
-node_modules/
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
 dist/
-coverage/
+
+# uv / virtualenv
+.venv/
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environment / secrets
 .env
 .env.*
-!.env.example
-artifacts/
-private-input/
-*.log
+
+# OS / editors
 .DS_Store
+.idea/
+.vscode/
+
+# Local Claude worktrees
+.claude/worktrees/
