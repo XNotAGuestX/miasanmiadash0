@@ -77,7 +77,7 @@ uv run migrator publish --from /tmp/pg-out --dry-run --name-prefix demo-   # dem
 **How it sends them:**
 - Before the first request, it checks every path, sha256 and schema.
 - It is create-only: it never sends a dashboard's `metadata.dash0Extensions.id` or a check-rule `id`.
-- Receipts in `<run dir>/import-results.json` make reruns safe. An imported asset reports `UNCHANGED`. A changed or ambiguous (`unknown`, e.g. a timeout) asset is refused until a human reconciles it.
+- Receipts in `<run dir>/import-results.json` make reruns safe. An imported asset reports `UNCHANGED`. A changed or ambiguous (`unknown`: a timeout or network error, any HTTP 5xx, or a 2xx without an ID) asset is refused until a human reconciles it. Only a 4xx counts as a definite failure that may be retried.
 - HTTP 401 or 403 stops the run.
 
 Exit codes:
