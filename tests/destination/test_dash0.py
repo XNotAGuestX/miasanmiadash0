@@ -111,10 +111,12 @@ def test_refuses_check_rule_with_id_before_request() -> None:
     assert send.requests == []
 
 
-@pytest.mark.parametrize("status", [502, 504])
-def test_gateway_errors_are_unknown(status: int) -> None:
-    out = publish_dashboard(DASHBOARD, CFG, raw(status, "bad gateway"))
+@pytest.mark.parametrize("status", [500, 502, 503, 504])
+def test_server_errors_are_unknown(status: int) -> None:
+    # The asset may already exist, so a 5xx must never allow a blind republish.
+    out = publish_dashboard(DASHBOARD, CFG, raw(status, "server error"))
     assert isinstance(out, Unknown)
+    assert f"HTTP {status}" in out.message
 
 
 def test_transport_error_is_unknown() -> None:
