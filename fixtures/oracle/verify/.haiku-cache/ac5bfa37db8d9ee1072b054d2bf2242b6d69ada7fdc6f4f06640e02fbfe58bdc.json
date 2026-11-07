@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Grouping is lost: the Datadog query is `by {container_name}`, but the candidate has a bare `avg(...)` with no `by (container_name)`, so it collapses all containers into one series.",
+      "Aggregation is wrong: `avg` across all series, including across the `interface` dimension, does not match a per-container series. Summing interfaces per container (`sum by (container_name)`) would be the grouping-preserving form.",
+      "Quantity is questionable: docker.net.bytes_sent is a cumulative byte counter reported as a gauge, and the Datadog request applies no rate. The candidate applies `rate()`, which yields bytes/s rather than the raw cumulative total. Unless the Datadog metric is verified as per-second, the candidate changes the quantity.",
+      "Series grain differs from the Datadog request: the candidate has no container_name grouping, so the series set does not match. The `$scope` template variable with default `*` is correctly dropped.",
+      "Outcome is ok: an OTel equivalent (container.network.io.usage.tx_bytes, monotonic sum, unit By) exists, so a translated result is appropriate, but the PromQL shape needs correction."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

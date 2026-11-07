@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Quantity differs: postgresql.rows_inserted counts rows inserted, but the candidate uses postgresql.tup_returned, which counts tuples returned by reads.",
+      "Filters dropped: the $db (prefix db) and $host (prefix host) template variables should become matchers such as postgresql_database_name=~\"$db\" and host_name=~\"$host\", but the candidate omits them, so the series set is wrong.",
+      "Outcome should not be translated on this mapping. No OTel metric in the provided definitions measures inserted rows, so the request should be blocked with MISSING_METRIC_MAPPING unless a correct inserted-rows metric is found in the catalog.",
+      "Grouping by database via postgresql_database_name matches the observed dataset label, so that part is acceptable."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The promql multiplies by the constant 100, which is not in the Datadog source. Datadog system.io.util is a percent, while system.disk.io_time is seconds, so the rate is a 0-1 ratio. The scale belongs in notes (unit differs: s vs %, see the OpenTelemetry system.disk.io_time definition) and must not be applied in promql.",
+      "The range is the fixed window [5m]. Only $__rate_interval is allowed as a range, so this must be rate({otel_metric_name=\"system.disk.io_time\", otel_metric_type=\"sum\"}[$__rate_interval]).",
+      "Quantity (fraction of time the disk is busy), aggregation (avg across series, no by-clause) and series selection (no scope matcher, since $scope has no prefix and default *) match the Datadog request. The rate() on a monotonic sum is valid.",
+      "Outcome translated is appropriate because an exact translation exists once the scale is handled in notes; the defect is in the promql text itself."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

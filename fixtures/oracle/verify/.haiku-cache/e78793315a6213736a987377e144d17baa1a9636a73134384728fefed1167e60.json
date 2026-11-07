@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The candidate multiplies the result by a constant 100 that does not appear in the Datadog request; numeric constants not in the source are forbidden, and nothing in the definitions justifies a percent scale.",
+      "The metric mapping is otherwise plausible: postgresql.rows_fetched maps to postgresql.tup_fetched (monotonic sum), and rate() over $__rate_interval fits a per-second display.",
+      "The unscoped template variable $scope with default * is correctly dropped, so the selector has no extra matchers.",
+      "An exact translation without the constant exists (avg(rate(...))), so translated is the right outcome and only the scale factor needs to be removed."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

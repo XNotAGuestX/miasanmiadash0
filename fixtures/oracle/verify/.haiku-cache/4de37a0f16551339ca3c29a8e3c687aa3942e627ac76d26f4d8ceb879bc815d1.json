@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The candidate multiplies the result by a numeric constant (100) that does not appear in the Datadog source query sum:nginx.net.reading{$scope}, which the converter rules forbid.",
+      "The mapping itself is right: nginx.net.reading is a connection count, and nginx.connections_current with state=\"reading\" measures the same quantity with the same sum aggregation and no extra grouping.",
+      "The $scope template variable has no prefix and default '*', so dropping it is correct.",
+      "Outcome translated is correct because an exact mapping exists, but the promql must be regenerated without the constant."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

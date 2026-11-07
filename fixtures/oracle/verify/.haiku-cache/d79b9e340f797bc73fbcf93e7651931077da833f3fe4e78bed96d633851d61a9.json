@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "ok",
+      "series_count": "n/a",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Datadog system.cpu.iowait measures CPU time spent in I/O wait, which OTel covers as system.cpu.utilization with state=\"wait\" (a ratio, not percent). That is a mapping with a unit scale, so MISSING_METRIC_MAPPING is not clearly right.",
+      "otel_metric_definitions is empty, so the candidate's claim that no OTel metric exists cannot be checked against the provided definitions.",
+      "The correct outcome is probably translated: select system.cpu.utilization{state=\"wait\"} with max aggregation and no grouping, and put the x100 percent scale (with a documentation link) in notes only, not in promql.",
+      "Unit differs (percent vs ratio), so the scale must be documented rather than applied silently."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

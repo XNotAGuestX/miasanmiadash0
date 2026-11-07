@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The promql applies a hard-coded scale `/ 1e7` that is not in the Datadog source. The converter must not apply unit scales in promql; it should note the scale (ns/s to percent, i.e. /1e9 then x100) in notes with a documentation link.",
+      "container.cpu.usage.usermode is a monotonic sum in ns, so rate() over $__rate_interval is valid, and the grouping by container_name matches the Datadog `by {container_name}`.",
+      "Datadog avg is replaced by sum; this is equivalent only if each container_name has a single series in the dataset, which should be stated as a caveat.",
+      "The `$scope` template variable has no prefix and default `*`, so dropping it is correct."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

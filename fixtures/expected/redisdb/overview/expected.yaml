@@ -14,11 +14,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/redisdb/overview/answer.yaml
   live_check:
-    agent0: yes, 1 series (14:05-15:21 UTC)
+    agent0: yes, 1 series (about 23-37 between 14:15Z and 15:15Z)
   expected:
     outcome: translated
     promql:
-    - (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])))) * 100
+    - (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])))) * 100
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -29,11 +29,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/redisdb/overview/answer.yaml
   live_check:
-    agent0: yes, 1 series
+    agent0: yes, 1 series (0 throughout)
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="redis.clients.blocked", otel_metric_type="sum"})
+    - sum({otel_metric_name="redis.clients.blocked", otel_metric_type="sum", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -48,7 +48,7 @@ requests:
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="redis.db.keys", otel_metric_type="gauge"})
+    - sum({otel_metric_name="redis.db.keys", otel_metric_type="gauge", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -63,7 +63,7 @@ requests:
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="redis.rdb.changes_since_last_save", otel_metric_type="sum"})
+    - sum({otel_metric_name="redis.rdb.changes_since_last_save", otel_metric_type="sum", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -74,7 +74,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/redisdb/overview/answer.yaml
   live_check:
-    agent0: no, 0 series (none of the 29 redis.* metrics in the catalog match)
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -88,7 +88,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/redisdb/overview/answer.yaml
   live_check:
-    agent0: no, 0 series
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -102,7 +102,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/redisdb/overview/answer.yaml
   live_check:
-    agent0: no, 0 series
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -114,7 +114,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/redisdb/overview/answer.yaml
   live_check:
-    agent0: no, 0 series
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -128,7 +128,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/redisdb/overview/answer.yaml
   live_check:
-    agent0: no, 0 series
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -142,12 +142,12 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/redisdb/overview/answer.yaml
   live_check:
-    agent0: yes, 1 series per formula (2 total)
+    agent0: yes, 1 series per formula (sys about 0.0005-0.0008, user about 0.0008-0.0012 s/s)
   expected:
     outcome: translated
     promql:
-    - avg(rate({otel_metric_name="redis.cpu.time", otel_metric_type="sum", state="sys"}[$__rate_interval]))
-    - avg(rate({otel_metric_name="redis.cpu.time", otel_metric_type="sum", state="user"}[$__rate_interval]))
+    - avg(rate({otel_metric_name="redis.cpu.time", otel_metric_type="sum", host_name=~"^($host)$", state="sys"}[$__rate_interval]))
+    - avg(rate({otel_metric_name="redis.cpu.time", otel_metric_type="sum", host_name=~"^($host)$", state="user"}[$__rate_interval]))
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -162,7 +162,7 @@ requests:
   expected:
     outcome: translated
     promql:
-    - (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])))) * 100
+    - (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])))) * 100
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -177,7 +177,7 @@ requests:
   expected:
     outcome: translated
     promql:
-    - (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])))) * 100
+    - (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])))) * 100
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -188,13 +188,22 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/redisdb/overview/answer.yaml
   live_check:
-    agent0: no, 0 series for the denominator
+    agent0: no, 0 series (redis.maxmemory not in dataset; redis.memory.used alone returns 1 series for docker-desktop)
+  dataset:
+    available: false
+    missing_metrics:
+    - redis.maxmemory
+    otel_sources:
+    - collector-contrib/receiver/redisreceiver/metadata.yaml
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    promql:
+    - (avg by (host_name) ({otel_metric_name="redis.memory.used", otel_metric_type="gauge", host_name=~"^($host)$"}) / max by (host_name) ({otel_metric_name="redis.maxmemory", otel_metric_type="gauge", host_name=~"^($host)$"})) * 100
+    errors: []
+    warnings:
+    - TEMPLATE_VARIABLE_DROPPED
   notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+  - OTel metric(s) redis.maxmemory are defined by OpenTelemetry but not present in dataset `default`; the translation stands, but it cannot be live-checked
 - source_path: widgets[3].definition.widgets[2].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -202,13 +211,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/redisdb/overview/answer.yaml
   live_check:
-    agent0: yes, 1 series (host_name=docker-desktop)
+    agent0: not run
   expected:
     outcome: blocked
     errors:
     - UNSUPPORTED_FORMULA
-  notes:
-  - 'rule overlay: Datadog function(s) per_minute block the request (plans 02/03/05); Agent0''s translation is discarded: sum by (host_name) (rate({otel_metric_name="redis.keys.evicted", otel_metric_type="sum"}[$__rate_interval])) * 60'
 - source_path: widgets[3].definition.widgets[3].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -220,7 +227,7 @@ requests:
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="redis.memory.rss", otel_metric_type="gauge"})
+    - sum({otel_metric_name="redis.memory.rss", otel_metric_type="gauge", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -235,7 +242,7 @@ requests:
   expected:
     outcome: translated
     promql:
-    - avg({otel_metric_name="redis.memory.fragmentation_ratio", otel_metric_type="gauge"})
+    - avg({otel_metric_name="redis.memory.fragmentation_ratio", otel_metric_type="gauge", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -250,7 +257,7 @@ requests:
   expected:
     outcome: translated
     promql:
-    - avg({otel_metric_name="redis.memory.fragmentation_ratio", otel_metric_type="gauge"})
+    - avg({otel_metric_name="redis.memory.fragmentation_ratio", otel_metric_type="gauge", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -265,7 +272,7 @@ requests:
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="redis.clients.connected", otel_metric_type="sum"})
+    - sum({otel_metric_name="redis.clients.connected", otel_metric_type="sum", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -276,11 +283,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/redisdb/overview/answer.yaml
   live_check:
-    agent0: yes, 1 series
+    agent0: yes, 1 series (0 throughout)
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="redis.clients.blocked", otel_metric_type="sum"})
+    - sum({otel_metric_name="redis.clients.blocked", otel_metric_type="sum", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -291,11 +298,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/redisdb/overview/answer.yaml
   live_check:
-    agent0: yes, 1 series
+    agent0: yes, 1 series (0 throughout)
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="redis.slaves.connected", otel_metric_type="sum"})
+    - sum({otel_metric_name="redis.slaves.connected", otel_metric_type="sum", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -306,13 +313,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/redisdb/overview/answer.yaml
   live_check:
-    agent0: yes, 1 series
+    agent0: not run
   expected:
     outcome: blocked
     errors:
     - UNSUPPORTED_FORMULA
-  notes:
-  - 'rule overlay: Datadog function(s) diff block the request (plans 02/03/05); Agent0''s translation is discarded: sum(increase({otel_metric_name="redis.connections.rejected", otel_metric_type="sum"}[$__interval]))'
 - source_path: widgets[4].definition.widgets[5].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -320,11 +325,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/redisdb/overview/answer.yaml
   live_check:
-    agent0: yes, 1 series
+    agent0: yes, 1 series (about 1.7-2.4 commands/s)
   expected:
     outcome: translated
     promql:
-    - sum(rate({otel_metric_name="redis.commands.processed", otel_metric_type="sum"}[$__rate_interval]))
+    - sum(rate({otel_metric_name="redis.commands.processed", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval]))
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -339,7 +344,7 @@ requests:
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="redis.db.keys", otel_metric_type="gauge"})
+    - sum({otel_metric_name="redis.db.keys", otel_metric_type="gauge", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -354,7 +359,7 @@ requests:
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="redis.db.keys", otel_metric_type="gauge"})
+    - sum({otel_metric_name="redis.db.keys", otel_metric_type="gauge", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -365,11 +370,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/redisdb/overview/answer.yaml
   live_check:
-    agent0: yes, 1 series
+    agent0: yes, 1 series (0 throughout)
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="redis.keys.expired", otel_metric_type="sum"})
+    - sum(rate({otel_metric_name="redis.keys.expired", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval]))
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -384,7 +389,7 @@ requests:
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="redis.db.expires", otel_metric_type="gauge"})
+    - sum({otel_metric_name="redis.db.expires", otel_metric_type="gauge", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -395,7 +400,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/redisdb/overview/answer.yaml
   live_check:
-    agent0: no, 0 series
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -409,7 +414,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/redisdb/overview/answer.yaml
   live_check:
-    agent0: no, not applicable
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -421,7 +426,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/redisdb/overview/answer.yaml
   live_check:
-    agent0: no, not applicable
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -461,7 +466,7 @@ widgets:
     title: Hit rate
     panel_plugin: StatChart
     promql: &id003
-    - (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])))) * 100
+    - (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])))) * 100
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -475,7 +480,7 @@ widgets:
     title: Blocked clients
     panel_plugin: StatChart
     promql: &id004
-    - sum({otel_metric_name="redis.clients.blocked", otel_metric_type="sum"})
+    - sum({otel_metric_name="redis.clients.blocked", otel_metric_type="sum", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -489,7 +494,7 @@ widgets:
     title: Redis keyspace
     panel_plugin: StatChart
     promql: &id005
-    - sum({otel_metric_name="redis.db.keys", otel_metric_type="gauge"})
+    - sum({otel_metric_name="redis.db.keys", otel_metric_type="gauge", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -503,7 +508,7 @@ widgets:
     title: Unsaved changes
     panel_plugin: StatChart
     promql: &id006
-    - sum({otel_metric_name="redis.rdb.changes_since_last_save", otel_metric_type="sum"})
+    - sum({otel_metric_name="redis.rdb.changes_since_last_save", otel_metric_type="sum", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -583,8 +588,8 @@ widgets:
     title: Average CPU usage
     panel_plugin: TimeSeriesChart
     promql: &id009
-    - avg(rate({otel_metric_name="redis.cpu.time", otel_metric_type="sum", state="sys"}[$__rate_interval]))
-    - avg(rate({otel_metric_name="redis.cpu.time", otel_metric_type="sum", state="user"}[$__rate_interval]))
+    - avg(rate({otel_metric_name="redis.cpu.time", otel_metric_type="sum", host_name=~"^($host)$", state="sys"}[$__rate_interval]))
+    - avg(rate({otel_metric_name="redis.cpu.time", otel_metric_type="sum", host_name=~"^($host)$", state="user"}[$__rate_interval]))
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -598,7 +603,7 @@ widgets:
     title: Cache hit rate
     panel_plugin: StatChart
     promql: &id010
-    - (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])))) * 100
+    - (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])))) * 100
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -612,7 +617,7 @@ widgets:
     title: Cache hit rate
     panel_plugin: TimeSeriesChart
     promql: &id011
-    - (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])))) * 100
+    - (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])))) * 100
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -621,9 +626,15 @@ widgets:
   milestone: p2
   reviewed: false
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    panel_key: widget-3-0
+    title: Percent Used Memory by Host
+    panel_plugin: TimeSeriesChart
+    promql: &id012
+    - (avg by (host_name) ({otel_metric_name="redis.memory.used", otel_metric_type="gauge", host_name=~"^($host)$"}) / max by (host_name) ({otel_metric_name="redis.maxmemory", otel_metric_type="gauge", host_name=~"^($host)$"})) * 100
+    errors: []
+    warnings:
+    - TEMPLATE_VARIABLE_DROPPED
 - source_path: widgets[3].definition.widgets[1]
   type: note
   milestone: p2
@@ -633,7 +644,7 @@ widgets:
     panel_key: widget-3-1
     title: ''
     panel_plugin: Markdown
-    promql: &id012 []
+    promql: &id013 []
     errors: []
     warnings: []
 - source_path: widgets[3].definition.widgets[2]
@@ -653,8 +664,8 @@ widgets:
     panel_key: widget-3-3
     title: Total allocated memory
     panel_plugin: TimeSeriesChart
-    promql: &id013
-    - sum({otel_metric_name="redis.memory.rss", otel_metric_type="gauge"})
+    promql: &id014
+    - sum({otel_metric_name="redis.memory.rss", otel_metric_type="gauge", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -667,8 +678,8 @@ widgets:
     panel_key: widget-3-4
     title: Fragmentation ratio
     panel_plugin: StatChart
-    promql: &id014
-    - avg({otel_metric_name="redis.memory.fragmentation_ratio", otel_metric_type="gauge"})
+    promql: &id015
+    - avg({otel_metric_name="redis.memory.fragmentation_ratio", otel_metric_type="gauge", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -681,8 +692,8 @@ widgets:
     panel_key: widget-3-5
     title: Fragmentation ratio
     panel_plugin: TimeSeriesChart
-    promql: &id015
-    - avg({otel_metric_name="redis.memory.fragmentation_ratio", otel_metric_type="gauge"})
+    promql: &id016
+    - avg({otel_metric_name="redis.memory.fragmentation_ratio", otel_metric_type="gauge", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -695,8 +706,8 @@ widgets:
     panel_key: widget-4-0
     title: Connected clients
     panel_plugin: TimeSeriesChart
-    promql: &id016
-    - sum({otel_metric_name="redis.clients.connected", otel_metric_type="sum"})
+    promql: &id017
+    - sum({otel_metric_name="redis.clients.connected", otel_metric_type="sum", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -709,7 +720,7 @@ widgets:
     panel_key: widget-4-1
     title: ''
     panel_plugin: Markdown
-    promql: &id017 []
+    promql: &id018 []
     errors: []
     warnings: []
 - source_path: widgets[4].definition.widgets[2]
@@ -721,8 +732,8 @@ widgets:
     panel_key: widget-4-2
     title: Blocked clients
     panel_plugin: TimeSeriesChart
-    promql: &id018
-    - sum({otel_metric_name="redis.clients.blocked", otel_metric_type="sum"})
+    promql: &id019
+    - sum({otel_metric_name="redis.clients.blocked", otel_metric_type="sum", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -735,8 +746,8 @@ widgets:
     panel_key: widget-4-3
     title: Connected replicas
     panel_plugin: TimeSeriesChart
-    promql: &id019
-    - sum({otel_metric_name="redis.slaves.connected", otel_metric_type="sum"})
+    promql: &id020
+    - sum({otel_metric_name="redis.slaves.connected", otel_metric_type="sum", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -760,8 +771,8 @@ widgets:
     panel_key: widget-4-5
     title: Commands per second
     panel_plugin: StatChart
-    promql: &id020
-    - sum(rate({otel_metric_name="redis.commands.processed", otel_metric_type="sum"}[$__rate_interval]))
+    promql: &id021
+    - sum(rate({otel_metric_name="redis.commands.processed", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval]))
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -774,8 +785,8 @@ widgets:
     panel_key: widget-5-0
     title: Total keys
     panel_plugin: TimeSeriesChart
-    promql: &id021
-    - sum({otel_metric_name="redis.db.keys", otel_metric_type="gauge"})
+    promql: &id022
+    - sum({otel_metric_name="redis.db.keys", otel_metric_type="gauge", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -788,8 +799,8 @@ widgets:
     panel_key: widget-5-1
     title: Current total
     panel_plugin: StatChart
-    promql: &id022
-    - sum({otel_metric_name="redis.db.keys", otel_metric_type="gauge"})
+    promql: &id023
+    - sum({otel_metric_name="redis.db.keys", otel_metric_type="gauge", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -802,7 +813,7 @@ widgets:
     panel_key: widget-5-2
     title: ''
     panel_plugin: Markdown
-    promql: &id023 []
+    promql: &id024 []
     errors: []
     warnings: []
 - source_path: widgets[5].definition.widgets[3]
@@ -814,8 +825,8 @@ widgets:
     panel_key: widget-5-3
     title: Expired keys
     panel_plugin: TimeSeriesChart
-    promql: &id024
-    - sum({otel_metric_name="redis.keys.expired", otel_metric_type="sum"})
+    promql: &id025
+    - sum(rate({otel_metric_name="redis.keys.expired", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval]))
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -828,8 +839,8 @@ widgets:
     panel_key: widget-5-4
     title: Keys with expiration
     panel_plugin: StatChart
-    promql: &id025
-    - sum({otel_metric_name="redis.db.expires", otel_metric_type="gauge"})
+    promql: &id026
+    - sum({otel_metric_name="redis.db.expires", otel_metric_type="gauge", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -918,67 +929,69 @@ dashboard:
       panel_key: widget-2-7
       promql: *id011
     - source_path: widgets[3].definition.widgets[0]
-      outcome: blocked
+      outcome: translated
+      panel_key: widget-3-0
+      promql: *id012
     - source_path: widgets[3].definition.widgets[1]
       outcome: translated
       panel_key: widget-3-1
-      promql: *id012
+      promql: *id013
     - source_path: widgets[3].definition.widgets[2]
       outcome: blocked
     - source_path: widgets[3].definition.widgets[3]
       outcome: translated
       panel_key: widget-3-3
-      promql: *id013
+      promql: *id014
     - source_path: widgets[3].definition.widgets[4]
       outcome: translated
       panel_key: widget-3-4
-      promql: *id014
+      promql: *id015
     - source_path: widgets[3].definition.widgets[5]
       outcome: translated
       panel_key: widget-3-5
-      promql: *id015
+      promql: *id016
     - source_path: widgets[4].definition.widgets[0]
       outcome: translated
       panel_key: widget-4-0
-      promql: *id016
+      promql: *id017
     - source_path: widgets[4].definition.widgets[1]
       outcome: translated
       panel_key: widget-4-1
-      promql: *id017
+      promql: *id018
     - source_path: widgets[4].definition.widgets[2]
       outcome: translated
       panel_key: widget-4-2
-      promql: *id018
+      promql: *id019
     - source_path: widgets[4].definition.widgets[3]
       outcome: translated
       panel_key: widget-4-3
-      promql: *id019
+      promql: *id020
     - source_path: widgets[4].definition.widgets[4]
       outcome: blocked
     - source_path: widgets[4].definition.widgets[5]
       outcome: translated
       panel_key: widget-4-5
-      promql: *id020
+      promql: *id021
     - source_path: widgets[5].definition.widgets[0]
       outcome: translated
       panel_key: widget-5-0
-      promql: *id021
+      promql: *id022
     - source_path: widgets[5].definition.widgets[1]
       outcome: translated
       panel_key: widget-5-1
-      promql: *id022
+      promql: *id023
     - source_path: widgets[5].definition.widgets[2]
       outcome: translated
       panel_key: widget-5-2
-      promql: *id023
+      promql: *id024
     - source_path: widgets[5].definition.widgets[3]
       outcome: translated
       panel_key: widget-5-3
-      promql: *id024
+      promql: *id025
     - source_path: widgets[5].definition.widgets[4]
       outcome: translated
       panel_key: widget-5-4
-      promql: *id025
+      promql: *id026
     - source_path: widgets[5].definition.widgets[5]
       outcome: blocked
     - source_path: widgets[6].definition.widgets[0]

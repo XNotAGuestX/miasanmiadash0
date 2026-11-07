@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Template variables with a tag prefix are dropped: `$db` (prefix db) should become `postgresql_database_name=~\"$db\"` and `$host` (prefix host) should become `host_name=~\"$host\"`, but the candidate has neither matcher, so it selects a different set of series.",
+      "The range uses a fixed `[5m]` instead of `[$__rate_interval]`, which the converter rules forbid.",
+      "Metric choice (postgresql.tup_deleted as the rows-deleted counter), unit, avg aggregation, and `by` grouping on postgresql_database_name (observed label) are consistent with the Datadog request.",
+      "The `$scope` variable (no prefix, default `*`) is correctly dropped, and the unused `table` variable does not affect the query."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

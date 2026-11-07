@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "ok",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "Candidate is blocked with MISSING_METRIC_MAPPING, and otel_metric_definitions is empty, so no OTel metric is shown to measure nginx.requests.total.",
+      "Without a catalog entry for a counter equivalent to nginx.requests.total, an exact translation cannot be established, so blocking is the conservative outcome the deterministic rules support.",
+      "The host template variable with prefix host would map to host_name=~\"$host\" only if a suitable metric existed, so it does not change the blocking decision.",
+      "If a matching OTel monotonic sum is later added to the catalog, this expectation should be revisited to check for a translated outcome."
+    ],
+    "verdict": "pass"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

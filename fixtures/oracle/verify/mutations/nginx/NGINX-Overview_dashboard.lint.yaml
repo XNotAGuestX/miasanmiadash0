@@ -1,0 +1,128 @@
+# lint verdicts for nginx/NGINX-Overview_dashboard. Triage only, never approval: humans set reviewed: true.
+verifier: lint
+meta:
+  tool: scripts/lint_expected.py
+results:
+- source_path: widgets[4].definition.widgets[0].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[4].definition.widgets[0].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: nginx.requests is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on nginx.requests with otel_metric_type=gauge'
+- source_path: widgets[4].definition.widgets[0].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[4].definition.widgets[0].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+- source_path: widgets[4].definition.widgets[0].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[4].definition.widgets[0].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[4].definition.widgets[1].definition.requests.fill#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: q: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[4].definition.widgets[1].definition.requests.fill#drop_by_label
+  verdict: block
+  reasons:
+  - 'grouping: q: Datadog by {host}, PromQL by (); answer labels: host->host_name'
+  - 'grouping: q: answer maps tag host -> host_name, PromQL groups by ()'
+- source_path: widgets[4].definition.widgets[1].definition.requests.fill#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: nginx.requests is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on nginx.requests with otel_metric_type=gauge'
+- source_path: widgets[4].definition.widgets[1].definition.requests.fill#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[4].definition.widgets[1].definition.requests.fill#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+- source_path: widgets[4].definition.widgets[1].definition.requests.fill#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[4].definition.widgets[1].definition.requests.fill#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[4].definition.widgets[4].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[4].definition.widgets[4].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[4].definition.widgets[4].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[4].definition.widgets[4].definition.requests[1]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[4].definition.widgets[4].definition.requests[1]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[4].definition.widgets[4].definition.requests[1]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[4].definition.widgets[4].definition.requests[2]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[4].definition.widgets[4].definition.requests[2]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[4].definition.widgets[4].definition.requests[2]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[5].definition.widgets[0].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: derived from 2 aggregations `avg(rate({otel_metric_name="nginx.connections_accepted",otel_metric...`, not a 1:1 metric'
+  - 'aggregation: query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[5].definition.widgets[0].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: nginx.connections_accepted is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on nginx.connections_accepted with otel_metric_type=gauge'
+  - 'aggregation: query1: derived from 2 aggregations `sum(rate({otel_metric_name="nginx.connections_accepted",otel_metric...`, not a 1:1 metric'
+- source_path: widgets[5].definition.widgets[0].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+  - 'aggregation: query1: derived from 2 aggregations `100 * (sum(rate({otel_metric_name="nginx.connections_accepted",otel...`, not a 1:1 metric'
+- source_path: widgets[5].definition.widgets[0].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+  - 'aggregation: query1: derived from 2 aggregations `sum(rate({otel_metric_name="nginx.connections_accepted",otel_metric...`, not a 1:1 metric'
+- source_path: widgets[5].definition.widgets[0].definition.requests[0]#sibling_metric
+  verdict: nit
+  reasons:
+  - 'aggregation: query1: derived from 2 aggregations `sum(rate({otel_metric_name="nginx.connections_handled",otel_metric_...`, not a 1:1 metric'
+- source_path: widgets[5].definition.widgets[0].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[5].definition.widgets[1].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[5].definition.widgets[1].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[5].definition.widgets[1].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []

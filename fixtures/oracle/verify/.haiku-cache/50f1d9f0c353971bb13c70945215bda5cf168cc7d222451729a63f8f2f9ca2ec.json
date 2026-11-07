@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Wrong metric: postgresql.rollbacks counts rolled-back transactions, while the Datadog query measures rows hot-updated (heap-only tuple updates). Filtering rollbacks by operation=\"hot_upd\" does not produce that quantity.",
+      "The candidate never checks whether an OTel metric for row operations (e.g. postgresql.operations with operation=\"hot_upd\") exists. If one does, the converter should translate to it; if not, the request should be blocked with MISSING_METRIC_MAPPING.",
+      "Template variables are dropped: $db (prefix db, observed label postgresql_database_name) and $host (prefix host, observed label host_name) should become matchers, so the candidate covers a different set of series than the request.",
+      "Grouping by postgresql_database_name matches the Datadog 'by {db}' and uses an observed label, but the aggregation and series are only correct if the underlying metric is correct, which it is not."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

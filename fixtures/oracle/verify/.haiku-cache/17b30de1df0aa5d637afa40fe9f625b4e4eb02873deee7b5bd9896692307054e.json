@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "differs",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "Candidate is blocked with MISSING_METRIC_MAPPING, but the OpenTelemetry nginx receiver measures the same quantity: nginx.connections_current, a gauge of current connections, split by the state attribute, where state=writing corresponds to Datadog nginx.net.writing (connections currently writing from stub_status).",
+      "An exact translation appears to exist, roughly {otel_metric_name=\"nginx.connections_current\", otel_metric_type=\"gauge\", state=\"writing\"} with the $Host template variable mapped to a host matcher (host label name to be confirmed against the dataset's observed labels), summed as a gauge with no rate().",
+      "otel_metric_definitions is empty, so this verdict relies on the known receiver semantics rather than a verified dataset definition; the blocked outcome should be revisited once the nginx.connections_current definition and its observed labels are supplied."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

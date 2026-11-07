@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Wrong quantity: the Datadog query is postgresql.rows_returned (rows returned by queries), but the candidate uses postgresql.tup_updated, which counts rows updated.",
+      "The candidate translates to a different metric instead of mapping rows_returned to an OTel metric that measures the same quantity; no OTel definition for rows_returned was supplied, so the expected outcome is blocked with MISSING_METRIC_MAPPING unless a true equivalent is confirmed.",
+      "Unit and aggregation are carried over from the wrong metric, so the series are not the same as the Datadog request even though the avg(rate(...)) shape looks plausible.",
+      "The $scope template variable has no prefix and default *, so dropping it is correct; this does not change the verdict."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

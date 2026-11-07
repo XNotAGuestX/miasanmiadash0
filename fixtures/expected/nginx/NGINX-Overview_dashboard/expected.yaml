@@ -14,13 +14,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/NGINX-Overview_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series (window 14:05-15:21 UTC; value 0 throughout)
+    agent0: not run
   expected:
     outcome: blocked
     errors:
     - UNSUPPORTED_QUERY_FUNCTION
-  notes:
-  - 'rule overlay: Datadog function(s) as_count block the request (plans 02/03/05); Agent0''s translation is discarded: sum(increase({otel_metric_name="nginx.connections_accepted", otel_metric_type="sum"}[15m])) - sum(increase({otel_metric_name="nginx.connections_handled", otel_metric_type="sum"}[15m]))'
 - source_path: widgets[4].definition.widgets[0].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -28,7 +26,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/NGINX-Overview_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series (window 14:05-15:21 UTC; about 1.9-4.0 req/s)
+    agent0: yes, 1 series (about 0.86 to 4.5 req/s over 14:05Z to 15:21Z)
   expected:
     outcome: translated
     promql:
@@ -56,11 +54,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/NGINX-Overview_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series (value 0 throughout)
+    agent0: yes, 1 series (value 0 throughout the window)
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="reading"})
+    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="reading", host_name=~"^($Host)$"})
     errors: []
     warnings: []
 - source_path: widgets[4].definition.widgets[4].definition.requests[1]
@@ -70,11 +68,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/NGINX-Overview_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series (value 1 throughout)
+    agent0: yes, 1 series (value 1)
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="writing"})
+    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="writing", host_name=~"^($Host)$"})
     errors: []
     warnings: []
 - source_path: widgets[4].definition.widgets[4].definition.requests[2]
@@ -84,11 +82,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/NGINX-Overview_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series (about 0-25)
+    agent0: yes, 1 series (values 0 to 25)
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting"})
+    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting", host_name=~"^($Host)$"})
     errors: []
     warnings: []
 - source_path: widgets[4].definition.widgets[5].definition.requests[0]
@@ -98,13 +96,13 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/NGINX-Overview_dashboard/answer.yaml
   live_check:
-    agent0: not run (blocked); the ungrouped base rate(nginx.requests) returns 1 series
+    agent0: yes, 1 series (service_name empty)
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
-  notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+    outcome: translated
+    promql:
+    - sum by (service_name) (rate({otel_metric_name="nginx.requests", otel_metric_type="sum"}[$__rate_interval]))
+    errors: []
+    warnings: []
 - source_path: widgets[5].definition.widgets[0].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -112,13 +110,13 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/NGINX-Overview_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series (value 0 throughout)
+    agent0: not run
   expected:
-    outcome: translated
-    promql:
-    - sum(rate({otel_metric_name="nginx.connections_accepted", otel_metric_type="sum"}[$__rate_interval])) - sum(rate({otel_metric_name="nginx.connections_handled", otel_metric_type="sum"}[$__rate_interval]))
-    errors: []
-    warnings: []
+    outcome: blocked
+    errors:
+    - MISSING_METRIC_MAPPING
+  notes:
+  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
 - source_path: widgets[5].definition.widgets[1].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -126,11 +124,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/nginx/NGINX-Overview_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series (about 1-26)
+    agent0: yes, 1 series (values 1 to 26)
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="active"})
+    - sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="active", host_name=~"^($Host)$"})
     errors: []
     warnings: []
 widgets:

@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The selector sets otel_metric_type=\"gauge\", but postgresql.tup_returned is defined as a monotonic sum and the dataset only has dataset_types [sum]. The selector matches nothing in the dataset.",
+      "The promql applies rate() to a selector typed as gauge, which breaks the rule that rate() is only for monotonic sums. The type should be \"sum\".",
+      "postgresql.tup_returned is a reasonable OTel counterpart for rows returned, and the template variable $scope (no prefix, default *) is correctly dropped. Series and grouping are unchanged, since the Datadog query has no by-clause.",
+      "The Datadog query applies no rate or per_second function, while the widget title says 'per sec'. The unit and rate assumption should be confirmed against the Datadog metric's native type, since the raw value may already be per-second."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

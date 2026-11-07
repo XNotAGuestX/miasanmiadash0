@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Numerator uses sum(rate(hits)) while Datadog formula uses avg for query1; the denominator also uses avg(rate(hits)), so the two terms of the formula are aggregated inconsistently and differently from the source.",
+      "The Datadog host template variable ($host with prefix host, default *) should become host=~\"$host\" on both queries, but the candidate drops the host matcher entirely, so the series set is wrong.",
+      "Datadog queries are raw avg values without rate(); the candidate applies rate() to the counters. The ratio of rates over the same window is a reasonable approximation, but it is not the same quantity as the raw-value ratio and should be stated.",
+      "The $scope variable (no prefix, default *) is correctly dropped and $key is unused in the queries, so those are fine.",
+      "Outcome is translated and the formula's *100 constant comes from the Datadog source, so no blocking rule is violated; the metrics are monotonic sums and rate() is allowed. The fix is to use avg aggregation consistently for both terms and add the host=~\"$host\" matcher on both selectors."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

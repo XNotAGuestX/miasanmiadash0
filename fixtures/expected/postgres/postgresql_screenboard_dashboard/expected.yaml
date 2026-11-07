@@ -14,7 +14,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: n/a (blocked)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -28,11 +28,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series (14:05–15:21Z, ≈10.8–12.3%)
+    agent0: yes, 1 series
   expected:
     outcome: translated
     promql:
-    - sum(rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum"}[$__rate_interval])) / (sum(rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum"}[$__rate_interval])) + sum(rate({otel_metric_name="postgresql.tup_returned", otel_metric_type="sum"}[$__rate_interval]))) * 100
+    - sum(rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])) / (sum(rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])) + sum(rate({otel_metric_name="postgresql.tup_returned", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval]))) * 100
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -43,11 +43,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series (14:05–15:21Z, value 0)
+    agent0: yes, 1 series
   expected:
     outcome: translated
     promql:
-    - sum({otel_metric_name="postgresql.rows", otel_metric_type="sum", state="dead"})
+    - sum({otel_metric_name="postgresql.rows", otel_metric_type="sum", state="dead", postgresql_database_name=~"^($db)$", postgresql_table_name=~"^($table)$", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -58,13 +58,17 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: n/a (blocked)
+    agent0: yes, 4 series per formula
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
-  notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+    outcome: translated
+    promql:
+    - avg by (postgresql_table_name) ({otel_metric_name="postgresql.table.size", otel_metric_type="sum", postgresql_database_name=~"^($db)$", postgresql_table_name=~"^($table)$", host_name=~"^($host)$"})
+    - avg by (postgresql_table_name) (rate({otel_metric_name="postgresql.index.scans", otel_metric_type="sum", postgresql_database_name=~"^($db)$", postgresql_table_name=~"^($table)$", host_name=~"^($host)$"}[$__rate_interval]))
+    - avg by (postgresql_table_name) ({otel_metric_name="postgresql.rows", otel_metric_type="sum", state="live", postgresql_database_name=~"^($db)$", postgresql_table_name=~"^($table)$", host_name=~"^($host)$"})
+    - avg by (postgresql_table_name) ({otel_metric_name="postgresql.rows", otel_metric_type="sum", state="dead", postgresql_database_name=~"^($db)$", postgresql_table_name=~"^($table)$", host_name=~"^($host)$"})
+    errors: []
+    warnings:
+    - TEMPLATE_VARIABLE_DROPPED
 - source_path: widgets[2].definition.widgets[2].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -72,13 +76,22 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: n/a (blocked)
+    agent0: not in dataset
+  dataset:
+    available: false
+    missing_metrics:
+    - postgresql.temp.io
+    otel_sources:
+    - collector-contrib/receiver/postgresqlreceiver/metadata.yaml
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    promql:
+    - sum(rate({otel_metric_name="postgresql.temp.io", otel_metric_type="sum", db_namespace=~"^($db)$", db_collection_name=~"^($table)$", host_name=~"^($host)$"}[$__rate_interval]))
+    errors: []
+    warnings:
+    - TEMPLATE_VARIABLE_DROPPED
   notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+  - OTel metric(s) postgresql.temp.io are defined by OpenTelemetry but not present in dataset `default`; the translation stands, but it cannot be live-checked
 - source_path: widgets[2].definition.widgets[3].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -86,11 +99,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: yes, 4 series (14:05–15:21Z; order_pkey, orderitem_pkey, products_pkey, shipping_pkey)
+    agent0: yes, 4 series
   expected:
     outcome: translated
     promql:
-    - avg by (postgresql_index_name) (rate({otel_metric_name="postgresql.index.scans", otel_metric_type="sum"}[$__rate_interval]))
+    - avg by (postgresql_index_name) (rate({otel_metric_name="postgresql.index.scans", otel_metric_type="sum", postgresql_database_name=~"^($db)$", host_name=~"^($host)$"}[$__rate_interval]))
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -101,11 +114,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: yes, 4 series (14:05–15:21Z)
+    agent0: yes, 4 series
   expected:
     outcome: translated
     promql:
-    - avg by (postgresql_index_name) (rate({otel_metric_name="postgresql.index.scans", otel_metric_type="sum"}[$__rate_interval]))
+    - avg by (postgresql_index_name) (rate({otel_metric_name="postgresql.index.scans", otel_metric_type="sum", postgresql_database_name=~"^($db)$", host_name=~"^($host)$"}[$__rate_interval]))
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -116,13 +129,14 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: n/a (blocked)
+    agent0: yes, 4 series
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
-  notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+    outcome: translated
+    promql:
+    - avg by (postgresql_table_name) ({otel_metric_name="postgresql.table.size", otel_metric_type="sum", postgresql_table_name=~"^($table)$", host_name=~"^($host)$"})
+    errors: []
+    warnings:
+    - TEMPLATE_VARIABLE_DROPPED
 - source_path: widgets[2].definition.widgets[6].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -130,11 +144,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: yes, 4 series (14:05–15:21Z; order, orderitem, products, shipping)
+    agent0: yes, 4 series
   expected:
     outcome: translated
     promql:
-    - avg by (postgresql_table_name) (label_replace({otel_metric_name="postgresql.rows", otel_metric_type="sum", state="live"}, "postgresql_table_name", "$1", "postgresql_table_name", "[^.]*[.](.*)"))
+    - avg by (postgresql_table_name) ({otel_metric_name="postgresql.rows", otel_metric_type="sum", state="live", postgresql_table_name=~"^($table)$", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -145,7 +159,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: n/a (blocked)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -157,13 +171,22 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: n/a (blocked)
+    agent0: not in dataset
+  dataset:
+    available: false
+    missing_metrics:
+    - postgresql.database.locks
+    otel_sources:
+    - collector-contrib/receiver/postgresqlreceiver/metadata.yaml
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    promql:
+    - sum by (mode, relation) ({otel_metric_name="postgresql.database.locks", otel_metric_type="gauge", host_name=~"^($host)$"})
+    errors: []
+    warnings:
+    - TEMPLATE_VARIABLE_DROPPED
   notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+  - OTel metric(s) postgresql.database.locks are defined by OpenTelemetry but not present in dataset `default`; the translation stands, but it cannot be live-checked
 - source_path: widgets[3].definition.widgets[2].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -171,13 +194,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: yes, 2 series (14:05–15:21Z; astronomy_db, postgres; all 0)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
     - UNSUPPORTED_QUERY_FUNCTION
-  notes:
-  - 'rule overlay: Datadog function(s) as_count block the request (plans 02/03/05); Agent0''s translation is discarded: max by (postgresql_database_name) (increase({otel_metric_name="postgresql.deadlocks", otel_metric_type="sum"}[$__interval]))'
 - source_path: widgets[4].definition.widgets[0].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -185,11 +206,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: yes, 2 series (14:05–15:21Z; astronomy_db, postgres)
+    agent0: yes, 2 series
   expected:
     outcome: translated
     promql:
-    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_inserted", otel_metric_type="sum"}[$__rate_interval]))
+    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_inserted", otel_metric_type="sum", postgresql_database_name=~"^($db)$", host_name=~"^($host)$"}[$__rate_interval]))
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -200,11 +221,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: yes, 2 series (14:05–15:21Z)
+    agent0: yes, 2 series
   expected:
     outcome: translated
     promql:
-    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_updated", otel_metric_type="sum"}[$__rate_interval]))
+    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_updated", otel_metric_type="sum", postgresql_database_name=~"^($db)$", host_name=~"^($host)$"}[$__rate_interval]))
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -215,13 +236,13 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: yes, 2/2/2 series (14:05–15:21Z)
+    agent0: yes, 2 series per formula
   expected:
     outcome: translated
     promql:
-    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_inserted", otel_metric_type="sum"}[$__rate_interval]))
-    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_updated", otel_metric_type="sum"}[$__rate_interval]))
-    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_deleted", otel_metric_type="sum"}[$__rate_interval]))
+    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_inserted", otel_metric_type="sum", postgresql_database_name=~"^($db)$", host_name=~"^($host)$"}[$__rate_interval]))
+    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_updated", otel_metric_type="sum", postgresql_database_name=~"^($db)$", host_name=~"^($host)$"}[$__rate_interval]))
+    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_deleted", otel_metric_type="sum", postgresql_database_name=~"^($db)$", host_name=~"^($host)$"}[$__rate_interval]))
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -232,11 +253,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: yes, 2 series (14:05–15:21Z)
+    agent0: yes, 2 series
   expected:
     outcome: translated
     promql:
-    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_deleted", otel_metric_type="sum"}[$__rate_interval]))
+    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_deleted", otel_metric_type="sum", postgresql_database_name=~"^($db)$", host_name=~"^($host)$"}[$__rate_interval]))
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -247,11 +268,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series (14:05–15:21Z; astronomy_db only, value 0)
+    agent0: yes, 1 series (astronomy_db, value 0)
   expected:
     outcome: translated
     promql:
-    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.operations", otel_metric_type="sum", operation="hot_upd"}[$__rate_interval]))
+    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.operations", otel_metric_type="sum", operation="hot_upd", postgresql_database_name=~"^($db)$", host_name=~"^($host)$"}[$__rate_interval]))
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -262,13 +283,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: yes, 2 series (14:05–15:21Z; astronomy_db, postgres)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
     - UNSUPPORTED_QUERY_FUNCTION
-  notes:
-  - 'rule overlay: Datadog function(s) rollup block the request (plans 02/03/05); Agent0''s translation is discarded: avg by (postgresql_database_name) (max_over_time({otel_metric_name="postgresql.backends", otel_metric_type="sum"}[$__interval]))'
 - source_path: widgets[5].definition.widgets[0].definition.requests[1]
   milestone: p2
   reviewed: false
@@ -276,13 +295,14 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: n/a (blocked)
+    agent0: yes, 1 series (value 100, no database label)
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
-  notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+    outcome: translated
+    promql:
+    - min by (postgresql_database_name) ({otel_metric_name="postgresql.connection.max", otel_metric_type="gauge", postgresql_database_name=~"^($db)$", host_name=~"^($host)$"})
+    errors: []
+    warnings:
+    - TEMPLATE_VARIABLE_DROPPED
 - source_path: widgets[5].definition.widgets[1].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -290,11 +310,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: yes, 2 series (14:05–15:21Z; astronomy_db=5, postgres=3)
+    agent0: yes, 2 series
   expected:
     outcome: translated
     promql:
-    - max by (postgresql_database_name) ({otel_metric_name="postgresql.backends", otel_metric_type="sum"})
+    - max by (postgresql_database_name) ({otel_metric_name="postgresql.backends", otel_metric_type="sum", postgresql_database_name=~"^($db)$", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -305,13 +325,23 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: n/a (blocked)
+    agent0: formula 1 yes, 1 series; formula 2 not in dataset
+  dataset:
+    available: false
+    missing_metrics:
+    - postgresql.sequential_scans
+    otel_sources:
+    - collector-contrib/receiver/postgresqlreceiver/metadata.yaml
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    promql:
+    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.index.scans", otel_metric_type="sum", postgresql_database_name=~"^($db)$", host_name=~"^($host)$"}[$__rate_interval]))
+    - avg by (db_namespace) (rate({otel_metric_name="postgresql.sequential_scans", otel_metric_type="sum", db_namespace=~"^($db)$", host_name=~"^($host)$"}[$__rate_interval]))
+    errors: []
+    warnings:
+    - TEMPLATE_VARIABLE_DROPPED
   notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+  - OTel metric(s) postgresql.sequential_scans are defined by OpenTelemetry but not present in dataset `default`; the translation stands, but it cannot be live-checked
 - source_path: widgets[6].definition.widgets[1].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -319,13 +349,23 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: n/a (blocked)
+    agent0: formula 1 yes, 1 series; formula 2 not in dataset
+  dataset:
+    available: false
+    missing_metrics:
+    - postgresql.sequential_scans
+    otel_sources:
+    - collector-contrib/receiver/postgresqlreceiver/metadata.yaml
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    promql:
+    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.index.scans", otel_metric_type="sum", postgresql_database_name=~"^($db)$", postgresql_table_name=~"^($table)$", host_name=~"^($host)$"}[$__rate_interval]))
+    - avg by (db_namespace) (rate({otel_metric_name="postgresql.sequential_scans", otel_metric_type="sum", db_namespace=~"^($db)$", db_collection_name=~"^($table)$", host_name=~"^($host)$"}[$__rate_interval]))
+    errors: []
+    warnings:
+    - TEMPLATE_VARIABLE_DROPPED
   notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+  - OTel metric(s) postgresql.sequential_scans are defined by OpenTelemetry but not present in dataset `default`; the translation stands, but it cannot be live-checked
 - source_path: widgets[6].definition.widgets[2].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -333,13 +373,22 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: n/a (blocked)
+    agent0: not in dataset
+  dataset:
+    available: false
+    missing_metrics:
+    - postgresql.sequential_scans
+    otel_sources:
+    - collector-contrib/receiver/postgresqlreceiver/metadata.yaml
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    promql:
+    - sum(rate({otel_metric_name="postgresql.sequential_scans", otel_metric_type="sum", db_namespace=~"^($db)$", db_collection_name=~"^($table)$", host_name=~"^($host)$"}[$__rate_interval]))
+    errors: []
+    warnings:
+    - TEMPLATE_VARIABLE_DROPPED
   notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+  - OTel metric(s) postgresql.sequential_scans are defined by OpenTelemetry but not present in dataset `default`; the translation stands, but it cannot be live-checked
 - source_path: widgets[6].definition.widgets[2].definition.requests[1]
   milestone: p2
   reviewed: false
@@ -347,7 +396,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: n/a (blocked)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -359,13 +408,22 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: n/a (blocked)
+    agent0: not in dataset
+  dataset:
+    available: false
+    missing_metrics:
+    - postgresql.function.calls
+    otel_sources:
+    - collector-contrib/receiver/postgresqlreceiver/metadata.yaml
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    promql:
+    - avg by (function) (rate({otel_metric_name="postgresql.function.calls", otel_metric_type="sum", db_namespace=~"^($db)$", db_collection_name=~"^($table)$", host_name=~"^($host)$"}[$__rate_interval]))
+    errors: []
+    warnings:
+    - TEMPLATE_VARIABLE_DROPPED
   notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+  - OTel metric(s) postgresql.function.calls are defined by OpenTelemetry but not present in dataset `default`; the translation stands, but it cannot be live-checked
 - source_path: widgets[7].definition.widgets[0].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -373,7 +431,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: n/a (blocked)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -385,7 +443,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: n/a (blocked)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
@@ -399,13 +457,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1/1 series (14:05–15:21Z)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
     - UNSUPPORTED_QUERY_FUNCTION
-  notes:
-  - 'rule overlay: Datadog function(s) as_count block the request (plans 02/03/05); Agent0''s translation is discarded: sum(increase({otel_metric_name="postgresql.bgwriter.checkpoint.count", otel_metric_type="sum", type="scheduled"}[$__interval])) ; sum(increase({otel_metric_name="postgresql.bgwriter.checkpoint.count", otel_metric_type="sum", type="requested"}[$__interval]))'
 - source_path: widgets[8].definition.widgets[0].definition.requests[1]
   milestone: p2
   reviewed: false
@@ -413,13 +469,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/postgres/postgresql_screenboard_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series (14:05–15:21Z)
+    agent0: not run (blocked)
   expected:
     outcome: blocked
     errors:
     - UNSUPPORTED_QUERY_FUNCTION
-  notes:
-  - 'rule overlay: Datadog function(s) as_count block the request (plans 02/03/05); Agent0''s translation is discarded: sum(increase({otel_metric_name="postgresql.bgwriter.checkpoint.count", otel_metric_type="sum", type="requested"}[$__interval]))'
 widgets:
 - source_path: widgets[0].definition.widgets[0]
   type: note
@@ -463,7 +517,7 @@ widgets:
     title: Rows fetched / returned
     panel_plugin: StatChart
     promql: &id003
-    - sum(rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum"}[$__rate_interval])) / (sum(rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum"}[$__rate_interval])) + sum(rate({otel_metric_name="postgresql.tup_returned", otel_metric_type="sum"}[$__rate_interval]))) * 100
+    - sum(rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])) / (sum(rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval])) + sum(rate({otel_metric_name="postgresql.tup_returned", otel_metric_type="sum", host_name=~"^($host)$"}[$__rate_interval]))) * 100
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -477,7 +531,7 @@ widgets:
     title: Dead rows
     panel_plugin: TimeSeriesChart
     promql: &id004
-    - sum({otel_metric_name="postgresql.rows", otel_metric_type="sum", state="dead"})
+    - sum({otel_metric_name="postgresql.rows", otel_metric_type="sum", state="dead", postgresql_database_name=~"^($db)$", postgresql_table_name=~"^($table)$", host_name=~"^($host)$"})
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -494,9 +548,15 @@ widgets:
   milestone: p2
   reviewed: false
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    panel_key: widget-2-2
+    title: Temp bytes
+    panel_plugin: TimeSeriesChart
+    promql: &id005
+    - sum(rate({otel_metric_name="postgresql.temp.io", otel_metric_type="sum", db_namespace=~"^($db)$", db_collection_name=~"^($table)$", host_name=~"^($host)$"}[$__rate_interval]))
+    errors: []
+    warnings:
+    - TEMPLATE_VARIABLE_DROPPED
 - source_path: widgets[2].definition.widgets[3]
   type: toplist
   milestone: p2
@@ -562,8 +622,8 @@ widgets:
     panel_key: widget-4-0
     title: Inserted
     panel_plugin: TimeSeriesChart
-    promql: &id005
-    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_inserted", otel_metric_type="sum"}[$__rate_interval]))
+    promql: &id006
+    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_inserted", otel_metric_type="sum", postgresql_database_name=~"^($db)$", host_name=~"^($host)$"}[$__rate_interval]))
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -576,8 +636,8 @@ widgets:
     panel_key: widget-4-1
     title: Updated
     panel_plugin: TimeSeriesChart
-    promql: &id006
-    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_updated", otel_metric_type="sum"}[$__rate_interval]))
+    promql: &id007
+    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_updated", otel_metric_type="sum", postgresql_database_name=~"^($db)$", host_name=~"^($host)$"}[$__rate_interval]))
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -598,8 +658,8 @@ widgets:
     panel_key: widget-4-3
     title: Deleted
     panel_plugin: TimeSeriesChart
-    promql: &id007
-    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_deleted", otel_metric_type="sum"}[$__rate_interval]))
+    promql: &id008
+    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_deleted", otel_metric_type="sum", postgresql_database_name=~"^($db)$", host_name=~"^($host)$"}[$__rate_interval]))
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -612,8 +672,8 @@ widgets:
     panel_key: widget-4-4
     title: 'Heap-only updates '
     panel_plugin: TimeSeriesChart
-    promql: &id008
-    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.operations", otel_metric_type="sum", operation="hot_upd"}[$__rate_interval]))
+    promql: &id009
+    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.operations", otel_metric_type="sum", operation="hot_upd", postgresql_database_name=~"^($db)$", host_name=~"^($host)$"}[$__rate_interval]))
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
@@ -624,7 +684,6 @@ widgets:
   expected:
     outcome: blocked
     errors:
-    - MISSING_METRIC_MAPPING
     - UNSUPPORTED_QUERY_FUNCTION
 - source_path: widgets[5].definition.widgets[1]
   type: toplist
@@ -643,7 +702,7 @@ widgets:
     panel_key: widget-5-2
     title: ''
     panel_plugin: Markdown
-    promql: &id009 []
+    promql: &id010 []
     errors: []
     warnings: []
 - source_path: widgets[6].definition.widgets[0]
@@ -651,9 +710,16 @@ widgets:
   milestone: p2
   reviewed: false
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    panel_key: widget-6-0
+    title: Sequential scans vs index scans
+    panel_plugin: TimeSeriesChart
+    promql: &id011
+    - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.index.scans", otel_metric_type="sum", postgresql_database_name=~"^($db)$", host_name=~"^($host)$"}[$__rate_interval]))
+    - avg by (db_namespace) (rate({otel_metric_name="postgresql.sequential_scans", otel_metric_type="sum", db_namespace=~"^($db)$", host_name=~"^($host)$"}[$__rate_interval]))
+    errors: []
+    warnings:
+    - TEMPLATE_VARIABLE_DROPPED
 - source_path: widgets[6].definition.widgets[1]
   type: query_table
   milestone: p2
@@ -737,7 +803,9 @@ dashboard:
     - source_path: widgets[2].definition.widgets[1]
       outcome: blocked
     - source_path: widgets[2].definition.widgets[2]
-      outcome: blocked
+      outcome: translated
+      panel_key: widget-2-2
+      promql: *id005
     - source_path: widgets[2].definition.widgets[3]
       outcome: blocked
     - source_path: widgets[2].definition.widgets[4]
@@ -755,21 +823,21 @@ dashboard:
     - source_path: widgets[4].definition.widgets[0]
       outcome: translated
       panel_key: widget-4-0
-      promql: *id005
+      promql: *id006
     - source_path: widgets[4].definition.widgets[1]
       outcome: translated
       panel_key: widget-4-1
-      promql: *id006
+      promql: *id007
     - source_path: widgets[4].definition.widgets[2]
       outcome: blocked
     - source_path: widgets[4].definition.widgets[3]
       outcome: translated
       panel_key: widget-4-3
-      promql: *id007
+      promql: *id008
     - source_path: widgets[4].definition.widgets[4]
       outcome: translated
       panel_key: widget-4-4
-      promql: *id008
+      promql: *id009
     - source_path: widgets[5].definition.widgets[0]
       outcome: blocked
     - source_path: widgets[5].definition.widgets[1]
@@ -777,9 +845,11 @@ dashboard:
     - source_path: widgets[5].definition.widgets[2]
       outcome: translated
       panel_key: widget-5-2
-      promql: *id009
+      promql: *id010
     - source_path: widgets[6].definition.widgets[0]
-      outcome: blocked
+      outcome: translated
+      panel_key: widget-6-0
+      promql: *id011
     - source_path: widgets[6].definition.widgets[1]
       outcome: blocked
     - source_path: widgets[6].definition.widgets[2]

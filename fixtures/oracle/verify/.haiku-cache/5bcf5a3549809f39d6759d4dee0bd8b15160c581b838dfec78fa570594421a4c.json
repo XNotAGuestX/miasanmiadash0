@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Datadog sums nginx.net.connections across all series with no state filter, but the candidate uses avg(...) and filters to state=\"active\", so both the aggregation and the set of series differ.",
+      "The matched metric nginx.connections_current is a non-monotonic sum (gauge-like) of connections by state, so an exact translation is plausible: sum over all series without the state matcher, with no rate applied.",
+      "The widget title says 'per second', but the Datadog query has no rate function and the metric is a connection count, so no rate should be introduced; the title mismatch is worth noting, not converting.",
+      "Unit ({connections}) and the choice of metric are consistent with the Datadog quantity, so the mismatch is limited to aggregation and series selection."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

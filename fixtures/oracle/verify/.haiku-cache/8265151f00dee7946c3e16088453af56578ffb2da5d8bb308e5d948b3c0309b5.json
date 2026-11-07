@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "differs",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "The candidate blocks with MISSING_METRIC_MAPPING, but the OpenTelemetry Docker/container network metric container.network.io (sum, bytes, attribute direction=transmit) measures bytes sent per container, the same quantity as docker.net.bytes_sent.",
+      "otel_metric_definitions is empty, so the candidate had no evidence for declaring the mapping missing; the blocked outcome is unsupported by the provided catalog.",
+      "An exact translation plausibly exists: a rate over container.network.io filtered to direction transmit, grouped by the image name label (container.image.name, to be checked against observed dataset labels), with avg aggregation and the $scope variable dropped as a default * without prefix. Confirm the metric's cumulative vs gauge nature and the observed label names before finalizing."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

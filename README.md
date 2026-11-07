@@ -4,7 +4,7 @@
 
 Hackathon project: a deterministic CLI that migrates Datadog dashboards and metric monitors to Dash0 using Perses, PromQL, and explicit telemetry mappings.
 
-**Current state: the offline `convert` command works for Datadog dashboards (Track A: query parser, mapping, PromQL, Perses dashboards) and metric monitors (Track B, plan 06). A supported monitor becomes `rules/<slug>.prometheus.{json,yaml}` (warning and critical rules) and `check-rules/<slug>.json` (a disabled, create-only Dash0 check-rule body), both rendered from one condition `<agg>_over_time((<query>)[<window>:1m])`; anything outside the reviewed allowlist is blocked with a diagnostic. `publish` and `fetch` don't exist yet.** See [STATUS.md](docs/STATUS.md).
+**Current state: the offline `convert` command works for Datadog dashboards (Track A: query parser, mapping, PromQL, Perses dashboards). Monitors are still reported as blocked. `fetch` downloads selected Datadog dashboards and monitors by ID (tested with recorded fake responses; not yet run against a live Datadog account). `publish` is not on this branch (PR #81).** See [STATUS.md](docs/STATUS.md).
 
 ## Install, test, convert
 
@@ -22,6 +22,24 @@ uv run migrator convert --source datadog \
 ```
 
 `convert` is offline. It writes `dashboards/`, `source/` copies, `report.json` and `manifest.json` into an empty `--out` directory, and exits `0` (all translated), `2` (some item partial or blocked) or `1` (bad input, mapping or arguments).
+
+`fetch` is read-only and downloads selected Datadog assets unchanged into a folder that `convert --input` reads:
+
+```bash
+DD_API_KEY=… DD_APP_KEY=… DD_SITE=datadoghq.eu \
+  uv run migrator fetch --source datadog --dashboard-id abc-def-123 --monitor-id 4242 --out /tmp/dd-in
+```
+
+It needs an application key with `dashboards_read` / `monitors_read`, validates every ID and the empty `--out` before any request, writes nothing unless every request succeeded, and exits `0` or `1`. It is tested against a fake transport only; no live Datadog run yet (blocker B3).
+
+To view the converted dashboards in a local Perses (Docker, bound to `127.0.0.1`; queries go to Dash0 through its proxy, so set `DASH0_AUTH_TOKEN` to see data, or any placeholder to see the layout only):
+
+```bash
+DASH0_AUTH_TOKEN=... docker compose -f scripts/review/docker-compose.yaml up -d
+uv run scripts/review/load_local.py /tmp/pg-out    # prints each dashboard's URL
+```
+
+See [scripts/review/README.md](scripts/review/README.md).
 
 ## Start here
 

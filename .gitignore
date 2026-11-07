@@ -34,3 +34,6 @@ coverage/
 artifacts/
 private-input/
 *.log
+
+# Local review artifacts (scripts/render_review_dashboard.py)
+out/

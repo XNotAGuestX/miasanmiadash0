@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Datadog plots the raw avg of postgresql.index_scans with no rate or as_rate, so the value is the cumulative scan count. The candidate wraps the monotonic OTel sum in rate(), which yields scans per second. That is a different quantity and unit.",
+      "Datadog aggregates with avg across series, while the candidate uses sum. These differ whenever several series share an index.",
+      "The $db (prefix db) and $host (prefix host) template variables should become matchers on the dataset labels (postgresql_database_name, host_name). The candidate drops them, so the series set does not match the request. $scope has no prefix and is correctly dropped.",
+      "The grouping label postgresql_index_name is not in the observed dataset labels; the dataset is authoritative for label names, so the grouping label needs verification against the dataset before this can translate.",
+      "Outcome 'translated' is acceptable because no Datadog function is used, but the PromQL is not an exact translation."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

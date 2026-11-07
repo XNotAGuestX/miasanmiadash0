@@ -1,0 +1,224 @@
+# lint verdicts for postgres/postgresql_dashboard. Triage only, never approval: humans set reviewed: true.
+verifier: lint
+meta:
+  tool: scripts/lint_expected.py
+results:
+- source_path: widgets[0].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[0].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: postgresql.tup_fetched is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on postgresql.tup_fetched with otel_metric_type=gauge'
+- source_path: widgets[0].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[0].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+- source_path: widgets[0].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[0].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[0].definition.requests[1]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[0].definition.requests[1]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: postgresql.tup_returned is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on postgresql.tup_returned with otel_metric_type=gauge'
+- source_path: widgets[0].definition.requests[1]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[0].definition.requests[1]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+- source_path: widgets[0].definition.requests[1]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[0].definition.requests[1]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[0].definition.requests[2]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[0].definition.requests[2]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: postgresql.tup_inserted is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on postgresql.tup_inserted with otel_metric_type=gauge'
+- source_path: widgets[0].definition.requests[2]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[0].definition.requests[2]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+- source_path: widgets[0].definition.requests[2]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[0].definition.requests[2]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[0].definition.requests[3]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[0].definition.requests[3]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: postgresql.tup_updated is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on postgresql.tup_updated with otel_metric_type=gauge'
+- source_path: widgets[0].definition.requests[3]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[0].definition.requests[3]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+- source_path: widgets[0].definition.requests[3]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[0].definition.requests[3]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[1].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator avg, PromQL sum'
+  - 'grain: query1: postgresql.backends has no dedup grain by (service_instance_id) (plan 05 Task 4)'
+- source_path: widgets[1].definition.requests[0]#drop_by_label
+  verdict: block
+  reasons:
+  - 'grouping: query1: Datadog by {db}, PromQL by (); answer labels: db->postgresql_database_name'
+  - 'grouping: query1: answer maps tag db -> postgresql_database_name, PromQL groups by ()'
+  - 'grain: query1: postgresql.backends has no dedup grain by (service_instance_id) (plan 05 Task 4)'
+- source_path: widgets[1].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+  - 'grain: query1: postgresql.backends has no dedup grain by (service_instance_id) (plan 05 Task 4)'
+- source_path: widgets[1].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[1].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[3].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+  - 'aggregation: query1: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[3].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: system.disk.io_time is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on system.disk.io_time with otel_metric_type=gauge'
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[3].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[3].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[3].definition.requests[0]#sibling_metric
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[3].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[6].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+  - 'aggregation: query1: Datadog aggregator max, PromQL min'
+  - 'aggregation: query1: nested aggregation `avg by (host_name)(rate({otel_metric_name="system.cpu.tim...` not in the source'
+- source_path: widgets[6].definition.requests[0]#drop_by_label
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+  - 'aggregation: query1: nested aggregation `avg(rate({otel_metric_name="system.cpu.time",otel_metric_...` not in the source'
+- source_path: widgets[6].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: system.cpu.time is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on system.cpu.time with otel_metric_type=gauge'
+  - 'literal: constant 100 is not in the Datadog source'
+  - 'aggregation: query1: nested aggregation `avg by (host_name)(rate({otel_metric_name="system.cpu.tim...` not in the source'
+- source_path: widgets[6].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+  - 'aggregation: query1: nested aggregation `avg by (host_name)(rate({otel_metric_name="system.cpu.tim...` not in the source'
+- source_path: widgets[6].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+  - 'literal: constant 100 is not in the Datadog source'
+  - 'aggregation: query1: nested aggregation `avg by (host_name)(rate({otel_metric_name="system.cpu.tim...` not in the source'
+- source_path: widgets[6].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[8].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[8].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: system.network.io is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on system.network.io with otel_metric_type=gauge'
+- source_path: widgets[8].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[8].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+- source_path: widgets[8].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[8].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[8].definition.requests[1]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[8].definition.requests[1]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: system.network.io is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on system.network.io with otel_metric_type=gauge'
+- source_path: widgets[8].definition.requests[1]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[8].definition.requests[1]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+- source_path: widgets[8].definition.requests[1]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[8].definition.requests[1]#outcome_flip
+  verdict: pass
+  reasons: []

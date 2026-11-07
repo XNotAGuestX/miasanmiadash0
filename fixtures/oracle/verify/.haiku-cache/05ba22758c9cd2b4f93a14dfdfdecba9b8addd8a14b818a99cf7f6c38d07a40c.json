@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "ok",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "The candidate is blocked with MISSING_METRIC_MAPPING, and otel_metric_definitions is empty, so no OTel metric is shown to measure postgresql.rows_fetched or postgresql.rows_returned.",
+      "Without definitions the converter cannot confirm an exact mapping, so blocking is the defensible outcome under the rules.",
+      "The formula's *100 is a constant from the Datadog source, so it is not a blocking issue.",
+      "If the catalog later defines these quantities (for example as a postgresql.rows metric filtered by a state attribute), this should be re-evaluated for translation rather than blocking."
+    ],
+    "verdict": "pass"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

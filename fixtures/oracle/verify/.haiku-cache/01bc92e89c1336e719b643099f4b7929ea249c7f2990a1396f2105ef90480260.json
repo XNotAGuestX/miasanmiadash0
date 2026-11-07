@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "query1 selects postgresql.tup_inserted with otel_metric_type=\"gauge\", but the definition is a monotonic sum and the dataset only has sum types, so the selector matches nothing and rate() is applied to a non-sum.",
+      "The $db (prefix db) and $host (prefix host) template variables are dropped, but they should become matchers such as postgresql_database_name=~\"$db\" and host_name=~\"$host\"; the candidate therefore covers a wider set of series than the Datadog request.",
+      "The Datadog queries are plain avg() with no rate function, yet all three candidate queries wrap the counter in rate(...[$__rate_interval]), which changes the aggregation from the raw counter to a per-second rate unless the Datadog metric is itself a rate; this needs confirming before the translation is accepted.",
+      "Mapping rows_* to tup_* (tuples inserted/updated/deleted) is a reasonable quantity match and the by {db} grouping maps to postgresql_database_name, so the translated outcome itself is appropriate."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}
