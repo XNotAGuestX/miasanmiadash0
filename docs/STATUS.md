@@ -1,6 +1,6 @@
 # Shared project status
 
-Last updated: 2026-11-07, initialization handoff.
+Last updated: 2026-11-07, source provider interface decision.
 
 Highest-priority requirement: deterministic conversion before all other objectives. No LLM involvement in source-to-Perses or query/alert conversion, including optional inference, repair, and fallback paths. Shared rules, handoff, kickoff prompt, and acceptance gates now state this explicitly. Codex and Claude remain implementation assistants only.
 
@@ -33,6 +33,10 @@ No implementation task is claimed. Codex and Claude must read this file before e
 ## Next concrete action
 
 Resolve the required starter/fork workflow and create a feature branch for implementation. Then verify a known-good Dash0 dashboard/check payload and bootstrap the offline slice. Account setup and target telemetry can be prepared by a human teammate while offline implementation progresses, if the team chooses to split the work.
+
+## Recorded decisions
+
+- 2026-11-07 (user): translation does not need to be source-agnostic. Datadog is the only P0 source. Each source provider owns its parsing, mapping, and translation; the requirement is one `SourceProvider` interface with a static table selected by `--source`, plus shared output types (Perses dashboards, PromQL check conditions, diagnostics, outcomes). If a shared contract would limit Datadog functionality, discuss it with the user before compromising features. Contract: `PROJECT_HANDOFF.md`, section "Source provider interface".
 
 ## Known blockers and decisions to resolve
 

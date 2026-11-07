@@ -24,10 +24,11 @@ The hackathon duration is not specified. Allocate the remaining engineering time
 ## 1. Bootstrap the smallest executable slice
 
 - Initialize one TypeScript CLI package with the proposed dependencies and a lockfile.
+- Define the `SourceProvider` interface, shared output types, and static provider table with Datadog as the only entry. Make `--source` required for `fetch` and `compile`; see [the handoff](PROJECT_HANDOFF.md#source-provider-interface).
 - Add `dev`, `build`, `typecheck`, and `test` scripts; document the exact working commands and tested runtime in README.
 - Add synthetic dashboard, monitor, and mapping JSON fixtures matching the first supported example.
 - Add the minimum types and Zod boundary schemas needed for those fixtures.
-- Wire `compile` so it reads fixtures, emits one dashboard/check-rule artifact plus a report/manifest, and never calls a network service.
+- Wire `compile` through the selected provider so it reads fixtures, emits one dashboard/check-rule artifact plus a report/manifest, and never calls a network service.
 
 **Gate:** a fresh install can run the offline command and produce reviewable outputs. At this stage, hard-coded example output is only scaffolding; it does not satisfy the translation gate.
 
@@ -60,6 +61,7 @@ Cover these behaviors with focused tests and one CLI smoke run:
 | Area | Required check |
 | --- | --- |
 | First-priority invariant | Conversion uses only explicit parsers, reviewed mappings, and deterministic rules; identical inputs/configuration/version yield identical outputs; no model-based conversion, repair, or fallback path exists |
+| Provider selection | Unknown `--source` exits `1` and lists known IDs; provider ID recorded in report and manifest; shared modules import no provider internals |
 | Parser | Complete input consumption; unsupported syntax rejected |
 | Mapping | Missing metric/tag, wrong type/unit, unsupported scale |
 | Monitor | Correct window/threshold; unsupported behavior blocks import |
@@ -89,7 +91,7 @@ Use HTTP mocks for contract/failure tests and real imports for live evidence. A 
 1. Cut extra vendors, frontend, YAML, and broad source discovery.
 2. Cut query-value widgets, formulas, exact styling/layout, and variable support.
 3. Cut counters, warning thresholds, notification routing, and wider monitor semantics.
-4. Keep one mapped gauge, one chart, one simple monitor, explicit incompatibility reporting, API fetch, and real Dash0 import.
+4. Keep one mapped gauge, one chart, one simple monitor, explicit incompatibility reporting, API fetch, and real Dash0 import. Keep the `SourceProvider` interface too, since it costs little; cut a second provider instead.
 
 If live access is still blocked at the deadline, deliver the offline compiler, artifacts, tests, and exact reproduction/blocker details. State that the challenge's live end-to-end requirement remains unmet; do not present a fallback as completed acceptance.
 

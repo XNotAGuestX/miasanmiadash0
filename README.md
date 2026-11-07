@@ -27,6 +27,7 @@ Build a working vertical slice before expanding feature coverage. Business resea
 - TypeScript, Node.js 22+, npm, one CLI package.
 - Commander for CLI arguments, Zod for boundary validation, Vitest for tests, tsx for local execution, tsc for type checking/building.
 - Built-in `fetch` for HTTP. Small deterministic parser and explicit mapping files for translation.
+- One `SourceProvider` interface selected with `--source` (only `datadog` for now). Each provider owns its own translation; shared code handles the report, manifest, and Dash0 import.
 - JSON inputs/outputs first. No frontend, database, or hosted service. LLM involvement in conversion is prohibited, not merely unnecessary.
 
 These are starting decisions for the empty repository. Preserve any existing implementation if the handoff is moved into a populated starter checkout. Record a justified stack change once in the handoff and status file.

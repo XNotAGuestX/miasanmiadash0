@@ -34,7 +34,7 @@ npm ci
 npm run typecheck
 npm test
 npm run build
-npm run dev -- compile --dashboard fixtures/datadog/dashboard.json --monitor fixtures/datadog/monitor.json --mapping fixtures/mappings/demo.json --out artifacts/review
+npm run dev -- compile --source datadog --dashboard fixtures/datadog/dashboard.json --monitor fixtures/datadog/monitor.json --mapping fixtures/mappings/demo.json --out artifacts/review
 ```
 
 These scripts and fixtures must be created and verified before this sequence is marked usable. The offline path must not need Datadog, Dash0, Codex, Claude, or model API credentials.
