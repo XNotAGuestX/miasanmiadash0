@@ -434,3 +434,28 @@ def test_diagnostics_are_ordered_by_item_then_source_path() -> None:
         return (0, path)
 
     assert c.diagnostics == sorted(c.diagnostics, key=key)
+
+
+def test_group_option_diagnostics_sort_at_the_group_position() -> None:
+    group = {
+        "definition": {
+            "type": "group",
+            "title": "G",
+            "background_color": "blue",
+            "widgets": [ts({"q": "avg:postgresql.connections{*}"}, yaxis={})],
+        }
+    }
+    c = compile_body(body(ts({"q": "avg:postgresql.connections{*}"}, yaxis={}), group))
+    assert [d.source_path for d in c.diagnostics if d.code == "OPTION_IGNORED"] == [
+        "widgets[0].definition.yaxis",
+        "widgets[1].definition.background_color",
+        "widgets[1].definition.widgets[0].definition.yaxis",
+    ]
+
+
+def test_source_paths_sort_by_numeric_index() -> None:
+    requests = [{"q": "avg:postgresql.connections{*}", "style": {}} for _ in range(11)]
+    c = compile_body(body(ts(*requests)))
+    assert [d.source_path for d in c.diagnostics if d.code == "OPTION_IGNORED"] == [
+        f"widgets[0].definition.requests[{k}].style" for k in range(11)
+    ]

@@ -7,6 +7,7 @@ formula syntax) run first; only then are the displayed queries parsed and compil
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -43,6 +44,7 @@ from migrator.validation import check_promql_syntax, validate_dashboard
 
 AUTO_WIDTH = 12
 AUTO_HEIGHT = 8
+_INDEX = re.compile(r"\[(\d+)\]")
 
 # --- Allowed source keys per level: (silently used, ignored with OPTION_IGNORED) ----
 
@@ -588,6 +590,9 @@ class _Builder:
         self.panels: dict[str, PersesPanel] = {}
         self.layouts: list[PersesGrid] = []
         self.items: list[ItemResult] = []
+        # Source paths in item order, plus each group's own path at the group's position,
+        # so diagnostics on group options sort with the group, not before every item.
+        self.anchors: list[str] = []
         self.top = _GridBuilder(widgets, None, ordered)
 
     def flush_top(self) -> None:
@@ -604,6 +609,7 @@ class _Builder:
         self.c.items.extend(diags)
         outcome: Outcome = "translated" if panel is not None else "blocked"
         self.items.append(ItemResult(self.ctx.source_id, path, "widget", title, outcome))
+        self.anchors.append(path)
         if panel is not None:
             self.panels[key] = panel
             grid.place(key, widget)
@@ -613,10 +619,12 @@ class _Builder:
         title = _str(d.get("title")) if isinstance(d, dict) else ""
         self.c.error("UNSUPPORTED_WIDGET", path, message, "Migrate this widget manually.")
         self.items.append(ItemResult(self.ctx.source_id, path, "widget", title, "blocked"))
+        self.anchors.append(path)
 
     def group(self, definition: dict[str, Any], i: int, path: str) -> None:
         """Group children become their own titled grid; the group itself is not an item."""
         self.flush_top()
+        self.anchors.append(path)
         raw_children = definition.get("widgets")
         children: list[Any] = raw_children if isinstance(raw_children, list) else []
         dpath = f"{path}.definition"
@@ -727,20 +735,36 @@ def compile_dashboard(
 
     items = [ItemResult(sid, "", "dashboard", asset.title, outcome), *b.items]
     return DashboardCompilation(
-        dashboard=dashboard, items=items, diagnostics=_ordered(c.items, b.items)
+        dashboard=dashboard, items=items, diagnostics=_ordered(c.items, b.anchors)
     )
 
 
-def _ordered(diagnostics: list[Diagnostic], items: list[ItemResult]) -> list[Diagnostic]:
-    """Item order, then source path; the stable sort keeps emission order for ties."""
+def _path_key(path: str) -> tuple[str | int, ...]:
+    """Source path as a sort key with numeric indices: `requests[2]` < `requests[10]`.
 
-    def key(d: Diagnostic) -> tuple[int, str]:
-        for index, item in enumerate(items, start=1):
-            if d.source_path == item.source_path or d.source_path.startswith(
-                item.source_path + "."
+    `re.split` with one capture group alternates text and index parts, so text always
+    compares with text and indices with indices.
+    """
+    return tuple(int(p) if n % 2 else p for n, p in enumerate(_INDEX.split(path)))
+
+
+def _ordered(diagnostics: list[Diagnostic], anchors: list[str]) -> list[Diagnostic]:
+    """Spec §8: item order, then source path, then emission order (stable sort).
+
+    `anchors` are item paths in item order, with each group's path at its position.
+    A diagnostic belongs to the most specific anchor that contains its path; one that
+    matches none (dashboard-level, e.g. `template_variables[0]`) belongs to the
+    dashboard item, which comes first.
+    """
+
+    def key(d: Diagnostic) -> tuple[int, tuple[str | int, ...]]:
+        best, best_len = 0, -1
+        for index, anchor in enumerate(anchors, start=1):
+            if len(anchor) > best_len and (
+                d.source_path == anchor or d.source_path.startswith(anchor + ".")
             ):
-                return index, d.source_path
-        return 0, d.source_path
+                best, best_len = index, len(anchor)
+        return best, _path_key(d.source_path)
 
     return sorted(diagnostics, key=key)
 
