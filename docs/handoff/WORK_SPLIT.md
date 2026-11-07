@@ -32,8 +32,8 @@ by assigning their issues.
 
 | # | What lands | From | Unblocks |
 |---|---|---|---|
-| S1 | Package, `src/target.ts`, `src/write.ts` (01.T1–T2) | B | All of Track A |
-| S2 | `src/promql.ts`, `mapping.ts` (03.T1–T2). Both files then belong to Track A | B | 03.T3 |
+| S1 | Package, `src/migrator/target.py`, `src/migrator/write.py` (01.T1–T2) | B | All of Track A |
+| S2 | `src/migrator/promql.py`, `mapping.py` (03.T1–T2). Both files then belong to Track A | B | 03.T3 |
 | S3 | Pinned postgres fixtures, `SourceAsset`, provider table (01.T4–T5) | B | 02.T2, 04.T1 |
 | S4 | `parseMetricQuery` (02.T1) | A | 06.T1 |
 | S5 | `compileMetricQuery` (03.T3) | A | 06.T4 |
@@ -61,7 +61,7 @@ by assigning their issues.
 ## Track B
 
 - [ ] 01.T1–T2. Gives S1.
-- [ ] 03.T1–T2. Gives S2. The `parseMapping` call goes into `index.ts` with 01.T5.
+- [ ] 03.T1–T2. Gives S2. The `parseMapping` call goes into `__init__.py` with 01.T5.
 - [ ] 01.T3–T5. Gives S3.
 - [ ] 01.T6.
 - [ ] 03.T4. Track A reviews the entry.
@@ -87,13 +87,13 @@ by assigning their issues.
 
 | Track A | Track B |
 |---|---|
-| `src/source/datadog/{model,parse-query,compile-query,dashboard,formula}.ts` | Everything else under `src/`, including `monitor.ts`, `index.ts`, `validation.ts`, `destination/` |
-| `src/promql.ts`, `src/source/datadog/mapping.ts` (after S2) | `package.json`, lockfile, `tsconfig.json`, vitest config |
+| `src/migrator/source/datadog/{model,parse_query,compile_query,dashboard,formula}.py` | Everything else under `src/`, including `monitor.py`, `__init__.py`, `validation.py`, `destination/` |
+| `src/migrator/promql.py`, `src/migrator/source/datadog/mapping.py` (after S2) | `pyproject.toml`, `uv.lock`, `.python-version` |
 | `mappings/datadog/postgres.json` (after S7), `kafka.json`, `docker.json` | `mappings/datadog/redis.json`, `nginx.json`; `fixtures/mappings/` |
 | `fixtures/datadog/synthetic/` | `fixtures/datadog/integrations-core/`, `fixtures/expected/`, `fixtures/dash0/`, `scripts/` |
-| | `tests/golden.test.ts`, `README.md`, `docs/DEMO.md` |
+| | `tests/test_golden.py`, `README.md`, `docs/DEMO.md` |
 
-Tests belong to the owner of the file they cover. Track B appends the monitor types to `model.ts`
+Tests belong to the owner of the file they cover. Track B appends the monitor types to `model.py`
 in 06.T1. Track A adds its Kafka and Docker golden cases as separate `describe` blocks and pins its
 own service folders. New dependencies go through Track B.
 
