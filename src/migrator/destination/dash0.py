@@ -3,6 +3,12 @@
 Create-only: never sends metadata.dash0Extensions or a check-rule id. No retries.
 An ambiguous result (transport error, any 5xx, a 2xx without an id) is "unknown",
 which the receipts (07.T3) refuse to republish.
+
+Verified live on 2026-11-07 (plan 07 Task 1): POST /api/import/check-rule returns
+the rule with its new id at "id". POST /api/import/dashboard returns the stored
+dashboard *without* any id, so the id is found by listing GET /api/dashboards
+(items {id, name, dataset}, name = metadata.name) before and after the import and
+taking the one new item with the dashboard's metadata.name.
 """
 
 from __future__ import annotations
@@ -23,9 +29,7 @@ from migrator.http import (
 from migrator.input import InputError
 from migrator.target import Dash0CheckRule, PersesDashboard
 
-# UNVERIFIED until plan 07 Task 1: where the new ID sits in each import response.
-DASHBOARD_ID_PATH: tuple[str, ...] = ("metadata", "dash0Extensions", "id")
-# UNVERIFIED until plan 07 Task 1.
+# Verified live (plan 07 Task 1): the check-rule import response carries the id here.
 CHECK_RULE_ID_PATH: tuple[str, ...] = ("id",)
 
 REQUEST_TIMEOUT_S = 30.0
@@ -55,7 +59,7 @@ class Imported:
 
 @dataclass(frozen=True)
 class Failed:
-    http_status: int
+    http_status: int | None  # None: nothing was sent (e.g. the pre-import listing failed)
     message: str
     status: Literal["failed"] = "failed"
 
@@ -118,12 +122,9 @@ def _decode(body: bytes) -> str:
 
 
 def _post_import(
-    kind: ImportKind,
-    body: Mapping[str, Any],
-    id_path: tuple[str, ...],
-    cfg: Dash0Config,
-    send: HttpSend,
-) -> PublishOutcome:
+    kind: ImportKind, body: Mapping[str, Any], cfg: Dash0Config, send: HttpSend
+) -> Failed | Unknown | _Accepted:
+    """POST once. Returns a Failed/Unknown outcome, or the parsed 2xx JSON body."""
     request = HttpRequest(
         method="POST",
         url=_url(cfg, f"/api/import/{kind}"),
@@ -150,16 +151,53 @@ def _post_import(
         return Failed(http_status=response.status, message=_clip(text, cfg.token))
 
     try:
-        parsed = json.loads(text)
+        return _Accepted(response.status, json.loads(text))
     except json.JSONDecodeError:
         return Unknown(_clip(f"HTTP {response.status} with a non-JSON body: {text}", cfg.token))
-    new_id = _dig(parsed, id_path)
-    if not isinstance(new_id, str) or not new_id:
-        return Unknown(
-            f"HTTP {response.status} but no id at {'.'.join(id_path)}; the {kind} was "
-            "probably created, reconcile before republishing"
+
+
+@dataclass(frozen=True)
+class _Accepted:
+    http_status: int
+    body: Any
+
+
+class _ListError(Exception):
+    def __init__(self, message: str, http_status: int | None) -> None:
+        super().__init__(message)
+        self.http_status = http_status
+
+
+def _dashboard_ids_named(name: str, cfg: Dash0Config, send: HttpSend) -> set[str]:
+    """IDs of the dataset's dashboards whose metadata.name is `name`. Raises _ListError."""
+    request = HttpRequest(
+        method="GET",
+        url=_url(cfg, "/api/dashboards"),
+        headers=_headers(cfg, with_body=False),
+        timeout=REQUEST_TIMEOUT_S,
+    )
+    try:
+        response = send(request)
+    except HttpTransportError as err:
+        raise _ListError(_clip(f"listing dashboards failed: {err}", cfg.token), None) from None
+    text = _decode(response.body)
+    if not response.ok:
+        raise _ListError(
+            _clip(f"listing dashboards failed: HTTP {response.status}: {text}", cfg.token),
+            response.status,
         )
-    return Imported(id=new_id, http_status=response.status)
+    try:
+        items = json.loads(text)
+    except json.JSONDecodeError:
+        items = None
+    if not isinstance(items, list) or not all(isinstance(i, dict) for i in items):
+        raise _ListError(
+            _clip(f"listing dashboards returned an unexpected shape: {text}", cfg.token),
+            response.status,
+        )
+    return {
+        i["id"] for i in items if i.get("name") == name and isinstance(i.get("id"), str) and i["id"]
+    }
 
 
 def publish_dashboard(
@@ -170,7 +208,32 @@ def publish_dashboard(
         raise InputError(
             "refusing to publish a dashboard with metadata.dash0Extensions (create-only)"
         )
-    return _post_import("dashboard", body, DASHBOARD_ID_PATH, cfg, send)
+    name = metadata.get("name") if isinstance(metadata, dict) else None
+    if not isinstance(name, str) or not name:
+        raise InputError("refusing to publish a dashboard without metadata.name")
+    try:
+        before = _dashboard_ids_named(name, cfg, send)
+    except _ListError as err:
+        # Nothing has been sent yet, so this is a definite failure.
+        return Failed(http_status=err.http_status, message=f"{err}; nothing was imported")
+
+    accepted = _post_import("dashboard", body, cfg, send)
+    if not isinstance(accepted, _Accepted):
+        return accepted
+    reconcile = "the dashboard was probably created, reconcile before republishing"
+    try:
+        new = _dashboard_ids_named(name, cfg, send) - before
+    except _ListError as err:
+        return Unknown(_clip(f"HTTP {accepted.http_status} but {err}; {reconcile}", cfg.token))
+    if len(new) != 1:
+        return Unknown(
+            _clip(
+                f"HTTP {accepted.http_status} but found {len(new)} new dashboards named "
+                f"{name!r}; {reconcile}",
+                cfg.token,
+            )
+        )
+    return Imported(id=new.pop(), http_status=accepted.http_status)
 
 
 def publish_check_rule(
@@ -178,7 +241,16 @@ def publish_check_rule(
 ) -> PublishOutcome:
     if "id" in body:
         raise InputError("refusing to publish a check rule with an id (create-only)")
-    return _post_import("check-rule", body, CHECK_RULE_ID_PATH, cfg, send)
+    accepted = _post_import("check-rule", body, cfg, send)
+    if not isinstance(accepted, _Accepted):
+        return accepted
+    new_id = _dig(accepted.body, CHECK_RULE_ID_PATH)
+    if not isinstance(new_id, str) or not new_id:
+        return Unknown(
+            f"HTTP {accepted.http_status} but no id at {'.'.join(CHECK_RULE_ID_PATH)}; the "
+            "check-rule was probably created, reconcile before republishing"
+        )
+    return Imported(id=new_id, http_status=accepted.http_status)
 
 
 def read_back(
