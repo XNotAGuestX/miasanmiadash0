@@ -4,7 +4,8 @@
       "grain": {
         "aggregation": "max",
         "labels": [
-          "service_instance_id"
+          "service_instance_id",
+          "postgresql_database_name"
         ]
       },
       "kind": "gauge",
@@ -12,7 +13,7 @@
         "db": "postgresql_database_name",
         "host": "host_name"
       },
-      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/ (postgresql.connections <-> postgresql.backends); labels from docs/DASH0_INVENTORY.md. Semantic note: backends counts all backend types; Datadog connections counts numbackends. Grain dedups resource-hash churn (docs/DASH0_INVENTORY.md#caveats)",
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/ (postgresql.connections <-> postgresql.backends); labels from docs/DASH0_INVENTORY.md. Semantic note: backends counts all backend types; Datadog connections counts numbackends. Grain dedups resource-hash churn (docs/DASH0_INVENTORY.md#caveats). Assumption (not reviewed): grain labels include postgresql_database_name because Datadog postgresql.connections is per database; with service_instance_id alone, avg:postgresql.connections{*} took the max over databases instead of averaging them",
       "reviewed": null,
       "scale": 1,
       "sourceUnit": "connection",
@@ -38,12 +39,19 @@
       "targetUnit": "1"
     },
     "postgresql.rows_deleted": {
+      "grain": {
+        "aggregation": "max",
+        "labels": [
+          "service_instance_id",
+          "postgresql_database_name"
+        ]
+      },
       "kind": "rate",
       "labels": {
         "db": "postgresql_database_name",
         "host": "host_name"
       },
-      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/ (postgresql.rows_deleted <-> postgresql.tup_deleted); Datadog reports a per-second rate of a cumulative counter; target type checked in Dash0 (Dash0 check 2026-11-07: count by (otel_metric_name, cpu_mode, system_network_direction, service_instance_id, host_name) (last_over_time({otel_metric_name=~...}[1h])) on dataset default)",
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/ (postgresql.rows_deleted <-> postgresql.tup_deleted); Datadog reports a per-second rate of a cumulative counter; target type checked in Dash0 (Dash0 check 2026-11-07: count by (otel_metric_name, cpu_mode, system_network_direction, service_instance_id, host_name) (last_over_time({otel_metric_name=~...}[1h])) on dataset default); Grain (assumption, not reviewed): max by (service_instance_id, postgresql_database_name) collapses resource-hash duplicates (docs/DASH0_INVENTORY.md#caveats, item 2) while keeping one series per database, so sums and averages over databases keep their meaning; a grain on service_instance_id alone would turn a sum over databases into a max.",
       "reviewed": null,
       "scale": 1,
       "sourceUnit": "row/second",
@@ -54,12 +62,19 @@
       "targetUnit": "{tup_deleted}"
     },
     "postgresql.rows_fetched": {
+      "grain": {
+        "aggregation": "max",
+        "labels": [
+          "service_instance_id",
+          "postgresql_database_name"
+        ]
+      },
       "kind": "rate",
       "labels": {
         "db": "postgresql_database_name",
         "host": "host_name"
       },
-      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/ (postgresql.rows_fetched <-> postgresql.tup_fetched); Datadog reports a per-second rate of a cumulative counter; target type checked in Dash0 (Dash0 check 2026-11-07: count by (otel_metric_name, cpu_mode, system_network_direction, service_instance_id, host_name) (last_over_time({otel_metric_name=~...}[1h])) on dataset default)",
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/ (postgresql.rows_fetched <-> postgresql.tup_fetched); Datadog reports a per-second rate of a cumulative counter; target type checked in Dash0 (Dash0 check 2026-11-07: count by (otel_metric_name, cpu_mode, system_network_direction, service_instance_id, host_name) (last_over_time({otel_metric_name=~...}[1h])) on dataset default); Grain (assumption, not reviewed): max by (service_instance_id, postgresql_database_name) collapses resource-hash duplicates (docs/DASH0_INVENTORY.md#caveats, item 2) while keeping one series per database, so sums and averages over databases keep their meaning; a grain on service_instance_id alone would turn a sum over databases into a max.",
       "reviewed": null,
       "scale": 1,
       "sourceUnit": "row/second",
@@ -70,12 +85,19 @@
       "targetUnit": "{tup_fetched}"
     },
     "postgresql.rows_inserted": {
+      "grain": {
+        "aggregation": "max",
+        "labels": [
+          "service_instance_id",
+          "postgresql_database_name"
+        ]
+      },
       "kind": "rate",
       "labels": {
         "db": "postgresql_database_name",
         "host": "host_name"
       },
-      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/ (postgresql.rows_inserted <-> postgresql.tup_inserted); Datadog reports a per-second rate of a cumulative counter; target type checked in Dash0 (Dash0 check 2026-11-07: count by (otel_metric_name, cpu_mode, system_network_direction, service_instance_id, host_name) (last_over_time({otel_metric_name=~...}[1h])) on dataset default)",
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/ (postgresql.rows_inserted <-> postgresql.tup_inserted); Datadog reports a per-second rate of a cumulative counter; target type checked in Dash0 (Dash0 check 2026-11-07: count by (otel_metric_name, cpu_mode, system_network_direction, service_instance_id, host_name) (last_over_time({otel_metric_name=~...}[1h])) on dataset default); Grain (assumption, not reviewed): max by (service_instance_id, postgresql_database_name) collapses resource-hash duplicates (docs/DASH0_INVENTORY.md#caveats, item 2) while keeping one series per database, so sums and averages over databases keep their meaning; a grain on service_instance_id alone would turn a sum over databases into a max.",
       "reviewed": null,
       "scale": 1,
       "sourceUnit": "row/second",
@@ -86,12 +108,19 @@
       "targetUnit": "{tup_inserted}"
     },
     "postgresql.rows_returned": {
+      "grain": {
+        "aggregation": "max",
+        "labels": [
+          "service_instance_id",
+          "postgresql_database_name"
+        ]
+      },
       "kind": "rate",
       "labels": {
         "db": "postgresql_database_name",
         "host": "host_name"
       },
-      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/ (postgresql.rows_returned <-> postgresql.tup_returned); Datadog reports a per-second rate of a cumulative counter; target type checked in Dash0 (Dash0 check 2026-11-07: count by (otel_metric_name, cpu_mode, system_network_direction, service_instance_id, host_name) (last_over_time({otel_metric_name=~...}[1h])) on dataset default)",
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/ (postgresql.rows_returned <-> postgresql.tup_returned); Datadog reports a per-second rate of a cumulative counter; target type checked in Dash0 (Dash0 check 2026-11-07: count by (otel_metric_name, cpu_mode, system_network_direction, service_instance_id, host_name) (last_over_time({otel_metric_name=~...}[1h])) on dataset default); Grain (assumption, not reviewed): max by (service_instance_id, postgresql_database_name) collapses resource-hash duplicates (docs/DASH0_INVENTORY.md#caveats, item 2) while keeping one series per database, so sums and averages over databases keep their meaning; a grain on service_instance_id alone would turn a sum over databases into a max.",
       "reviewed": null,
       "scale": 1,
       "sourceUnit": "row/second",
@@ -102,12 +131,19 @@
       "targetUnit": "{tup_returned}"
     },
     "postgresql.rows_updated": {
+      "grain": {
+        "aggregation": "max",
+        "labels": [
+          "service_instance_id",
+          "postgresql_database_name"
+        ]
+      },
       "kind": "rate",
       "labels": {
         "db": "postgresql_database_name",
         "host": "host_name"
       },
-      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/ (postgresql.rows_updated <-> postgresql.tup_updated); Datadog reports a per-second rate of a cumulative counter; target type checked in Dash0 (Dash0 check 2026-11-07: count by (otel_metric_name, cpu_mode, system_network_direction, service_instance_id, host_name) (last_over_time({otel_metric_name=~...}[1h])) on dataset default)",
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/ (postgresql.rows_updated <-> postgresql.tup_updated); Datadog reports a per-second rate of a cumulative counter; target type checked in Dash0 (Dash0 check 2026-11-07: count by (otel_metric_name, cpu_mode, system_network_direction, service_instance_id, host_name) (last_over_time({otel_metric_name=~...}[1h])) on dataset default); Grain (assumption, not reviewed): max by (service_instance_id, postgresql_database_name) collapses resource-hash duplicates (docs/DASH0_INVENTORY.md#caveats, item 2) while keeping one series per database, so sums and averages over databases keep their meaning; a grain on service_instance_id alone would turn a sum over databases into a max.",
       "reviewed": null,
       "scale": 1,
       "sourceUnit": "row/second",
@@ -290,7 +326,7 @@
       "matchers": {
         "system_network_direction": "receive"
       },
-      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/ (system.net.bytes_rcvd <-> system.network.io, direction receive); label values checked in Dash0 (Dash0 check 2026-11-07: count by (otel_metric_name, cpu_mode, system_network_direction, service_instance_id, host_name) (last_over_time({otel_metric_name=~...}[1h])) on dataset default)",
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/ (system.net.bytes_rcvd <-> system.network.io, direction receive); label values checked in Dash0 (Dash0 check 2026-11-07: count by (otel_metric_name, cpu_mode, system_network_direction, service_instance_id, host_name) (last_over_time({otel_metric_name=~...}[1h])) on dataset default); Loopback is kept: Datadog's network check excludes no interface by default (integrations-core@a9b9e42 network/datadog_checks/network/network.py: excluded_interfaces defaults to []; spec.yaml lists lo/lo0 only as an example; the agent's shipped network.d/conf.yaml.default sets no exclusion), and the OTel hostmetrics network scraper also includes every interface unless configured. No grain (assumption, not reviewed): a max by (service_instance_id) would turn the sum over interfaces and hosts into a max, and a dedup on (host_name, network_interface_name) relies on labels not yet verified on system.network.io; resource-hash duplicates were only observed on Postgres series.",
       "reviewed": null,
       "scale": 1,
       "sourceUnit": "byte/second",
@@ -308,7 +344,7 @@
       "matchers": {
         "system_network_direction": "transmit"
       },
-      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/ (system.net.bytes_sent <-> system.network.io, direction transmit); label values checked in Dash0 (Dash0 check 2026-11-07: count by (otel_metric_name, cpu_mode, system_network_direction, service_instance_id, host_name) (last_over_time({otel_metric_name=~...}[1h])) on dataset default)",
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/ (system.net.bytes_sent <-> system.network.io, direction transmit); label values checked in Dash0 (Dash0 check 2026-11-07: count by (otel_metric_name, cpu_mode, system_network_direction, service_instance_id, host_name) (last_over_time({otel_metric_name=~...}[1h])) on dataset default); Loopback is kept: Datadog's network check excludes no interface by default (integrations-core@a9b9e42 network/datadog_checks/network/network.py: excluded_interfaces defaults to []; spec.yaml lists lo/lo0 only as an example; the agent's shipped network.d/conf.yaml.default sets no exclusion), and the OTel hostmetrics network scraper also includes every interface unless configured. No grain (assumption, not reviewed): a max by (service_instance_id) would turn the sum over interfaces and hosts into a max, and a dedup on (host_name, network_interface_name) relies on labels not yet verified on system.network.io; resource-hash duplicates were only observed on Postgres series.",
       "reviewed": null,
       "scale": 1,
       "sourceUnit": "byte/second",

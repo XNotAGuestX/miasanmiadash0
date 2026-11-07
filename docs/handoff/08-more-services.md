@@ -40,7 +40,7 @@ The best second-monitor candidate.
 **Files:**
 - Create: `fixtures/datadog/integrations-core/kafka/{dashboards/kafka_dashboard.json,monitors/kafka_offline_partition.json,monitors/broker_produce_latency.json,monitors/kafka_high_producer_request_rate.json}`
 - Create: `mappings/datadog/kafka.json`, `fixtures/expected/kafka/`
-- Test: `tests/golden.test.ts` (new case `kafka golden`)
+- Test: `tests/test_golden.py` (new case `kafka golden`)
 
 **Mapping entries.** Verify each in Dash0 first.
 
