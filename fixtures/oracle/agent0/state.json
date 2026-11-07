@@ -1,0 +1,95 @@
+{
+  "cases": {
+    "docker_daemon/docker_dashboard": {
+      "adopted": true,
+      "answered_at": "2026-11-07T16:46:36Z",
+      "attempts": 0,
+      "dataset": "default",
+      "error": null,
+      "prompt_sha256": "00251170ce26098af5afd29f75164fa24f32c4a8e61e6551087145a8544cf511",
+      "status": "done",
+      "thread_id": "aff1389d-e057-40ae-bf62-0a1063ccc8be"
+    },
+    "kafka/kafka_dashboard": {
+      "adopted": true,
+      "answered_at": "2026-11-07T16:48:36Z",
+      "attempts": 0,
+      "dataset": "default",
+      "error": null,
+      "prompt_sha256": "a680f2cba53b9a5972164e26d394538161be1defce7d6d840028e2bac4db6e75",
+      "status": "done",
+      "thread_id": "bbe01e64-a0b8-40ec-88a7-95fbb50095ba"
+    },
+    "kafka/kafka_kraft_dashboard": {
+      "adopted": true,
+      "answered_at": "2026-11-07T16:49:53Z",
+      "attempts": 0,
+      "dataset": "default",
+      "error": null,
+      "prompt_sha256": "7b7befa282d2eab9158f1532fd40f04212165bc2154da632bb2a72ea08b64e41",
+      "status": "done",
+      "thread_id": "0919eed0-9c07-4f86-9d85-ed8528ee0d2f"
+    },
+    "nginx/NGINX-Metrics_dashboard": {
+      "adopted": true,
+      "answered_at": "2026-11-07T16:26:51Z",
+      "attempts": 0,
+      "dataset": "default",
+      "error": null,
+      "prompt_sha256": "e63572e2590ba44d8d6611b7c6a49260db7b546a492d2e92ae09343802f16975",
+      "status": "done",
+      "thread_id": null
+    },
+    "nginx/NGINX-Overview_dashboard": {
+      "adopted": true,
+      "answered_at": "2026-11-07T16:45:48Z",
+      "attempts": 0,
+      "dataset": "default",
+      "error": null,
+      "prompt_sha256": "a7eba334b0a10b2f317999d460ed0dcdba8f18ae9d814d63dd643ba2cc95c1e5",
+      "status": "done",
+      "thread_id": "703b3c8a-9b01-4b2a-b5e1-9117b7291f5f"
+    },
+    "nginx/plus_overview": {
+      "adopted": true,
+      "answered_at": "2026-11-07T16:46:55Z",
+      "attempts": 0,
+      "dataset": "default",
+      "error": null,
+      "prompt_sha256": "cd5781a563daf2c4ba52730e521798f3e3328eea772b3999de734c3e07457582",
+      "status": "done",
+      "thread_id": "5a13bb42-7dc1-43f3-ad05-3bd866e4981a"
+    },
+    "postgres/postgresql_dashboard": {
+      "adopted": true,
+      "answered_at": "2026-11-07T16:25:24Z",
+      "attempts": 0,
+      "dataset": "default",
+      "error": null,
+      "prompt_sha256": "ed213961a9c28c24fe615511dae02ad1097e6ae04102d2d30624eceb8d073136",
+      "status": "done",
+      "thread_id": null
+    },
+    "postgres/postgresql_screenboard_dashboard": {
+      "adopted": true,
+      "answered_at": "2026-11-07T16:32:50Z",
+      "attempts": 0,
+      "dataset": "default",
+      "error": null,
+      "prompt_sha256": "5615f1b6b686915f00f1afb557da38329a77ca24b79c363263408c874cd3cb77",
+      "status": "done",
+      "thread_id": null
+    },
+    "redisdb/overview": {
+      "adopted": true,
+      "answered_at": "2026-11-07T16:48:22Z",
+      "attempts": 0,
+      "dataset": "default",
+      "error": null,
+      "prompt_sha256": "de1701d8bc4feb958275a2a77fd10b543412626c02fce1ce8f126619f9011024",
+      "status": "done",
+      "thread_id": "9fb34f78-2637-45dd-aa0a-2d8ac8bf7ff3"
+    }
+  },
+  "version": 1
+}
