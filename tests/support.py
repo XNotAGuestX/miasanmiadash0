@@ -274,6 +274,42 @@ def panel_queries(panel: dict[str, Any]) -> list[str]:
     return [q["spec"]["plugin"]["spec"]["query"] for q in panel["spec"]["queries"]]
 
 
+def comparison(case: Case, unit: Unit) -> dict[str, Any]:
+    """Expected vs actual of one request case, for the HTML report (tests/report_html.py)."""
+    expected = case.expected
+    exp_promql = list(expected.get("promql") or [])
+    act_promql = panel_queries(unit.panel) if unit.panel else []
+    act_errors, act_warnings = codes(unit.diagnostics, "error"), codes(unit.diagnostics, "warning")
+    exp_errors, exp_warnings = set(expected.get("errors", [])), set(expected.get("warnings", []))
+    mismatch = []
+    if unit.outcome != expected["outcome"]:
+        mismatch.append("outcome")
+    if canonical_list(act_promql) != canonical_list(exp_promql):
+        mismatch.append("promql")
+    if act_errors != exp_errors or (
+        expected["outcome"] == "translated" and act_warnings != exp_warnings
+    ):
+        mismatch.append("codes")
+
+    def side(outcome: str, promql: list[str], errors: set[str], warnings: set[str]) -> Any:
+        return {
+            "outcome": outcome,
+            "promql": promql,
+            "canonical": canonical_list(promql),
+            "errors": sorted(errors),
+            "warnings": sorted(warnings),
+        }
+
+    return {
+        "case_id": case.case_id,
+        "reviewed": case.reviewed,
+        "source": case.source_item,
+        "expected": side(expected["outcome"], exp_promql, exp_errors, exp_warnings),
+        "actual": side(unit.outcome, act_promql, act_errors, act_warnings),
+        "mismatch": mismatch,
+    }
+
+
 # --------------------------------------------------------------------------- result helpers
 
 

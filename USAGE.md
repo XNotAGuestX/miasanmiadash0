@@ -7,4 +7,5 @@
 - `uv run scripts/run_oracle.py --mode judge` and `uv run scripts/crosscheck.py input --all` add the Agent0 judge and Haiku checks.
 - `uv run scripts/triage.py` colours every request and writes `fixtures/expected/TRIAGE.md` plus `verified.json` (green requests count as tests).
 - Humans verify as much as possible, red and yellow first, by setting `reviewed: true` (or a correction) in `fixtures/expected/<svc>/<id>/overrides.yaml`; `uv run scripts/render_review_dashboard.py --all` helps by rendering both sides as Perses dashboards.
+- After every `pytest` run that executes request cases, open `out/test-report/index.html` (the path is printed at the end) to compare expected and actual PromQL, outcome and diagnostic codes per request in the browser; failures come first, with a canonical PromQL diff.
 - A failing test means the converter or the expectation is wrong: fix the converter in `src/migrator`, or correct the expectation in `overrides.yaml`, then rerun `uv run pytest`.
