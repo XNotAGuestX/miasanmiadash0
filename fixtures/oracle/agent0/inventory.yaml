@@ -1,0 +1,170 @@
+# Agent0 answer, verbatim (receiver part), asked 2026-11-07 17:16 local via Dash0 UI chat.
+# Prompt: "Read-only question ... In dataset `default`, list every OpenTelemetry instrumentation
+# scope that currently emits metrics (last 24h) ... receiver scopes ... full list of metric names
+# with their type. Answer as YAML only."
+# Non-receiver scope counts (SDK/app instrumentation, 60 scopes) omitted here; see docs/DASH0_INVENTORY.md.
+# Cross-checked against docs/DASH0_INVENTORY.md (2026-11-07 14:50 UTC): consistent, JMX now 19 metrics.
+dataset: default
+time_range: {from: 2026-11-06T16:16:15Z, to: 2026-11-07T16:16:15Z}
+scope_count: 77
+receivers_not_found: [mysql, mongodb, elasticsearch, kubeletstats, k8scluster]
+receiver_scopes:
+  dockerstatsreceiver:
+    - {name: container.blockio.io_service_bytes_recursive, type: sum}
+    - {name: container.cpu.usage.kernelmode, type: sum}
+    - {name: container.cpu.usage.system, type: sum}
+    - {name: container.cpu.usage.total, type: sum}
+    - {name: container.cpu.usage.usermode, type: sum}
+    - {name: container.cpu.utilization, type: gauge}
+    - {name: container.memory.file, type: sum}
+    - {name: container.memory.percent, type: gauge}
+    - {name: container.memory.usage.limit, type: sum}
+    - {name: container.memory.usage.total, type: sum}
+    - {name: container.network.io.usage.rx_bytes, type: sum}
+    - {name: container.network.io.usage.rx_dropped, type: sum}
+    - {name: container.network.io.usage.rx_packets, type: sum}
+    - {name: container.network.io.usage.tx_bytes, type: sum}
+    - {name: container.network.io.usage.tx_dropped, type: sum}
+    - {name: container.network.io.usage.tx_packets, type: sum}
+    - {name: container.uptime, type: gauge}
+  hostmetricsreceiver:
+    - {name: system.cpu.logical.count, type: sum}
+    - {name: system.cpu.time, type: sum}
+    - {name: system.cpu.utilization, type: gauge}
+    - {name: system.disk.io, type: sum}
+    - {name: system.disk.io_time, type: sum}
+    - {name: system.disk.merged, type: sum}
+    - {name: system.disk.operation_time, type: sum}
+    - {name: system.disk.operations, type: sum}
+    - {name: system.disk.pending_operations, type: sum}
+    - {name: system.disk.weighted_io_time, type: sum}
+    - {name: system.filesystem.inodes.usage, type: sum}
+    - {name: system.filesystem.usage, type: sum}
+    - {name: system.cpu.load_average.15m, type: gauge}
+    - {name: system.cpu.load_average.1m, type: gauge}
+    - {name: system.cpu.load_average.5m, type: gauge}
+    - {name: system.memory.limit, type: sum}
+    - {name: system.memory.usage, type: sum}
+    - {name: system.memory.utilization, type: gauge}
+    - {name: system.network.connection.count, type: sum}
+    - {name: system.network.dropped, type: sum}
+    - {name: system.network.errors, type: sum}
+    - {name: system.network.io, type: sum}
+    - {name: system.network.packets, type: sum}
+    - {name: system.paging.faults, type: sum}
+    - {name: system.paging.operations, type: sum}
+    - {name: system.paging.usage, type: sum}
+    - {name: system.paging.utilization, type: gauge}
+    - {name: system.process.count, type: sum}
+    - {name: system.process.created, type: sum}
+    - {name: process.cpu.time, type: sum}
+    - {name: process.disk.io, type: sum}
+    - {name: process.memory.usage, type: sum}
+    - {name: process.memory.virtual, type: sum}
+    - {name: system.uptime, type: gauge}
+  httpcheckreceiver:
+    - {name: httpcheck.duration, type: gauge}
+    - {name: httpcheck.error, type: sum}
+    - {name: httpcheck.status, type: sum}
+  kafkametricsreceiver:
+    - {name: kafka.brokers, type: sum}
+    - {name: kafka.consumer_group.lag, type: gauge}
+    - {name: kafka.consumer_group.lag_sum, type: gauge}
+    - {name: kafka.consumer_group.members, type: sum}
+    - {name: kafka.consumer_group.offset, type: gauge}
+    - {name: kafka.consumer_group.offset_sum, type: gauge}
+    - {name: kafka.partition.current_offset, type: gauge}
+    - {name: kafka.partition.oldest_offset, type: gauge}
+    - {name: kafka.partition.replicas, type: sum}
+    - {name: kafka.partition.replicas_in_sync, type: sum}
+    - {name: kafka.topic.partitions, type: sum}
+  nginxreceiver:
+    - {name: nginx.connections_accepted, type: sum}
+    - {name: nginx.connections_current, type: sum}
+    - {name: nginx.connections_handled, type: sum}
+    - {name: nginx.requests, type: sum}
+  postgresqlreceiver:
+    - {name: postgresql.backends, type: sum}
+    - {name: postgresql.bgwriter.buffers.allocated, type: sum}
+    - {name: postgresql.bgwriter.buffers.writes, type: sum}
+    - {name: postgresql.bgwriter.checkpoint.count, type: sum}
+    - {name: postgresql.bgwriter.duration, type: sum}
+    - {name: postgresql.bgwriter.maxwritten, type: sum}
+    - {name: postgresql.blks_hit, type: sum}
+    - {name: postgresql.blks_read, type: sum}
+    - {name: postgresql.blocks_read, type: sum}
+    - {name: postgresql.commits, type: sum}
+    - {name: postgresql.connection.max, type: gauge}
+    - {name: postgresql.database.count, type: sum}
+    - {name: postgresql.db_size, type: sum}
+    - {name: postgresql.deadlocks, type: sum}
+    - {name: postgresql.index.scans, type: sum}
+    - {name: postgresql.index.size, type: gauge}
+    - {name: postgresql.operations, type: sum}
+    - {name: postgresql.rollbacks, type: sum}
+    - {name: postgresql.rows, type: sum}
+    - {name: postgresql.table.count, type: sum}
+    - {name: postgresql.table.size, type: sum}
+    - {name: postgresql.table.vacuum.count, type: sum}
+    - {name: postgresql.tup_deleted, type: sum}
+    - {name: postgresql.tup_fetched, type: sum}
+    - {name: postgresql.tup_inserted, type: sum}
+    - {name: postgresql.tup_returned, type: sum}
+    - {name: postgresql.tup_updated, type: sum}
+  prometheusreceiver:
+    - {name: demo_ad_served_total, type: sum}
+    - {name: scrape_duration_seconds, type: gauge}
+    - {name: scrape_samples_post_metric_relabeling, type: gauge}
+    - {name: scrape_samples_scraped, type: gauge}
+    - {name: scrape_series_added, type: gauge}
+    - {name: up, type: gauge}
+  redisreceiver:
+    - {name: redis.clients.blocked, type: sum}
+    - {name: redis.clients.connected, type: sum}
+    - {name: redis.clients.max_input_buffer, type: gauge}
+    - {name: redis.clients.max_output_buffer, type: gauge}
+    - {name: redis.commands, type: gauge}
+    - {name: redis.commands.processed, type: sum}
+    - {name: redis.connections.received, type: sum}
+    - {name: redis.connections.rejected, type: sum}
+    - {name: redis.cpu.time, type: sum}
+    - {name: redis.db.avg_ttl, type: gauge}
+    - {name: redis.db.expires, type: gauge}
+    - {name: redis.db.keys, type: gauge}
+    - {name: redis.keys.evicted, type: sum}
+    - {name: redis.keys.expired, type: sum}
+    - {name: redis.keyspace.hits, type: sum}
+    - {name: redis.keyspace.misses, type: sum}
+    - {name: redis.latest_fork, type: gauge}
+    - {name: redis.memory.fragmentation_ratio, type: gauge}
+    - {name: redis.memory.lua, type: gauge}
+    - {name: redis.memory.peak, type: gauge}
+    - {name: redis.memory.rss, type: gauge}
+    - {name: redis.memory.used, type: gauge}
+    - {name: redis.net.input, type: sum}
+    - {name: redis.net.output, type: sum}
+    - {name: redis.rdb.changes_since_last_save, type: sum}
+    - {name: redis.replication.backlog_first_byte_offset, type: gauge}
+    - {name: redis.replication.offset, type: gauge}
+    - {name: redis.slaves.connected, type: sum}
+    - {name: redis.uptime, type: sum}
+  jmx:
+    - {name: kafka.controller.active.count, type: sum}
+    - {name: kafka.isr.operation.count, type: sum}
+    - {name: kafka.lag.max, type: gauge}
+    - {name: kafka.leaderElection.unclean.count, type: sum}
+    - {name: kafka.logs.flush.Count, type: sum}
+    - {name: kafka.logs.flush.time.50p, type: gauge}
+    - {name: kafka.logs.flush.time.99p, type: gauge}
+    - {name: kafka.message.count, type: sum}
+    - {name: kafka.network.io, type: sum}
+    - {name: kafka.partition.count, type: sum}
+    - {name: kafka.partition.offline, type: sum}
+    - {name: kafka.partition.underReplicated, type: sum}
+    - {name: kafka.purgatory.size, type: sum}
+    - {name: kafka.request.count, type: sum}
+    - {name: kafka.request.failed, type: sum}
+    - {name: kafka.request.queue, type: sum}
+    - {name: kafka.request.time.50p, type: gauge}
+    - {name: kafka.request.time.99p, type: gauge}
+    - {name: kafka.request.time.total, type: sum}
