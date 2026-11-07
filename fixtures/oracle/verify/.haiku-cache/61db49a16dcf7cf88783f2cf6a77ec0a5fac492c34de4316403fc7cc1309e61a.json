@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The candidate multiplies by 100 twice, and neither constant is in the Datadog source. That scales the result by 10000 relative to the rate of system.disk.io_time, so the numbers are wrong.",
+      "system.disk.io_time is cumulative seconds, so rate() gives a busy ratio in 0-1 per device. Datadog system.io.util is a percent. The unit difference should be stated in notes with a proposed scale of 100 and a documentation link, not applied in promql.",
+      "The quantity (device busy time) and the avg over all devices match the Datadog request, and the unfiltered $scope variable is correctly dropped. The corrected promql would be avg(rate({otel_metric_name=\"system.disk.io_time\", otel_metric_type=\"sum\"}[$__rate_interval])) with the scale in notes."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

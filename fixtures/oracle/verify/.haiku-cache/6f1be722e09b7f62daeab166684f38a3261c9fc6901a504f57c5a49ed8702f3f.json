@@ -1,0 +1,24 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "Selector uses otel_metric_type=\"gauge\" but postgresql.tup_updated is a monotonic sum in the dataset (dataset_types: sum); the matcher should be otel_metric_type=\"sum\".",
+      "Template variable $db (tag prefix db) is not turned into a matcher. It should filter on the observed label postgresql_database_name, since db_namespace is absent in the dataset.",
+      "Template variable $host (tag prefix host) is not turned into a matcher. It should filter on host_name=~\"$host\", which is observed in the dataset.",
+      "$scope has no prefix and default *, so dropping it is correct; $table is not used by the query.",
+      "Aggregation differs: the candidate averages rate() values, while the Datadog query averages the raw metric per db. Applying rate() also changes the quantity to a per-second rate unless the Datadog series is already a rate; the source does not show this.",
+      "Grouping by postgresql_database_name matches the Datadog by {db} grouping and uses the observed label name.",
+      "Outcome translated is appropriate, since an OTel counterpart measuring rows updated exists in the dataset."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

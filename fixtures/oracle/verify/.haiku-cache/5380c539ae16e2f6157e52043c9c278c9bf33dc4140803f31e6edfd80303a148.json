@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Formula 1 (nginx.connections.active) is translated as 100 * (active - waiting), which is not the Datadog quantity. The candidate invents a subtraction and a constant that do not appear in the source.",
+      "The constant 100 is not in the Datadog source, which breaks the no-constants rule. Nothing in the definitions shows a percent-vs-ratio scale that would justify it.",
+      "Formula 2 (nginx.connections.idle) maps to state=\"waiting\". That is plausible, but the candidate does not justify the equivalence, and it is only correct if the dataset's state value for idle is \"waiting\".",
+      "The $host template variable (prefix host, default *) is dropped. The expected host matcher (host_name or the observed label) is absent, so the grouping and series scope differ from Datadog. The observed dataset labels only list state, so the converter must confirm the host label name before translating.",
+      "Outcome translated is acceptable: the metric exists in the dataset and a direct OTel mapping is available, so blocking is not required."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

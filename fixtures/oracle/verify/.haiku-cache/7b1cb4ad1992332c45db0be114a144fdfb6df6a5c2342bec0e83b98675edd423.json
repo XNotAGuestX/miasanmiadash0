@@ -1,0 +1,23 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Quantity differs: the Datadog query has no rate or rollup function and plots the raw index_scans value, but the candidate wraps the OTel monotonic sum in rate(), giving scans per second.",
+      "Unit differs as a consequence: the Datadog value is a count of scans, while the candidate's rate() yields {scans}/s.",
+      "Aggregation differs: Datadog uses avg by {index}, but the candidate uses sum by (postgresql_index_name); avg across series is not a sum.",
+      "Grouping label is unverified and likely wrong: postgresql_index_name is not among the observed dataset labels for postgresql.index.scans, so the grouping cannot be confirmed to exist in the target dataset.",
+      "Series set differs: the $db (prefix db) and $host (prefix host) template variables should become matchers postgresql_database_name=~\"$db\" and host_name=~\"$host\", but the candidate drops them. The $table variable (prefix table) should likewise become postgresql_table_name=~\"$table\" and is also dropped.",
+      "Outcome 'translated' is the right choice since no function blocks the request, but the PromQL itself does not reproduce the Datadog expression."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

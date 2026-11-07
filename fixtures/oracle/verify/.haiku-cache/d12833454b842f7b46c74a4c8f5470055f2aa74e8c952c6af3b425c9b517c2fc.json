@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The first PromQL term uses a fixed range [5m] on rate(), which the hard rules forbid; the only allowed range is [$__rate_interval].",
+      "The $host template variable has prefix host and default *, so the rules require a matcher host=~\"$host\" on both metrics. The candidate omits it, so the series set is not the same as the Datadog request.",
+      "The Datadog $scope variable has no prefix and default *, so dropping it is correct. The $key variable is not used in any query, so ignoring it is also correct.",
+      "Quantity, unit (hit ratio times 100 as in the source) and aggregation (avg of per-series rates) match the Datadog request. The outcome is translated, which is correct since no function is used."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

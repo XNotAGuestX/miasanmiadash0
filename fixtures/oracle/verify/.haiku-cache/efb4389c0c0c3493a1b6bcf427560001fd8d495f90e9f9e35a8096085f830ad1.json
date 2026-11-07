@@ -1,0 +1,23 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The candidate hardcodes the constant 100, which is not in the Datadog source. The percent-vs-ratio scale must go in notes with a documentation link, not in promql.",
+      "Aggregation mismatch: Datadog 'max:' with no group-by reduces across all hosts with max, but the candidate applies min over per-host averages.",
+      "Grouping mismatch: the Datadog query has no 'by' clause, but the candidate groups by host_name, which also is not among the observed dataset labels for system_cpu_time.",
+      "Series count differs: Datadog yields one aggregated series for the scope, while the candidate yields one series per host.",
+      "Quantity: system.cpu.time is a cumulative seconds sum per cpu and cpu_mode; its rate is a per-cpu fraction of time in wait, which approximates system.cpu.iowait only after averaging across cpus, and the candidate's avg-by-host does not match the Datadog ungrouped max.",
+      "Unit: system.cpu.iowait is a percent, while the candidate is a ratio scaled by a hardcoded 100."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

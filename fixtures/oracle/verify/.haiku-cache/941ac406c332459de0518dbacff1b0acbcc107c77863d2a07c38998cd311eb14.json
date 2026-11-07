@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Aggregation mismatch: the Datadog query is sum:redis.net.commands with no grouping, so it sums across all series. The candidate uses avg(...), which yields a per-series average instead of the total.",
+      "Series selection is incomplete: the $host template variable has tag prefix 'host' and default '*', so the converter should add a host=~\"$host\" matcher. The candidate omits it, so the series set differs.",
+      "Quantity and unit match: redis.commands.processed is a monotonic sum of '{command}', the same quantity as redis.net.commands. rate(...[$__rate_interval]) is valid on this monotonic sum.",
+      "Dropping $scope (no prefix, default '*') and leaving $key unused is consistent with the rules. The translated outcome is correct because an exact translation exists.",
+      "Correct PromQL would be sum(rate({otel_metric_name=\"redis.commands.processed\", otel_metric_type=\"sum\", host=~\"$host\"}[$__rate_interval])), assuming the host label exists in the dataset; host is not in the observed label list, so this needs verification."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

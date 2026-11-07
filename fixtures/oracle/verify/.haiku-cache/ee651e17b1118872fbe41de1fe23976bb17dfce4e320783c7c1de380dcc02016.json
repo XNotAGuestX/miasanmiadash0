@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The candidate multiplies the result by 100, a numeric constant that does not appear in the Datadog source query. The hard rules forbid this, so the unit and quantity no longer match bytes/s.",
+      "Mapping system.network.io with system_network_direction=\"transmit\" to system.net.bytes_sent is a reasonable match, and system_network_direction is an observed dataset label, so the label name is correct.",
+      "The sum across all series with no grouping matches the Datadog query, and the $scope template variable without a prefix is correctly dropped.",
+      "rate() over a monotonic sum is acceptable here because the Datadog bytes_sent metric is a per-second rate, and the candidate uses only $__rate_interval.",
+      "The translated outcome is appropriate since no function blocks the request. The fix is to remove the factor 100 and keep the rate-based sum."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

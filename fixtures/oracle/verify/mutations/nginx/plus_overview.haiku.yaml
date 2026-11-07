@@ -1,0 +1,282 @@
+# Claude Haiku cross-check of each candidate against the Datadog request (scripts/crosscheck.py input).
+# haiku verdicts for nginx/plus_overview. Triage only, never approval: humans set reviewed: true.
+verifier: haiku
+meta:
+  tool: scripts/crosscheck.py
+  model: claude-haiku-5-5
+  effort: medium
+  max_tokens: 16000
+  structured_output: output_config.format json_schema
+  system_prompt_sha256: e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971
+  schema_sha256: db0053dd6f2478874e3174dd255c1254e11ec857cb649947efa0e76e6856f9c1
+  cache: fixtures/oracle/verify/.haiku-cache
+results:
+- source_path: widgets[1].definition.widgets[1].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'Aggregation differs: Datadog uses sum:, the candidate uses avg(), which divides by the series count instead of summing them.'
+  - 'Quantity differs: nginx.connections_accepted is a monotonic sum, so the Datadog value should be sum(rate(...[$__rate_interval])) per the converter''s rate rule. The candidate reads the raw cumulative counter with no rate().'
+  - Template variable $host has tag prefix host and default *, so the converter must emit a matcher such as host label =~"$host". The candidate drops it, so the series set is wider than the Datadog request.
+  - Outcome translated is acceptable because the metric exists in the dataset and maps directly; the defect is in the PromQL, not the blocking decision.
+  checks:
+    quantity: differs
+    unit: ok
+    aggregation: differs
+    grouping: ok
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: b784fb7bf6d48c0a
+- source_path: widgets[1].definition.widgets[1].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - The PromQL multiplies the result by a constant 100 that does not appear in the Datadog source; numeric constants not in the source are forbidden, and the scale is not justified by a unit difference (the metric is a plain connection count in {connections}).
+  - The Datadog template variable $host (prefix host, default *) should become a matcher on the host label (e.g. host_name=~"$host"), but the candidate drops it, so the candidate covers all series instead of the same filtered set.
+  - The metric mapping nginx.connections.accepted to nginx.connections_accepted (monotonic sum, in dataset) is plausible, and translating rather than blocking is the correct outcome.
+  checks:
+    quantity: differs
+    unit: ok
+    aggregation: ok
+    grouping: ok
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: 0b4c31e3ccb2cfb7
+- source_path: widgets[1].definition.widgets[1].definition.requests[0]#sibling_metric
+  verdict: block
+  reasons:
+  - 'Wrong quantity: the Datadog query is nginx.connections.accepted, but the candidate selects nginx.connections_handled, which measures handled connections, not accepted ones.'
+  - The template variable $host (tag prefix host, default *) should become a matcher on the host label (=~"$host"), but the candidate omits it, so grouping and series selection differ.
+  - The candidate uses no rate() on the sum, and no accepted-connections metric definition is provided to justify the sum aggregation. The correct metric should be looked up, and if none exists the request should be blocked with MISSING_METRIC_MAPPING.
+  checks:
+    quantity: differs
+    unit: n/a
+    aggregation: differs
+    grouping: differs
+    series_count: differs
+    outcome: differs
+  method: haiku
+  cache: 9284fe7a89fb4dc1
+- source_path: widgets[1].definition.widgets[1].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons:
+  - otel_metric_definitions is empty, so the provided evidence contains no OTel metric that measures nginx accepted connections; blocking with MISSING_METRIC_MAPPING is consistent with the supplied catalog
+  - If the target catalog contains the OTel nginx receiver's monotonic cumulative sum for accepted connections, an exact translation (rate over that sum, grouped by the same series) would exist and this block would be wrong; re-check against a catalog that includes that metric
+  - Blocking is the correct outcome only under the supplied evidence; the query has no function or formula that would itself force a block
+  checks:
+    quantity: n/a
+    unit: n/a
+    aggregation: n/a
+    grouping: n/a
+    series_count: n/a
+    outcome: ok
+  method: haiku
+  cache: c23650171cef1fd1
+- source_path: widgets[1].definition.widgets[2].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - Datadog asks for sum of nginx.connections.active filtered by the host template variable; the candidate computes avg(state=active) minus sum(state=waiting), which is a different quantity.
+  - The subtraction introduces a waiting-connections term that is not in the request, and the avg aggregation does not match the Datadog sum.
+  - The candidate drops the $host template matcher (host prefix, default *), so grouping and scope differ. The dataset does not list a host label, so the correct label name needs checking before it is added.
+  - A translation with state="active" and sum aggregation over nginx.connections_current (non-monotonic sum, unit {connections}) would match the request, so translated is the right outcome.
+  checks:
+    quantity: differs
+    unit: ok
+    aggregation: differs
+    grouping: differs
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: 18500cbd31775ffc
+- source_path: widgets[1].definition.widgets[2].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - The candidate computes 100 * (active - waiting), but the Datadog query is sum:nginx.connections.active{$host}, which is only the active connections. The waiting series and the subtraction are extra.
+  - The constant 100 is not in the Datadog source and is a percent scale that the rules do not allow in promql.
+  - The $host template variable (prefix host, default *) is dropped. It should become a host label matcher such as host_name=~"$host", though the observed dataset labels do not show which host label name to use.
+  - 'The outcome is translated, which is correct because an exact translation exists: sum by none over nginx.connections_current with state="active" and the host matcher.'
+  checks:
+    quantity: differs
+    unit: differs
+    aggregation: ok
+    grouping: ok
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: a6995da688bf50f5
+- source_path: widgets[1].definition.widgets[2].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons:
+  - The request has no Datadog functions and only a plain sum over nginx.connections.active with a host template variable, so the block is not caused by a function rule.
+  - otel_metric_definitions is empty, so no OTel metric in the provided catalog measures this quantity, and MISSING_METRIC_MAPPING is the correct error.
+  - The candidate is blocked, so there is no PromQL to compare on quantity, unit, aggregation, grouping or series.
+  checks:
+    quantity: n/a
+    unit: n/a
+    aggregation: n/a
+    grouping: n/a
+    series_count: n/a
+    outcome: ok
+  method: haiku
+  cache: a4b31a2cc9dcd327
+- source_path: widgets[1].definition.widgets[3].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'Aggregation differs: Datadog sum:nginx.connections.idle sums across series, but the candidate wraps the selector in avg(), which yields a per-series mean instead of the total.'
+  - Template variable $host (prefix host, default *) is dropped; it should become a matcher like host_name=~"$host" (label name to verify against the dataset), so the candidate covers all series rather than the filtered set.
+  - Series set differs as a consequence of the missing host matcher and the avg aggregation.
+  - Quantity mapping idle to state="waiting" on nginx.connections_current is plausible (both count idle keepalive connections) and the metric is a non-monotonic sum with no rate needed, so the metric choice is acceptable.
+  - Outcome translated is appropriate since an exact translation exists; only the aggregation and host filter need fixing.
+  checks:
+    quantity: ok
+    unit: ok
+    aggregation: differs
+    grouping: differs
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: 176e90857f52126d
+- source_path: widgets[1].definition.widgets[3].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'Wrong state: the Datadog metric nginx.connections.idle counts idle connections, but the candidate selects state="waiting".'
+  - 'Invented constant: the candidate multiplies by 100, which is not in the Datadog source and is not a unit scale. The rules forbid it.'
+  - 'Template variable dropped: $host has prefix host and default *, so it should become a host matcher (e.g. host_name=~"$host"). The candidate omits it. Only the state label is observed in the dataset, so the correct host label cannot be verified from the provided data.'
+  - 'Series selection differs: the candidate''s series set (waiting, scaled by 100) does not match the Datadog series (idle, unscaled, filtered by host).'
+  checks:
+    quantity: differs
+    unit: ok
+    aggregation: ok
+    grouping: ok
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: e376ca93e431aa92
+- source_path: widgets[1].definition.widgets[3].definition.requests[0]#outcome_flip
+  verdict: nit
+  reasons:
+  - Candidate is blocked with MISSING_METRIC_MAPPING, and otel_metric_definitions is empty, so no OTel metric can be confirmed to measure the same quantity; the block cannot be verified against the catalog.
+  - The OTel nginx receiver may expose waiting connections as nginx.connections_current with a state attribute (e.g. state="waiting"). If that metric is defined in the catalog, an exact translation could exist and the block would be wrong; check the catalog before accepting the block.
+  - The Datadog query is sum:nginx.connections.idle{$host} with no grouping and no formula. The $host template variable (prefix host, default *) would map to host_name=~"$host" if a translation exists.
+  checks:
+    quantity: n/a
+    unit: n/a
+    aggregation: n/a
+    grouping: n/a
+    series_count: n/a
+    outcome: n/a
+  method: haiku
+  cache: c8d8e36c93e01e59
+- source_path: widgets[1].definition.widgets[5].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'Aggregation differs: Datadog uses sum across the matching series, but the candidate wraps the selector in avg(), which returns a mean rather than a total.'
+  - 'Quantity and unit match: nginx.requests is a monotonic sum counting {requests}, consistent with nginx.requests.total.'
+  - The template variable $host (tag prefix host, default *) should become a matcher host=~"$host"; the candidate drops it. The observed dataset labels do not list a host label, so the label name needs confirming before the matcher is finalised.
+  - Outcome translated is appropriate because the request uses no Datadog functions.
+  - 'Monotonic sum with no rate or increase: the converter''s rate convention for monotonic sums is not reflected in the candidate.'
+  checks:
+    quantity: ok
+    unit: ok
+    aggregation: differs
+    grouping: ok
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: b2923250381d30d5
+- source_path: widgets[1].definition.widgets[5].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - The candidate multiplies the result by a constant 100 that is not in the Datadog source; this changes the quantity and violates the no-invented-constants rule.
+  - The template variable $host with tag prefix host should become a matcher host=~"$host" (default * kept as a filter), but the candidate drops it, so the series set differs from the request.
+  - The metric mapping nginx.requests.total -> nginx.requests (monotonic sum) and the translated outcome are appropriate; the sum aggregation matches the Datadog sum.
+  checks:
+    quantity: differs
+    unit: ok
+    aggregation: ok
+    grouping: differs
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: a01b56f93f23f42d
+- source_path: widgets[1].definition.widgets[5].definition.requests[0]#sibling_metric
+  verdict: block
+  reasons:
+  - Candidate maps nginx.requests.total (requests) to nginx.connections_accepted (connections, unit {connections}), a different quantity.
+  - The Datadog template variable $host (tag prefix host, default *) should become a host label matcher =~"$host"; the candidate omits it.
+  - No OTel metric in the definitions measures requests, so the correct outcome is blocked with MISSING_METRIC_MAPPING, not translated.
+  - Candidate outcome translated is wrong for this request.
+  checks:
+    quantity: differs
+    unit: differs
+    aggregation: ok
+    grouping: differs
+    series_count: differs
+    outcome: differs
+  method: haiku
+  cache: 4fdea67d31efcfe4
+- source_path: widgets[1].definition.widgets[5].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons:
+  - Candidate is blocked with MISSING_METRIC_MAPPING, and otel_metric_definitions is empty, so no OTel metric is shown to measure nginx.requests.total.
+  - Without a catalog entry for a counter equivalent to nginx.requests.total, an exact translation cannot be established, so blocking is the conservative outcome the deterministic rules support.
+  - The host template variable with prefix host would map to host_name=~"$host" only if a suitable metric existed, so it does not change the blocking decision.
+  - If a matching OTel monotonic sum is later added to the catalog, this expectation should be revisited to check for a translated outcome.
+  checks:
+    quantity: n/a
+    unit: n/a
+    aggregation: n/a
+    grouping: n/a
+    series_count: n/a
+    outcome: ok
+  method: haiku
+  cache: b4106692efc80c48
+- source_path: widgets[6].definition.widgets[0].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - Formula query1 (nginx.connections.active) is translated as avg(...) minus sum(state="waiting"); it should be a plain sum of the state="active" series with no subtraction.
+  - Formula query2 (nginx.connections.idle) is translated as sum(state="waiting"); the Datadog metric is idle connections, and "waiting" is not in the Datadog source. The PromQL needs the idle state value, which must be verified against the observed dataset values for state.
+  - The Datadog request has two displayed formulas, so two series are expected. The candidate's first formula combines both metrics into one expression, which changes the series set.
+  - The template variable $host (tag prefix host, default *) must become a host matcher such as host=~"$host". Neither PromQL string includes it.
+  - The outcome is translated, which is correct because an OTel metric measures the same quantity (nginx.connections_current with a state attribute), so the translated outcome is not the problem.
+  checks:
+    quantity: differs
+    unit: ok
+    aggregation: differs
+    grouping: differs
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: f5752f6119807615
+- source_path: widgets[6].definition.widgets[0].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - Formula 1 (nginx.connections.active) is translated as 100 * (active - waiting), which is not the Datadog quantity. The candidate invents a subtraction and a constant that do not appear in the source.
+  - The constant 100 is not in the Datadog source, which breaks the no-constants rule. Nothing in the definitions shows a percent-vs-ratio scale that would justify it.
+  - Formula 2 (nginx.connections.idle) maps to state="waiting". That is plausible, but the candidate does not justify the equivalence, and it is only correct if the dataset's state value for idle is "waiting".
+  - The $host template variable (prefix host, default *) is dropped. The expected host matcher (host_name or the observed label) is absent, so the grouping and series scope differ from Datadog. The observed dataset labels only list state, so the converter must confirm the host label name before translating.
+  - 'Outcome translated is acceptable: the metric exists in the dataset and a direct OTel mapping is available, so blocking is not required.'
+  checks:
+    quantity: differs
+    unit: differs
+    aggregation: ok
+    grouping: differs
+    series_count: differs
+    outcome: ok
+  method: haiku
+  cache: 5380c539ae16e2f6
+- source_path: widgets[6].definition.widgets[0].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons:
+  - The candidate blocks with MISSING_METRIC_MAPPING, and otel_metric_definitions is empty, so no OTel metric is available to establish an exact mapping for nginx.connections.active or nginx.connections.idle.
+  - Blocking is the conservative outcome here. If a definition is later supplied showing a monotonic or gauge metric with a state attribute (active/idle), the converter should re-evaluate and translate with the state matcher instead of blocking.
+  - No Datadog function appears in the queries or formulas, so the block is not caused by a function rule.
+  checks:
+    quantity: n/a
+    unit: n/a
+    aggregation: n/a
+    grouping: n/a
+    series_count: n/a
+    outcome: ok
+  method: haiku
+  cache: 1e3f0728d8964bcb

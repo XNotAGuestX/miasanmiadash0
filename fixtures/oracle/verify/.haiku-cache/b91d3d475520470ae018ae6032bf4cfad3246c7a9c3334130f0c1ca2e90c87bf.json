@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "Datadog groups by docker_image, but the candidate's avg() has no by-clause, so all containers and devices collapse into one series.",
+      "The correct grouping label in the dataset is container_image_name (observed), so the PromQL should be avg by (container_image_name)(rate(...)).",
+      "The rate() over a monotonic sum with $__rate_interval is acceptable, and the operation=\"read\" filter matches the read-bytes intent.",
+      "The scope template variable has no prefix and default *, so dropping it is correct.",
+      "The candidate's series count (one aggregate series versus one per image) therefore differs from the Datadog request."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

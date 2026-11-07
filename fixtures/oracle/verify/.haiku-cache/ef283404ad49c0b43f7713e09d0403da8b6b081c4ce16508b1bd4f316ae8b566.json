@@ -1,0 +1,19 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "ok",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "otel_metric_definitions is empty, so no OTel metric in the supplied catalog measures postgresql.rows_updated; blocking with MISSING_METRIC_MAPPING is correct.",
+      "If a catalog entry for an OTel row-update counter becomes available, re-check whether it is a monotonic sum and whether its attributes can express the by {db} grouping; the candidate would then need translating, not blocking."
+    ],
+    "verdict": "pass"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

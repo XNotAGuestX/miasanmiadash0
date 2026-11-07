@@ -39,6 +39,23 @@ def _cmd_convert(args: argparse.Namespace) -> int:
     return result.exit_code
 
 
+def _cmd_fetch(args: argparse.Namespace) -> int:
+    import os
+
+    from migrator.fetch import run_fetch
+    from migrator.source.asset import FetchSelection, SourceFetchError
+
+    sel = FetchSelection(tuple(args.dashboard_id or ()), tuple(args.monitor_id or ()))
+    try:
+        written = run_fetch(args.source, sel, args.out, os.environ)
+    except (InputError, SourceFetchError) as err:
+        print(f"error: {err}", file=sys.stderr)
+        return 1
+    for rel in written:
+        print(f"FETCHED {rel}")
+    return 0
+
+
 def _cmd_publish(args: argparse.Namespace) -> int:
     import os
 
@@ -98,6 +115,12 @@ def build_parser() -> argparse.ArgumentParser:
     conv.add_argument("--format", choices=["json", "yaml"], default="json")
     conv.add_argument("--project", default="datadog-migration", help="Perses project name")
 
+    fet = sub.add_parser("fetch", help="download selected source assets by ID (read-only)")
+    fet.add_argument("--source", required=True, help="source provider id, e.g. datadog")
+    fet.add_argument("--dashboard-id", action="append", help="dashboard ID (repeatable)")
+    fet.add_argument("--monitor-id", action="append", help="monitor ID (repeatable)")
+    fet.add_argument("--out", required=True, help="output directory (must be empty)")
+
     pub = sub.add_parser("publish", help="import converted artifacts into Dash0 (create-only)")
     pub.add_argument("--from", dest="source_dir", required=True, help="a convert output directory")
     pub.add_argument("--dry-run", action="store_true", help="print the plan; send nothing")
@@ -130,6 +153,8 @@ def main(argv: list[str] | None = None) -> int:
         args, extra = parser.parse_known_args(argv[:1])
         return passthrough[argv[0]](args, argv[1:])
     args = parser.parse_args(argv)
+    if args.command == "fetch":
+        return _cmd_fetch(args)
     if args.command == "publish":
         return _cmd_publish(args)
     return _cmd_convert(args)

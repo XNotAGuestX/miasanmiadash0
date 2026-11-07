@@ -19,4 +19,14 @@ fetch kafka/assets/monitors/kafka_offline_partition.json kafka/monitors/kafka_of
 fetch kafka/assets/monitors/broker_produce_latency.json kafka/monitors/broker_produce_latency.json
 fetch kafka/assets/monitors/kafka_high_producer_request_rate.json kafka/monitors/kafka_high_producer_request_rate.json
 fetch docker_daemon/assets/dashboards/docker_dashboard.json docker_daemon/dashboards/docker_dashboard.json
+fetch redisdb/assets/dashboards/overview.json redisdb/dashboards/overview.json
+fetch redisdb/assets/monitors/high_mem.json redisdb/monitors/high_mem.json
+fetch nginx/assets/dashboards/NGINX-Metrics_dashboard.json nginx/dashboards/NGINX-Metrics_dashboard.json
+fetch nginx/assets/monitors/4xx.json nginx/monitors/4xx.json
+fetch nginx/assets/monitors/5xx.json nginx/monitors/5xx.json
+fetch nginx/assets/monitors/conn_dropped.json nginx/monitors/conn_dropped.json
+fetch nginx/assets/monitors/upstream_health_check_failures.json nginx/monitors/upstream_health_check_failures.json
+fetch nginx/assets/monitors/upstream_latency.json nginx/monitors/upstream_latency.json
+fetch nginx/assets/monitors/upstream_peer_fails.json nginx/monitors/upstream_peer_fails.json
+fetch nginx/assets/monitors/worker_crashes.json nginx/monitors/worker_crashes.json
 fetch LICENSE LICENSE

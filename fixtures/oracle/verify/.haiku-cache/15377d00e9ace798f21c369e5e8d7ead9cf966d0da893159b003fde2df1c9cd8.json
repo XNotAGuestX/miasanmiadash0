@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Datadog postgresql.connections counts open connections, but the candidate uses postgresql.db_size, which measures database size in bytes (unit By). These are different quantities.",
+      "The candidate's unit (bytes) does not match the connection count the Datadog query displays, so no unit scale would make it equivalent.",
+      "Aggregation (avg) and grouping (by db mapped to postgresql_database_name, which is observed in the dataset) are consistent with the request, but the wrong metric makes the series set different.",
+      "The candidate returns translated, but no OTel metric in the provided definitions measures connections. The correct outcome is blocked with MISSING_METRIC_MAPPING unless a connections metric is supplied.",
+      "Caveat for the proposed fix: the monotonic-sum-only rule applies, and postgresql.connections would be a non-monotonic sum or gauge, so rate() must not be used on it."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

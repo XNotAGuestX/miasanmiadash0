@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The candidate multiplies the result by 100, a numeric constant that is not in the Datadog source. The hard rules forbid this in promql; any unit scale must go in notes only.",
+      "postgresql.backends is a direct OTel equivalent of postgresql.connections (number of backends), so translating rather than blocking is correct.",
+      "Grouping by db maps to postgresql_database_name, which is observed in the dataset, so the grouping label is valid.",
+      "The metric is a non-monotonic sum, and avg by over it does not use rate(), so the aggregation shape is acceptable.",
+      "Template $scope has no prefix and default *, so dropping it is correct."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

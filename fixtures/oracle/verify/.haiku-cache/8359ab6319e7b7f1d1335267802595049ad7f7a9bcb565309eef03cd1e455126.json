@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Wrong quantity: Datadog system.net.bytes_sent counts bytes sent, but the candidate selects system.network.packets, which counts packets.",
+      "Wrong unit: the Datadog request is in bytes per second, while the candidate's metric is in {packets}. The result is not a bytes/s rate.",
+      "The candidate's direction label is correct (system_network_direction is observed in the dataset), but it is applied to the wrong metric. A byte-counting OTel metric such as system.network.io (sum, monotonic, direction=transmit) should be used instead; its definition was not supplied, so verify it before translating.",
+      "Template variable $scope has no prefix and default '*', so dropping it is correct and grouping and aggregation (sum over all series) are otherwise consistent.",
+      "Outcome: translated is the expected outcome because an exact byte-counter mapping should exist, so only the metric choice is wrong."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

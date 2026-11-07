@@ -1,0 +1,281 @@
+# lint verdicts for redisdb/overview. Triage only, never approval: humans set reviewed: true.
+verifier: lint
+meta:
+  tool: scripts/lint_expected.py
+results:
+- source_path: widgets[1].definition.widgets[0].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[1].definition.widgets[0].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: redis.keyspace.hits is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on redis.keyspace.hits with otel_metric_type=gauge'
+- source_path: widgets[1].definition.widgets[0].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+- source_path: widgets[1].definition.widgets[0].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[1].definition.widgets[0].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[1].definition.widgets[1].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[1].definition.widgets[1].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[1].definition.widgets[1].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[1].definition.widgets[1].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[1].definition.widgets[2].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[1].definition.widgets[2].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[1].definition.widgets[2].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[1].definition.widgets[2].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[1].definition.widgets[3].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[1].definition.widgets[3].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[1].definition.widgets[3].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[2].definition.widgets[5].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: promql[0] query1: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[2].definition.widgets[5].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: promql[0] redis.cpu.time is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: promql[0] rate() on redis.cpu.time with otel_metric_type=gauge'
+- source_path: widgets[2].definition.widgets[5].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: promql[0] constant 100 is not in the Datadog source'
+- source_path: widgets[2].definition.widgets[5].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - 'range: promql[0] range [5m], only [$__rate_interval] is allowed'
+- source_path: widgets[2].definition.widgets[5].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[2].definition.widgets[6].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[2].definition.widgets[6].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: redis.keyspace.hits is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on redis.keyspace.hits with otel_metric_type=gauge'
+- source_path: widgets[2].definition.widgets[6].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+- source_path: widgets[2].definition.widgets[6].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[2].definition.widgets[6].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[2].definition.widgets[7].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[2].definition.widgets[7].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: redis.keyspace.hits is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on redis.keyspace.hits with otel_metric_type=gauge'
+- source_path: widgets[2].definition.widgets[7].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+- source_path: widgets[2].definition.widgets[7].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[2].definition.widgets[7].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[3].definition.widgets[3].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[3].definition.widgets[3].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[3].definition.widgets[3].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[3].definition.widgets[3].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[3].definition.widgets[4].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[3].definition.widgets[4].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[3].definition.widgets[4].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[3].definition.widgets[4].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[3].definition.widgets[5].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator avg, PromQL sum'
+- source_path: widgets[3].definition.widgets[5].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[3].definition.widgets[5].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[3].definition.widgets[5].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[4].definition.widgets[0].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[4].definition.widgets[0].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[4].definition.widgets[0].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[4].definition.widgets[0].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[4].definition.widgets[2].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query2: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[4].definition.widgets[2].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[4].definition.widgets[2].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[4].definition.widgets[2].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[4].definition.widgets[3].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[4].definition.widgets[3].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[4].definition.widgets[3].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[4].definition.widgets[5].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[4].definition.widgets[5].definition.requests[0]#rate_on_gauge
+  verdict: block
+  reasons:
+  - 'type: redis.commands.processed is sum in the OTel catalog, PromQL selects gauge'
+  - 'rate: rate() on redis.commands.processed with otel_metric_type=gauge'
+- source_path: widgets[4].definition.widgets[5].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[4].definition.widgets[5].definition.requests[0]#range_change
+  verdict: block
+  reasons:
+  - 'range: range [5m], only [$__rate_interval] is allowed'
+- source_path: widgets[4].definition.widgets[5].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[5].definition.widgets[0].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[5].definition.widgets[0].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[5].definition.widgets[0].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[5].definition.widgets[0].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[5].definition.widgets[1].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[5].definition.widgets[1].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[5].definition.widgets[1].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[5].definition.widgets[1].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[5].definition.widgets[3].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'rate: monotonic counter redis.keys.expired selected without rate()/increase()'
+  - 'aggregation: query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[5].definition.widgets[3].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'rate: monotonic counter redis.keys.expired selected without rate()/increase()'
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[5].definition.widgets[3].definition.requests[0]#sibling_metric
+  verdict: nit
+  reasons:
+  - 'rate: monotonic counter redis.keys.evicted selected without rate()/increase()'
+- source_path: widgets[5].definition.widgets[3].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []
+- source_path: widgets[5].definition.widgets[4].definition.requests[0]#agg_swap
+  verdict: block
+  reasons:
+  - 'aggregation: query1: Datadog aggregator sum, PromQL avg'
+- source_path: widgets[5].definition.widgets[4].definition.requests[0]#add_scale
+  verdict: block
+  reasons:
+  - 'literal: constant 100 is not in the Datadog source'
+- source_path: widgets[5].definition.widgets[4].definition.requests[0]#sibling_metric
+  verdict: pass
+  reasons: []
+- source_path: widgets[5].definition.widgets[4].definition.requests[0]#outcome_flip
+  verdict: pass
+  reasons: []

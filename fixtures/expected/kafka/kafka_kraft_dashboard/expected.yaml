@@ -14,7 +14,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -26,7 +26,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -38,13 +38,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series (14:05-15:21 UTC, value 0)
+    agent0: not run
   expected:
     outcome: blocked
     errors:
     - UNSUPPORTED_QUERY_FUNCTION
-  notes:
-  - 'rule overlay: Datadog function(s) weighted block the request (plans 02/03/05); Agent0''s translation is discarded: sum({otel_metric_name="kafka.partition.offline", otel_metric_type="sum"})'
 - source_path: widgets[3].definition.widgets[1].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -52,13 +50,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series (14:05-15:21 UTC, value 0)
+    agent0: not run
   expected:
     outcome: blocked
     errors:
     - UNSUPPORTED_QUERY_FUNCTION
-  notes:
-  - 'rule overlay: Datadog function(s) weighted block the request (plans 02/03/05); Agent0''s translation is discarded: sum({otel_metric_name="kafka.partition.underReplicated", otel_metric_type="sum"})'
 - source_path: widgets[3].definition.widgets[2].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -66,11 +62,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series (14:05-15:21 UTC, value 0)
+    agent0: yes, 1 series (value 0 over 14:05-15:21Z)
   expected:
     outcome: translated
     promql:
-    - max(rate({otel_metric_name="kafka.isr.operation.count", otel_metric_type="sum", operation="expand"}[$__rate_interval])) - max(rate({otel_metric_name="kafka.isr.operation.count", otel_metric_type="sum", operation="shrink"}[$__rate_interval]))
+    - max(rate({otel_metric_name="kafka.isr.operation.count", otel_metric_type="sum", operation="expand", deployment_environment_name=~"^($env)$"}[$__rate_interval])) - max(rate({otel_metric_name="kafka.isr.operation.count", otel_metric_type="sum", operation="shrink", deployment_environment_name=~"^($env)$"}[$__rate_interval]))
     errors: []
     warnings: []
 - source_path: widgets[3].definition.widgets[3].definition.requests[0]
@@ -80,13 +76,21 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not in dataset
+  dataset:
+    available: false
+    missing_metrics:
+    - kafka.request.time.avg
+    otel_sources:
+    - java-contrib/jmx-scraper/src/main/resources/kafka.yaml
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    promql:
+    - avg({otel_metric_name="kafka.request.time.avg", otel_metric_type="gauge", type="FetchFollower", deployment_environment_name=~"^($env)$"})
+    errors: []
+    warnings: []
   notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+  - OTel metric(s) kafka.request.time.avg are defined by OpenTelemetry but not present in dataset `default`; the translation stands, but it cannot be live-checked
 - source_path: widgets[3].definition.widgets[4].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -94,13 +98,21 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not in dataset
+  dataset:
+    available: false
+    missing_metrics:
+    - kafka.request.time.avg
+    otel_sources:
+    - java-contrib/jmx-scraper/src/main/resources/kafka.yaml
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    promql:
+    - avg({otel_metric_name="kafka.request.time.avg", otel_metric_type="gauge", type="FetchConsumer", deployment_environment_name=~"^($env)$"})
+    errors: []
+    warnings: []
   notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+  - OTel metric(s) kafka.request.time.avg are defined by OpenTelemetry but not present in dataset `default`; the translation stands, but it cannot be live-checked
 - source_path: widgets[3].definition.widgets[5].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -108,13 +120,21 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not in dataset
+  dataset:
+    available: false
+    missing_metrics:
+    - kafka.request.time.avg
+    otel_sources:
+    - java-contrib/jmx-scraper/src/main/resources/kafka.yaml
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    promql:
+    - avg({otel_metric_name="kafka.request.time.avg", otel_metric_type="gauge", type="Produce", deployment_environment_name=~"^($env)$"})
+    errors: []
+    warnings: []
   notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+  - OTel metric(s) kafka.request.time.avg are defined by OpenTelemetry but not present in dataset `default`; the translation stands, but it cannot be live-checked
 - source_path: widgets[4].definition.widgets[1].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -122,13 +142,22 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: 'partly: query2 (leader elections) not in dataset; query1 (unclean) yes, 1 series (value 0)'
+  dataset:
+    available: false
+    missing_metrics:
+    - kafka.leader.election.rate
+    otel_sources:
+    - java-contrib/jmx-scraper/src/main/resources/kafka.yaml
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    promql:
+    - avg(rate({otel_metric_name="kafka.leader.election.rate", otel_metric_type="sum", deployment_environment_name=~"^($env)$"}[$__rate_interval]))
+    - avg(rate({otel_metric_name="kafka.leaderElection.unclean.count", otel_metric_type="sum", deployment_environment_name=~"^($env)$"}[$__rate_interval]))
+    errors: []
+    warnings: []
   notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+  - OTel metric(s) kafka.leader.election.rate are defined by OpenTelemetry but not present in dataset `default`; the translation stands, but it cannot be live-checked
 - source_path: widgets[4].definition.widgets[2].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -136,13 +165,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series per formula (14:05-15:21 UTC)
+    agent0: not run
   expected:
     outcome: blocked
     errors:
     - UNSUPPORTED_QUERY_FUNCTION
-  notes:
-  - 'rule overlay: Datadog function(s) weighted block the request (plans 02/03/05); Agent0''s translation is discarded: sum(rate({otel_metric_name="kafka.network.io", otel_metric_type="sum", direction="in"}[$__rate_interval])) ; sum(rate({otel_metric_name="kafka.network.io", otel_metric_type="sum", direction="out"}[$__rate_interval]))'
 - source_path: widgets[4].definition.widgets[3].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -150,13 +177,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series per formula (14:05-15:21 UTC)
+    agent0: not run
   expected:
     outcome: blocked
     errors:
     - UNSUPPORTED_QUERY_FUNCTION
-  notes:
-  - 'rule overlay: Datadog function(s) weighted block the request (plans 02/03/05); Agent0''s translation is discarded: sum({otel_metric_name="kafka.purgatory.size", otel_metric_type="sum", type="Produce"}) ; sum({otel_metric_name="kafka.purgatory.size", otel_metric_type="sum", type="Fetch"})'
 - source_path: widgets[4].definition.widgets[4].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -164,13 +189,22 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not in dataset
+  dataset:
+    available: false
+    missing_metrics:
+    - kafka.request.time.avg
+    otel_sources:
+    - java-contrib/jmx-scraper/src/main/resources/kafka.yaml
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    promql:
+    - avg by (deployment_environment_name) ({otel_metric_name="kafka.request.time.avg", otel_metric_type="gauge", type="Produce", deployment_environment_name=~"^($env)$"})
+    - avg by (deployment_environment_name) ({otel_metric_name="kafka.request.time.avg", otel_metric_type="gauge", type="FetchConsumer", deployment_environment_name=~"^($env)$"})
+    errors: []
+    warnings: []
   notes:
-  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
+  - OTel metric(s) kafka.request.time.avg are defined by OpenTelemetry but not present in dataset `default`; the translation stands, but it cannot be live-checked
 - source_path: widgets[5].definition.widgets[1].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -178,7 +212,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -190,7 +224,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -202,7 +236,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -214,7 +248,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -226,12 +260,12 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: yes, 2 series per formula (14:05-15:21 UTC; groups accounting and fraud-detection on host docker-desktop)
+    agent0: yes, 2 series for each formula (groups accounting and fraud-detection, host docker-desktop)
   expected:
     outcome: translated
     promql:
-    - sum by (host_name, group) ({otel_metric_name="kafka.consumer_group.lag", otel_metric_type="gauge"})
-    - sum by (host_name, group) ({otel_metric_name="kafka.consumer_group.offset", otel_metric_type="gauge"})
+    - sum by (host_name, group, deployment_environment_name) ({otel_metric_name="kafka.consumer_group.lag", otel_metric_type="gauge", deployment_environment_name=~"^($env)$", group=~"^($consumer_group)$"})
+    - sum by (host_name, group, deployment_environment_name) ({otel_metric_name="kafka.consumer_group.offset", otel_metric_type="gauge", deployment_environment_name=~"^($env)$", group=~"^($consumer_group)$"})
     errors: []
     warnings: []
 - source_path: widgets[6].definition.widgets[2].definition.requests[0]
@@ -241,13 +275,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series (14:05-15:21 UTC)
+    agent0: not run
   expected:
     outcome: blocked
     errors:
     - UNSUPPORTED_QUERY_FUNCTION
-  notes:
-  - 'rule overlay: Datadog function(s) weighted block the request (plans 02/03/05); Agent0''s translation is discarded: sum({otel_metric_name="kafka.consumer.bytes_consumed_rate", otel_metric_type="gauge"})'
 - source_path: widgets[6].definition.widgets[3].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -255,13 +287,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series (14:05-15:21 UTC; client_id consumer-fraud-detection-1)
+    agent0: not run
   expected:
     outcome: blocked
     errors:
     - UNSUPPORTED_FORMULA
-  notes:
-  - 'rule overlay: Datadog function(s) abs, weighted block the request (plans 02/03/05); Agent0''s translation is discarded: abs(sum by (client_id) ({otel_metric_name="kafka.consumer.records_consumed_rate", otel_metric_type="gauge"}))'
 - source_path: widgets[6].definition.widgets[4].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -269,13 +299,11 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: yes, 1 series (14:05-15:21 UTC)
+    agent0: not run
   expected:
     outcome: blocked
     errors:
     - UNSUPPORTED_QUERY_FUNCTION
-  notes:
-  - 'rule overlay: Datadog function(s) weighted block the request (plans 02/03/05); Agent0''s translation is discarded: sum({otel_metric_name="kafka.consumer.fetch_rate", otel_metric_type="gauge"})'
 - source_path: widgets[7].definition.widgets[1].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -283,7 +311,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -295,7 +323,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -307,7 +335,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -319,7 +347,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -331,7 +359,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -343,7 +371,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -357,7 +385,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -371,7 +399,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -385,7 +413,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -399,7 +427,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -413,7 +441,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -427,7 +455,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -441,7 +469,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -455,7 +483,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -469,7 +497,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -483,7 +511,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -497,7 +525,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -511,7 +539,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -523,7 +551,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -535,7 +563,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -548,7 +576,7 @@ requests:
     kind: agent0
     ref: fixtures/oracle/agent0/kafka/kafka_kraft_dashboard/answer.yaml
   live_check:
-    agent0: n/a
+    agent0: not run
   expected:
     outcome: blocked
     errors:
@@ -628,7 +656,7 @@ widgets:
     title: ISR Delta
     panel_plugin: StatChart
     promql: &id003
-    - max(rate({otel_metric_name="kafka.isr.operation.count", otel_metric_type="sum", operation="expand"}[$__rate_interval])) - max(rate({otel_metric_name="kafka.isr.operation.count", otel_metric_type="sum", operation="shrink"}[$__rate_interval]))
+    - max(rate({otel_metric_name="kafka.isr.operation.count", otel_metric_type="sum", operation="expand", deployment_environment_name=~"^($env)$"}[$__rate_interval])) - max(rate({otel_metric_name="kafka.isr.operation.count", otel_metric_type="sum", operation="shrink", deployment_environment_name=~"^($env)$"}[$__rate_interval]))
     errors: []
     warnings: []
 - source_path: widgets[3].definition.widgets[3]
@@ -636,25 +664,40 @@ widgets:
   milestone: p2
   reviewed: false
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    panel_key: widget-3-3
+    title: Follower Fetch Latency
+    panel_plugin: StatChart
+    promql: &id004
+    - avg({otel_metric_name="kafka.request.time.avg", otel_metric_type="gauge", type="FetchFollower", deployment_environment_name=~"^($env)$"})
+    errors: []
+    warnings: []
 - source_path: widgets[3].definition.widgets[4]
   type: query_value
   milestone: p2
   reviewed: false
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    panel_key: widget-3-4
+    title: Consumer Fetch Latency
+    panel_plugin: StatChart
+    promql: &id005
+    - avg({otel_metric_name="kafka.request.time.avg", otel_metric_type="gauge", type="FetchConsumer", deployment_environment_name=~"^($env)$"})
+    errors: []
+    warnings: []
 - source_path: widgets[3].definition.widgets[5]
   type: query_value
   milestone: p2
   reviewed: false
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    panel_key: widget-3-5
+    title: Produce Latency
+    panel_plugin: StatChart
+    promql: &id006
+    - avg({otel_metric_name="kafka.request.time.avg", otel_metric_type="gauge", type="Produce", deployment_environment_name=~"^($env)$"})
+    errors: []
+    warnings: []
 - source_path: widgets[3].definition.widgets[6]
   type: manage_status
   milestone: p2
@@ -672,7 +715,7 @@ widgets:
     panel_key: widget-4-0
     title: ''
     panel_plugin: Markdown
-    promql: &id004 []
+    promql: &id007 []
     errors: []
     warnings: []
 - source_path: widgets[4].definition.widgets[1]
@@ -680,9 +723,15 @@ widgets:
   milestone: p2
   reviewed: false
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    panel_key: widget-4-1
+    title: Clean and Unclean Leader Elections
+    panel_plugin: TimeSeriesChart
+    promql: &id008
+    - avg(rate({otel_metric_name="kafka.leader.election.rate", otel_metric_type="sum", deployment_environment_name=~"^($env)$"}[$__rate_interval]))
+    - avg(rate({otel_metric_name="kafka.leaderElection.unclean.count", otel_metric_type="sum", deployment_environment_name=~"^($env)$"}[$__rate_interval]))
+    errors: []
+    warnings: []
 - source_path: widgets[4].definition.widgets[2]
   type: timeseries
   milestone: p2
@@ -704,9 +753,15 @@ widgets:
   milestone: p2
   reviewed: false
   expected:
-    outcome: blocked
-    errors:
-    - MISSING_METRIC_MAPPING
+    outcome: translated
+    panel_key: widget-4-4
+    title: Request Times
+    panel_plugin: TimeSeriesChart
+    promql: &id009
+    - avg by (deployment_environment_name) ({otel_metric_name="kafka.request.time.avg", otel_metric_type="gauge", type="Produce", deployment_environment_name=~"^($env)$"})
+    - avg by (deployment_environment_name) ({otel_metric_name="kafka.request.time.avg", otel_metric_type="gauge", type="FetchConsumer", deployment_environment_name=~"^($env)$"})
+    errors: []
+    warnings: []
 - source_path: widgets[5].definition.widgets[0]
   type: note
   milestone: p2
@@ -716,7 +771,7 @@ widgets:
     panel_key: widget-5-0
     title: ''
     panel_plugin: Markdown
-    promql: &id005 []
+    promql: &id010 []
     errors: []
     warnings: []
 - source_path: widgets[5].definition.widgets[1]
@@ -760,7 +815,7 @@ widgets:
     panel_key: widget-6-0
     title: ''
     panel_plugin: Markdown
-    promql: &id006 []
+    promql: &id011 []
     errors: []
     warnings: []
 - source_path: widgets[6].definition.widgets[1]
@@ -772,9 +827,9 @@ widgets:
     panel_key: widget-6-1
     title: Consumer Lag by Group
     panel_plugin: TimeSeriesChart
-    promql: &id007
-    - sum by (host_name, group) ({otel_metric_name="kafka.consumer_group.lag", otel_metric_type="gauge"})
-    - sum by (host_name, group) ({otel_metric_name="kafka.consumer_group.offset", otel_metric_type="gauge"})
+    promql: &id012
+    - sum by (host_name, group, deployment_environment_name) ({otel_metric_name="kafka.consumer_group.lag", otel_metric_type="gauge", deployment_environment_name=~"^($env)$", group=~"^($consumer_group)$"})
+    - sum by (host_name, group, deployment_environment_name) ({otel_metric_name="kafka.consumer_group.offset", otel_metric_type="gauge", deployment_environment_name=~"^($env)$", group=~"^($consumer_group)$"})
     errors: []
     warnings: []
 - source_path: widgets[6].definition.widgets[2]
@@ -810,7 +865,7 @@ widgets:
     panel_key: widget-7-0
     title: ''
     panel_plugin: Markdown
-    promql: &id008 []
+    promql: &id013 []
     errors: []
     warnings: []
 - source_path: widgets[7].definition.widgets[1]
@@ -862,7 +917,7 @@ widgets:
     panel_key: widget-8-0
     title: ''
     panel_plugin: Markdown
-    promql: &id009 []
+    promql: &id014 []
     errors: []
     warnings: []
 - source_path: widgets[8].definition.widgets[1]
@@ -970,7 +1025,7 @@ widgets:
     panel_key: widget-9-0
     title: ''
     panel_plugin: Markdown
-    promql: &id010 []
+    promql: &id015 []
     errors: []
     warnings: []
 - source_path: widgets[9].definition.widgets[1]
@@ -998,7 +1053,7 @@ widgets:
     panel_key: widget-10-0
     title: ''
     panel_plugin: Markdown
-    promql: &id011 []
+    promql: &id016 []
     errors: []
     warnings: []
 - source_path: widgets[10].definition.widgets[1]
@@ -1047,29 +1102,39 @@ dashboard:
       panel_key: widget-3-2
       promql: *id003
     - source_path: widgets[3].definition.widgets[3]
-      outcome: blocked
+      outcome: translated
+      panel_key: widget-3-3
+      promql: *id004
     - source_path: widgets[3].definition.widgets[4]
-      outcome: blocked
+      outcome: translated
+      panel_key: widget-3-4
+      promql: *id005
     - source_path: widgets[3].definition.widgets[5]
-      outcome: blocked
+      outcome: translated
+      panel_key: widget-3-5
+      promql: *id006
     - source_path: widgets[3].definition.widgets[6]
       outcome: blocked
     - source_path: widgets[4].definition.widgets[0]
       outcome: translated
       panel_key: widget-4-0
-      promql: *id004
+      promql: *id007
     - source_path: widgets[4].definition.widgets[1]
-      outcome: blocked
+      outcome: translated
+      panel_key: widget-4-1
+      promql: *id008
     - source_path: widgets[4].definition.widgets[2]
       outcome: blocked
     - source_path: widgets[4].definition.widgets[3]
       outcome: blocked
     - source_path: widgets[4].definition.widgets[4]
-      outcome: blocked
+      outcome: translated
+      panel_key: widget-4-4
+      promql: *id009
     - source_path: widgets[5].definition.widgets[0]
       outcome: translated
       panel_key: widget-5-0
-      promql: *id005
+      promql: *id010
     - source_path: widgets[5].definition.widgets[1]
       outcome: blocked
     - source_path: widgets[5].definition.widgets[2]
@@ -1081,11 +1146,11 @@ dashboard:
     - source_path: widgets[6].definition.widgets[0]
       outcome: translated
       panel_key: widget-6-0
-      promql: *id006
+      promql: *id011
     - source_path: widgets[6].definition.widgets[1]
       outcome: translated
       panel_key: widget-6-1
-      promql: *id007
+      promql: *id012
     - source_path: widgets[6].definition.widgets[2]
       outcome: blocked
     - source_path: widgets[6].definition.widgets[3]
@@ -1095,7 +1160,7 @@ dashboard:
     - source_path: widgets[7].definition.widgets[0]
       outcome: translated
       panel_key: widget-7-0
-      promql: *id008
+      promql: *id013
     - source_path: widgets[7].definition.widgets[1]
       outcome: blocked
     - source_path: widgets[7].definition.widgets[2]
@@ -1109,7 +1174,7 @@ dashboard:
     - source_path: widgets[8].definition.widgets[0]
       outcome: translated
       panel_key: widget-8-0
-      promql: *id009
+      promql: *id014
     - source_path: widgets[8].definition.widgets[1]
       outcome: blocked
     - source_path: widgets[8].definition.widgets[2]
@@ -1137,7 +1202,7 @@ dashboard:
     - source_path: widgets[9].definition.widgets[0]
       outcome: translated
       panel_key: widget-9-0
-      promql: *id010
+      promql: *id015
     - source_path: widgets[9].definition.widgets[1]
       outcome: blocked
     - source_path: widgets[9].definition.widgets[2]
@@ -1145,7 +1210,7 @@ dashboard:
     - source_path: widgets[10].definition.widgets[0]
       outcome: translated
       panel_key: widget-10-0
-      promql: *id011
+      promql: *id016
     - source_path: widgets[10].definition.widgets[1]
       outcome: blocked
     - source_path: widgets[10].definition.widgets[2]

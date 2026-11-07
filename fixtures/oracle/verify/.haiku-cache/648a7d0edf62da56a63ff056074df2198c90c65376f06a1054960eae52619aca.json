@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The Datadog query is nginx.net.conn_dropped_per_s, a count of dropped connections per second. No OTel metric in the definitions measures dropped connections directly.",
+      "The candidate subtracts nginx.connections_handled from itself. Both operands are identical, so the result is always zero and does not represent dropped connections.",
+      "The candidate derives a value from other metrics (dropped = accepted - handled style logic). The rules require blocking with MISSING_METRIC_MAPPING and putting any proposed derivation in notes, not in promql.",
+      "The outcome should be blocked with MISSING_METRIC_MAPPING, not translated.",
+      "Summing and rate-of-monotonic-sum usage are structurally fine, but they do not rescue the wrong quantity."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

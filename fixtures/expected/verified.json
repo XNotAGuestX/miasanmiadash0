@@ -1,0 +1,13 @@
+{
+  "postgres/postgresql_dashboard": [
+    "widgets[0].definition.requests[3]",
+    "widgets[2].definition.requests[0]",
+    "widgets[4].definition.requests[0]",
+    "widgets[4].definition.requests[1]",
+    "widgets[4].definition.requests[2]",
+    "widgets[5].definition.requests[0]",
+    "widgets[7].definition.requests[0]",
+    "widgets[8].definition.requests[0]",
+    "widgets[8].definition.requests[1]"
+  ]
+}

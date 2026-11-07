@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "Datadog nginx.net.request_per_s measures requests per second, but the candidate uses nginx.connections_accepted, which counts accepted connections. That is a different quantity.",
+      "Unit differs: the candidate's unit is {connections} as a rate, while the source is requests per second.",
+      "The candidate's rate() over connections_accepted is not an equivalent of the Datadog per-second request rate, so the aggregation does not match.",
+      "Given only the definitions supplied, no OTel metric in the candidate's inputs measures requests, so the correct outcome is blocked with MISSING_METRIC_MAPPING, not translated. If an nginx requests counter is defined in the catalog, it would need a separate review."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

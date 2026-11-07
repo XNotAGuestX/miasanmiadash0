@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "n/a",
+      "outcome": "ok",
+      "quantity": "n/a",
+      "series_count": "n/a",
+      "unit": "n/a"
+    },
+    "reasons": [
+      "otel_metric_definitions is empty, so the candidate's MISSING_METRIC_MAPPING cannot be checked against the catalog or the dataset.",
+      "The Datadog metric is a per-second request rate per host. A plausible OTel counterpart is a monotonic request-count sum (for example nginx.requests), which would need rate(...[$__rate_interval]) and a host grouping. Whether that exact translation exists depends on definitions that were not supplied.",
+      "If no such mapping exists, blocking is correct. If a monotonic request counter with a usable host label exists, the block is wrong and the request should translate as avg by host of the rate, with the $host matcher on the host label.",
+      "Verify the metric definitions and host label in the dataset before accepting the block."
+    ],
+    "verdict": "nit"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

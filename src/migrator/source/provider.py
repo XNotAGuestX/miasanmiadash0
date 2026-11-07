@@ -7,6 +7,8 @@ from collections.abc import Mapping
 from migrator.input import InputError
 from migrator.source.asset import (
     CompileOptions,
+    FetchingProvider,
+    FetchSelection,
     ProviderLoadResult,
     SourceAsset,
     SourceProvider,
@@ -27,6 +29,8 @@ def get_provider(provider_id: str) -> SourceProvider:
 __all__ = [
     "PROVIDERS",
     "CompileOptions",
+    "FetchSelection",
+    "FetchingProvider",
     "ProviderLoadResult",
     "SourceAsset",
     "SourceProvider",

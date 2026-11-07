@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "query1 wraps the lag in a hard-coded `100 *` factor that is not in the Datadog source; the scale is not justified by any unit difference, so the quantity and unit are wrong.",
+      "Both candidate queries drop the `env` and `consumer_group` template-variable matchers (`env=~\"$env\"`, `consumer_group=~\"$consumer_group\"`), so the series set differs from the Datadog request.",
+      "Grouping uses `host_name`, which is not among the observed dataset labels for kafka.consumer_group.lag/offset (group, topic, type, service_name, service_instance_id); host grouping cannot be expressed with that label, and `env` is dropped from the `by` clause entirely.",
+      "The formula list has query1 and query2 as displayed formulas, but query1 is not a plain sum of the lag metric in the candidate, so the first PromQL is not an exact translation.",
+      "The metric mapping itself (kafka.consumer_lag to kafka.consumer_group.lag, kafka.consumer_offset to kafka.consumer_group.offset, both gauges, sum aggregation) is plausible, so a translated outcome is the right outcome but the PromQL must be corrected."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

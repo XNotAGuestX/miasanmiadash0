@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The PromQL uses a fixed range [5m]; the converter may only use $__rate_interval as a range, so this must be rewritten.",
+      "The Datadog metric docker.net.bytes_rcvd is a cumulative byte total per container, but the candidate applies rate(), which changes the quantity to bytes per second. Unless the Datadog value is confirmed to be a rate, the unit (B vs B/s) and quantity differ.",
+      "Grouping is correct: docker_image maps to container_image_name, which is observed in the dataset. Aggregation (avg by image) and the dropped $scope template variable match the Datadog request.",
+      "Outcome translated is appropriate because an OTel sum metric measuring received bytes exists in the dataset."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

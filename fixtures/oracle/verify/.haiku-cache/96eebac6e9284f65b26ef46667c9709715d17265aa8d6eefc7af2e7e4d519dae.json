@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "differs",
+      "series_count": "ok",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The candidate multiplies the result by a constant 100 that does not appear in the Datadog source; the hard rules forbid numeric constants not in the source, and nothing in the request justifies a percent scale.",
+      "nginx.requests is a monotonic sum with unit {requests}, so rate() over it gives requests per second and matches the Datadog per-second metric without any scaling. The correct candidate is sum(rate({otel_metric_name=\"nginx.requests\", otel_metric_type=\"sum\"}[$__rate_interval])) with no multiplier.",
+      "The {$scope} template variable has no prefix and default *, so dropping it is correct and no matcher is needed.",
+      "Outcome translated is right because an exact translation exists; only the extra factor is wrong."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

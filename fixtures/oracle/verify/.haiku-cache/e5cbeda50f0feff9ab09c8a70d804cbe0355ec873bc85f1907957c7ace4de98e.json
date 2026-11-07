@@ -1,0 +1,20 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "n/a",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "ok",
+      "series_count": "ok",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The Datadog metric system.load.15 is the 15-minute system load average, which OTel hostmetrics covers with the gauge system.cpu.load_average.15m (same quantity, unitless, not normalized per CPU). An exact translation exists, so MISSING_METRIC_MAPPING is wrong.",
+      "otel_metric_definitions is empty, so the converter had no definition to check against. The correct outcome is translated, with promql {otel_metric_name=\"system.cpu.load_average.15m\", otel_metric_type=\"gauge\"}; the $scope variable has no prefix and default *, so it is dropped.",
+      "No rate() is applied because the metric is a gauge. Series grain (per host) matches the Datadog request, so no grain caveat is needed."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

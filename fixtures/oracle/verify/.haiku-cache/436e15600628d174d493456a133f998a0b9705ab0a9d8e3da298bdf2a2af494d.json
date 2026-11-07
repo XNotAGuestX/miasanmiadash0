@@ -1,0 +1,23 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "differs",
+      "grouping": "ok",
+      "outcome": "differs",
+      "quantity": "differs",
+      "series_count": "differs",
+      "unit": "differs"
+    },
+    "reasons": [
+      "The candidate uses a fixed range [5m]; the converter may only use [$__rate_interval], so the translated PromQL violates a hard rule.",
+      "The candidate applies rate() to the cumulative bytes counter and returns bytes per second, while the Datadog query averages docker.io.write_bytes, a byte quantity, per image. The quantity and unit differ unless the Datadog metric is itself a rate, which the request does not establish.",
+      "The candidate's avg by (container_image_name) averages over device_major/device_minor series within each container, while the Datadog average is over container series. The series set and aggregation level differ.",
+      "Grouping by docker_image maps to container_image_name, which is observed in the dataset, so the grouping label is correct.",
+      "The Datadog $scope template variable has no prefix and default *, so dropping it is correct and the candidate matches on that point.",
+      "The candidate is translated, but the fixed-window rule and the quantity mismatch mean the request should not translate as written."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

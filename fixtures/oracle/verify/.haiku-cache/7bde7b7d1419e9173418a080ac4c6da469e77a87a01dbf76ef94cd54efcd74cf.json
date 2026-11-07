@@ -1,0 +1,21 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "ok",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The selector uses otel_metric_type=\"gauge\", but postgresql.tup_inserted is a monotonic sum in the dataset (dataset_types: sum), so the selector matches no series. It should be otel_metric_type=\"sum\".",
+      "The $db template variable (prefix db) should become a matcher on postgresql_database_name=~\"$db\", and the $host variable (prefix host) should become host_name=~\"$host\" (host_name is observed in the dataset). The candidate drops both, so it covers a wider set of series than the Datadog request.",
+      "The $scope variable has no prefix and default '*', so dropping it is correct. The $table variable is not used in the query, so it does not apply.",
+      "Quantity (tuple insertions) and grouping by database name match the Datadog request, and rate() on a monotonic sum is the right treatment. The outcome is translated, which is correct because a direct OTel metric exists."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

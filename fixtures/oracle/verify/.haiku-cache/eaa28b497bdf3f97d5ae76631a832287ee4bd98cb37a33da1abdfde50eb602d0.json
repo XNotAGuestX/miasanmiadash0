@@ -1,0 +1,22 @@
+{
+  "model": "claude-haiku-5-5",
+  "output": {
+    "checks": {
+      "aggregation": "ok",
+      "grouping": "differs",
+      "outcome": "ok",
+      "quantity": "ok",
+      "series_count": "differs",
+      "unit": "ok"
+    },
+    "reasons": [
+      "The numerator selector for redis.keyspace.hits uses otel_metric_type=\"gauge\", but the dataset only has this metric as sum (dataset_types: [sum]), so the numerator matches no series. The denominator uses sum for the same metric, so the two sides are inconsistent.",
+      "A gauge selector wrapped in rate() would also violate the rule that rate() is only for monotonic sums. The numerator should use otel_metric_type=\"sum\", matching the definition (monotonic sum) and the dataset.",
+      "The Datadog $host template variable has prefix host and default *, so it should produce a host=~\"$host\" matcher on both sides. The candidate omits it, so the series set differs from the request. The dataset does not list a host label among observed labels, so the label name needs confirming before the matcher is added.",
+      "$scope has no prefix and default *, so dropping it is correct. $key is not referenced by any query, so it needs no matcher.",
+      "The *100 scale and the ratio hits/(hits+misses) match the Datadog formula, and translating to a translated outcome is correct since the metrics exist as monotonic sums."
+    ],
+    "verdict": "block"
+  },
+  "system_sha256": "e0d8b72a4befbaa6388399933cfa793d987b2671eb1ddcc83e53b654c0a46971"
+}

@@ -18,9 +18,13 @@ uv run migrator check                    # project DoD: ruff + mypy + pytest (un
 uv run pytest --include-unreviewed       # also run oracle-proposed, not yet reviewed cases
 uv run pytest -m p0                      # only the MVP cases (also: -m p1, -m p2)
 uv run pytest tests/unit/requests        # only request/widget/parser tests
-uv sync --group oracle                   # opt-in: Agent0 MCP client for scripts/run_oracle.py
-uv run pytest tests/scripts              # fixture tooling (the MCP SDK test skips without the group)
+uv run pytest tests/scripts              # fixture tooling (oracle runner, verifiers)
 ```
+
+Each run that executes `test_request_translation` writes `out/test-report/index.html` (git-ignored;
+the `file://` URL is printed in the summary): per request case the expected and actual outcome,
+PromQL and diagnostic codes side by side, the canonical PromQL diff and the Datadog request, failures
+first. `conftest.py` collects the records (`record_comparison` fixture), `report_html.py` renders them.
 
 Tests are offline: an autouse fixture in `conftest.py` replaces `socket.socket` and
 `socket.create_connection`, so any network access raises. A case whose mapping file
@@ -169,11 +173,33 @@ what enforces them.
 Agent0's live checks ran against the Dash0 `default` dataset, where receiver data only exists
 2026-11-07 ~14:05–15:21 UTC.
 
+## Verifying the oracle (development time only, issue #87)
+
+Verifiers triage each request's expectation. Their verdicts (`pass | nit | block`, contract in
+`scripts/verify_common.py`) are written to `fixtures/oracle/verify/<svc>/<id>/<verifier>.yaml`.
+`scripts/triage.py` writes the **green** requests to `fixtures/expected/verified.json`; tests run
+those like human-reviewed ones. The converter never reads any of it. Humans verify as much as
+possible (red and yellow first); a human `reviewed: true` in overrides.yaml always wins.
+
+| Layer | Command | What it checks |
+|---|---|---|
+| L0 lint (deterministic) | `uv run scripts/lint_expected.py --all` | PromQL parses; aggregator and `by` grouping match the Datadog query; `rate()` only on monotonic sums; instrument type vs catalog; no invented constants; only `[$__rate_interval]`; formula shape and count |
+| Mutations | `uv run scripts/mutate_expected.py --all`, then `lint_expected.py --all --mutations` / `crosscheck.py input … --mutations` | known-bad variants (`agg_swap`, `drop_by_label`, `rate_on_gauge`, `add_scale`, `range_change`, `sibling_metric`, `outcome_flip`) measure each verifier's catch rate |
+| W2 agent0 judge | `uv run scripts/run_oracle.py --mode judge [--case <svc>/<id>]` (prompt: `fixtures/oracle/JUDGE.md`) | agent0, in a fresh thread, first derives its own answer from the Datadog request, then compares it to the anonymous candidate and runs it live |
+| W3a round 2 | `uv run scripts/run_oracle.py --full --out-dir fixtures/oracle/agent0-r2`, then `uv run scripts/crosscheck.py rerun --all` | a second agent0 round; outcome mismatch → block, `canonical_promql`-equal → pass, otherwise Haiku decides equivalent / cosmetic / semantic |
+| W3b Haiku vs input | `uv run scripts/crosscheck.py input <svc>/<id> \| --all` (`claude-haiku-5-5`, `ANTHROPIC_API_KEY`) | the candidate against the Datadog request, the OTel catalog definitions and the labels observed in the dataset (`fixtures/oracle/dash0_default_labels.yaml`); answers are cached in `fixtures/oracle/verify/.haiku-cache/` |
+| Triage | `uv run scripts/triage.py --all` → `fixtures/expected/TRIAGE.md` | red = any block; yellow = a nit or judge/Haiku split; green = all pass and judge or Haiku ran; unverified otherwise. A verifier below 80 % mutation catch rate is *untrusted*: its findings still count, its pass does not |
+| W1 review dashboards | `uv run scripts/render_review_dashboard.py <svc>/<id>`, then `scripts/review/README.md` | one Perses panel per translated request (triage colour, Datadog query in the description), viewed in a local Perses that queries Dash0; Dash0 publish is the fallback |
+
+Agreement between LLM verifiers is not proof: they make correlated errors. Use disagreement and
+findings to decide what to look at first; a green request still needs a human look.
+
 ## Review (`overrides.yaml`)
 
-Unreviewed expectations are proposals. A human reviews `fixtures/expected/REVIEW.md`, then records
-decisions in `fixtures/expected/<svc>/<id>/overrides.yaml`, keyed by request `source_path`, or by
-widget `source_path` for a widget without requests (note, image, event stream, ...):
+Unreviewed expectations are proposals. A human reviews `fixtures/expected/TRIAGE.md` (review order)
+and `fixtures/expected/REVIEW.md` (flagged deviations), then records decisions in
+`fixtures/expected/<svc>/<id>/overrides.yaml`, keyed by request `source_path`, or by widget
+`source_path` for a widget without requests (note, image, event stream, ...):
 
 ```yaml
 'widgets[0].definition.requests[0]':
