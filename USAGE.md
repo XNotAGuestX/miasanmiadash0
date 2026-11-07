@@ -1,6 +1,7 @@
 # Usage: testing and improvement loop
 
 - `uv run pytest` runs every human-reviewed or triage-green case; add `--include-unreviewed` to run the rest too.
+- `uv run pytest --html=out/test-report.html --self-contained-html && open out/test-report.html` shows every test in the browser, filterable by passed, failed and skipped (unreviewed).
 - `scripts/pin-integrations-core.sh` then `uv run scripts/extract_cases.py` refresh the Datadog source cases (pick dashboards in `fixtures/oracle/dashboards.json`).
 - `uv run scripts/run_oracle.py` asks Agent0 for expectations (needs a Dash0 token), and `uv run scripts/build_expected.py` turns them into `fixtures/expected/**/expected.yaml`.
 - `uv run scripts/lint_expected.py --all` is the free, deterministic first check.
