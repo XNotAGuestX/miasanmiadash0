@@ -9,7 +9,21 @@
 # Every session sets application_name=hold-pg-connections. On exit, Ctrl-C or
 # TERM the script kills its docker exec clients and also terminates those
 # sessions server-side, because killing `docker exec` does not end psql in the
-# container.
+# container. Cleanup matches by application_name, so it also ends the sessions of
+# a concurrent run of this script: run one at a time.
+#
+# The script refuses to go past max_connections - superuser_reserved_connections,
+# so it never locks out superuser access.
+#
+# Planned crossing numbers (2026-11-07, not yet run live; needs blocker B2).
+# Dash0 read-only check: current ~= 8 backends (astronomy_db 5 + postgres 3),
+# usage ratio ~= 0.08, so max_connections ~= 100 (default; reserved 3 -> limit 97).
+# The demo check is avg over 15m with degraded > 0.8 and failed > 0.9:
+#   count=75 -> (8 + 75) / 100 = 0.83  degraded
+#   count=85 -> (8 + 85) / 100 = 0.93  failed
+# Hold for at least 1800 s so the 15-minute average crosses. Re-measure with
+# --dry-run first (it prints max_connections and current) and record the live
+# values in docs/DEMO.md.
 set -u
 
 APP=hold-pg-connections
@@ -26,7 +40,9 @@ is_pos_int() {
   [ "$1" -gt 0 ]
 }
 
-[ $# -ge 2 ] && [ $# -le 3 ] || die "usage: $0 <count> <seconds> [--dry-run]"
+if [ $# -lt 2 ] || [ $# -gt 3 ]; then
+  die "usage: $0 <count> <seconds> [--dry-run]"
+fi
 count=$1
 seconds=$2
 dry_run=0
@@ -42,13 +58,22 @@ query() {
   docker exec -e PGUSER -e PGDATABASE -e PGPASSWORD "$PG_CONTAINER" psql -tAc "$1"
 }
 
-max=$(query "show max_connections" | tr -d '[:space:]') || die "could not read max_connections"
-current=$(query "select count(*) from pg_stat_activity" | tr -d '[:space:]') || die "could not read the current connection count"
+# Capture psql's output before trimming it, so a psql failure is reported as one
+# instead of being masked by the pipeline.
+strip() { printf '%s' "$1" | tr -d '[:space:]'; }
+raw=$(query "show max_connections") || die "could not read max_connections (psql failed)"
+max=$(strip "$raw")
+raw=$(query "show superuser_reserved_connections") || die "could not read superuser_reserved_connections (psql failed)"
+reserved=$(strip "$raw")
+raw=$(query "select count(*) from pg_stat_activity") || die "could not read the current connection count (psql failed)"
+current=$(strip "$raw")
 is_pos_int "$max" || die "unexpected max_connections value"
+case "$reserved" in '' | *[!0-9]*) die "unexpected superuser_reserved_connections value" ;; esac
 case "$current" in '' | *[!0-9]*) die "unexpected connection count value" ;; esac
 
-if [ $((current + count)) -ge "$max" ]; then
-  die "refusing: would exceed max_connections (current $current + $count >= $max)"
+limit=$((max - reserved))
+if [ $((current + count)) -ge "$limit" ]; then
+  die "refusing: would exceed max_connections minus superuser_reserved_connections (current $current + $count >= $max - $reserved)"
 fi
 
 printf 'max_connections=%s current=%s holding=%s for %ss (usage about %s%%)\n' \
@@ -87,6 +112,23 @@ while [ "$i" -lt "$count" ]; do
   pids="$pids $!"
   i=$((i + 1))
 done
+
+# Check that the sessions are really open (bad credentials make every psql exit
+# at once). Poll for up to 10 s.
+active=0
+tries=0
+while [ "$tries" -lt 10 ]; do
+  raw=$(query "select count(*) from pg_stat_activity where application_name = '$APP'") || raw=0
+  active=$(strip "$raw")
+  [ "$active" = "$count" ] && break
+  tries=$((tries + 1))
+  sleep 1
+done
+if [ "$active" != "$count" ]; then
+  printf 'error: only %s of %s sessions are open (check PGUSER, PGDATABASE, PGPASSWORD)\n' "$active" "$count" >&2
+  exit 1
+fi
+printf 'holding %s sessions\n' "$active"
 
 wait
 pids=""

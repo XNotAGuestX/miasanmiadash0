@@ -15,18 +15,25 @@ SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "hold-pg-connections.
 PASSWORD = "s3cret-pw"
 
 
-def make_stub(directory: Path, max_conn: int = 100, current: int = 8) -> Path:
-    """A stub `docker` that answers the two read-only queries, records every call,
-    and for pg_sleep sessions records its pid and sleeps until killed."""
+def make_stub(
+    directory: Path, max_conn: int = 100, current: int = 8, sessions_fail: bool = False
+) -> Path:
+    """A stub `docker` that answers the read-only queries, records every call, and
+    for pg_sleep sessions records its pid and sleeps until killed (or, with
+    sessions_fail, exits at once like psql with bad credentials)."""
+    session = "exit 2" if sessions_fail else f'echo $$ > "{directory}/child-$$.pid"; exec sleep 300'
     stub = directory / "docker"
     stub.write_text(
         "#!/bin/sh\n"
         f'printf \'%s\\n\' "$*" >> "{directory}/calls.log"\n'
         'case "$*" in\n'
         f'  *"show max_connections"*) echo {max_conn} ;;\n'
+        '  *"show superuser_reserved_connections"*) echo 3 ;;\n'
+        f'  *"count(*) from pg_stat_activity where application_name"*) '
+        f'ls "{directory}" | grep -c "^child-" ;;\n'
         f'  *"count(*) from pg_stat_activity"*) echo {current} ;;\n'
         "  *pg_terminate_backend*) echo t ;;\n"
-        f'  *pg_sleep*) echo $$ > "{directory}/child-$$.pid"; exec sleep 300 ;;\n'
+        f"  *pg_sleep*) {session} ;;\n"
         "esac\n"
     )
     stub.chmod(0o755)
@@ -84,8 +91,8 @@ def test_dry_run_prints_count_sessions(tmp_path: Path) -> None:
     r = run(stub, "70", "900", "--dry-run")
     assert r.returncode == 0, r.stderr
     assert sum("pg_sleep(900)" in line for line in r.stdout.splitlines()) == 70
-    # Dry run only ran the two read-only queries.
-    assert len(calls(stub).strip().splitlines()) == 2
+    # Dry run only ran the three read-only queries.
+    assert len(calls(stub).strip().splitlines()) == 3
 
 
 def test_never_prints_the_password(tmp_path: Path) -> None:
@@ -101,6 +108,30 @@ def test_refuses_to_exceed_max_connections(tmp_path: Path) -> None:
     assert r.returncode == 1
     assert "refusing: would exceed max_connections" in r.stderr
     assert not list(stub.glob("child-*"))
+
+
+def test_keeps_superuser_reserved_headroom(tmp_path: Path) -> None:
+    # 8 + 89 = 97 = 100 - 3 reserved: refused; 8 + 88 = 96 is allowed.
+    stub = make_stub(tmp_path)
+    assert run(stub, "89", "60", "--dry-run").returncode == 1
+    assert run(stub, "88", "60", "--dry-run").returncode == 0
+
+
+def test_psql_failure_is_reported_as_such(tmp_path: Path) -> None:
+    stub = tmp_path / "docker"
+    stub.write_text("#!/bin/sh\nexit 2\n")
+    stub.chmod(0o755)
+    r = run(tmp_path, "2", "60", "--dry-run")
+    assert r.returncode == 1
+    assert "psql failed" in r.stderr
+
+
+def test_sessions_that_never_open_fail_the_run(tmp_path: Path) -> None:
+    stub = make_stub(tmp_path, sessions_fail=True)
+    r = run(stub, "2", "60")
+    assert r.returncode == 1
+    assert "only 0 of 2 sessions are open" in r.stderr
+    assert "released" not in r.stdout
 
 
 @pytest.mark.parametrize("args", [("x", "60"), ("0", "60"), ("2",), ("2", "60", "--nope")])
