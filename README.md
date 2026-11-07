@@ -1,0 +1,42 @@
+# Datadog → Dash0 Migrator
+
+**Highest priority, before anything else: deterministic conversion. No LLM shall be involved in translation from a source to Perses, PromQL, or Dash0 check rules—not even as an optional fallback. Reduce MVP scope before compromising this rule.** Codex and Claude may help write the implementation and tests; migration itself uses explicit parsers, mappings, and deterministic rules only.
+
+Hackathon project: a deterministic CLI that migrates Datadog dashboards and metric monitors to Dash0 using Perses, PromQL, and explicit telemetry mappings.
+
+**Current state: project handoff only. The CLI, fixtures, tests, and live integrations are not implemented yet.** Commands and source paths in the handoff describe the intended implementation.
+
+## Start here
+
+1. Read [AGENTS.md](AGENTS.md), the shared working rules for humans, Codex, and Claude.
+2. Read [the project handoff](docs/PROJECT_HANDOFF.md) for scope, architecture, contracts, and acceptance criteria.
+3. Follow [the execution plan](docs/EXECUTION_PLAN.md) in priority order.
+4. Check and update [STATUS.md](docs/STATUS.md) before handing work to another contributor.
+5. Use [the demo runbook](docs/DEMO.md) to verify the deliverable.
+
+[CLAUDE.md](CLAUDE.md) directs Claude to the same shared rules. Technical references and the challenge's submission requirements are collected in [SOURCES.md](docs/SOURCES.md).
+
+## The first deliverable
+
+Fetch one selected Datadog dashboard and one selected metric monitor, compile the supported subset, export reviewable artifacts and a migration report, import both into Dash0, and show the resulting dashboard and check rule in the Dash0 UI. Include an unsupported example that produces a useful diagnostic.
+
+Build a working vertical slice before expanding feature coverage. Business research, pricing, positioning, and pitch work are handled separately.
+
+## Proposed implementation defaults
+
+- TypeScript, Node.js 22+, npm, one CLI package.
+- Commander for CLI arguments, Zod for boundary validation, Vitest for tests, tsx for local execution, tsc for type checking/building.
+- Built-in `fetch` for HTTP. Small deterministic parser and explicit mapping files for translation.
+- JSON inputs/outputs first. No frontend, database, or hosted service. LLM involvement in conversion is prohibited, not merely unnecessary.
+
+These are starting decisions for the empty repository. Preserve any existing implementation if the handoff is moved into a populated starter checkout. Record a justified stack change once in the handoff and status file.
+
+## Setup to complete during implementation
+
+- Resolve the required starter/fork relationship before the first implementation commit; see [the execution plan](docs/EXECUTION_PLAN.md#0-unblock-the-repository-and-destination).
+- Use a dedicated feature branch, for example `codex/mvp-migrator`; keep module names and task names tool-neutral.
+- Create EU Datadog and Dash0 accounts. The challenge requires a Dash0 organization name beginning with `thinc`.
+- Copy `.env.example` to `.env` and supply credentials locally. Implement explicit `.env` loading or document shell environment setup; the template alone does not load variables.
+- Bootstrap the package and record working install/build/test/CLI commands here as soon as they exist.
+
+No install or runtime command is advertised as working until it has been implemented and checked.
