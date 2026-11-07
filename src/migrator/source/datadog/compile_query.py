@@ -158,19 +158,23 @@ def compile_metric_query(
             and var.prefix is not None
             and entry.labels.get(var.prefix) == promoted
         ):
-            # Known limitation (left open deliberately; see PR #85 review): the dashboard
-            # substitutes `$name` at view time, so the converter never sees the value and
-            # cannot regex-escape it. A selected `a.b` therefore also matches `aXb`.
-            # - Perses documents `${name:regex}`, but it escapes with one backslash
-            #   (`(a\.b)`), an invalid escape inside a double-quoted PromQL string, and
-            #   promql-parser rejects it in backtick strings too. Perses' source also has
-            #   an undocumented `regexliteral` format (double backslash); Dash0's docs
-            #   document neither (dash0.com/docs/dash0/dashboards/bind-variables-to-queries).
-            # - Dash0 also says it does not anchor `=~` and suggests `=~"^($name)$"`.
-            #   What Dash0 substitutes for the "All" default is undocumented, so anchoring
-            #   is not applied blind either.
-            # Decide both with the Dash0 render check of ListVariable (plan 07 Task 1).
-            matchers.append(Matcher(promoted, f"${var.name}", "=~"))
+            # Datadog `$var` filters are exact tag matches. The dashboard substitutes the
+            # value at view time, so the closest documented form is the anchored
+            # alternation `=~"^($name)$"`: Dash0 does not anchor `=~` and documents exactly
+            # this form for whole-value matching
+            # (dash0.com/docs/dash0/dashboards/bind-variables-to-queries). Under Prometheus
+            # semantics (`=~` is fully anchored) the anchors change nothing.
+            # Assumptions and residual gaps (PR #85):
+            # - Values are not regex-escaped: a selected `a.b` also matches `aXb`. Perses
+            #   documents `${name:regex}`, but its single-backslash output (`(a\.b)`) is an
+            #   invalid escape in a double-quoted PromQL string; the double-backslash
+            #   `regexliteral` format exists only in Perses' source, is undocumented, and
+            #   Dash0 documents no format modifiers. If Dash0 lacked it, `${name:...}` would
+            #   stay literal and match nothing, which is worse than a wider match.
+            # - What Dash0 substitutes for the "All" default (`$__all`) is undocumented;
+            #   Perses expands it to the alternation of all values, which the anchors keep.
+            #   Confirm in the Dash0 ListVariable render check (plan 07 Task 1).
+            matchers.append(Matcher(promoted, f"^(${var.name})$", "=~"))
         elif var.default is None or var.default == "*":
             default_note = "default '*'" if var.default == "*" else "no default"
             d.add(

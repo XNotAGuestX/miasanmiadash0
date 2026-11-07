@@ -273,11 +273,11 @@ def test_maps_prefixed_variables_to_list_variable() -> None:
     [var] = c.dashboard["spec"]["variables"]
     assert var["kind"] == "ListVariable"
     assert var["spec"]["plugin"]["spec"]["labelName"] == "postgresql_database_name"
-    assert 'postgresql_database_name=~"$db"' in queries_of(c, "widget-0")[0]["query"]
+    assert 'postgresql_database_name=~"^($db)$"' in queries_of(c, "widget-0")[0]["query"]
     infos = [d for d in c.diagnostics if d.source_path == "template_variables[0]"]
     assert [d.code for d in infos] == ["OPTION_IGNORED"]
     assert "unverified in Dash0" in infos[0].message
-    assert "without escaping" in infos[0].message
+    assert "anchored" in infos[0].message and "not escaped" in infos[0].message
     assert validate_dashboard(c.dashboard) == []
 
 

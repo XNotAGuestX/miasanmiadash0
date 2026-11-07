@@ -10,6 +10,7 @@ from migrator.source.datadog.compile_query import (
 from migrator.source.datadog.mapping import DatadogMapping
 from migrator.source.datadog.model import ParseOk
 from migrator.source.datadog.parse_query import parse_metric_query
+from migrator.validation import check_promql_syntax
 from tests.datadog.helpers import entry, mapping
 
 STAR = [TemplateVariable("scope", None, "*")]
@@ -208,5 +209,11 @@ def test_promoted_variable_becomes_regex_matcher() -> None:
         variables=variables,
         promoted={"db": "postgresql_database_name"},
     )
-    assert 'postgresql_database_name=~"$db"' in r.promql
+    # Anchored for whole-value (Datadog exact) matching in Dash0, which does not anchor
+    # `=~`; the template stays valid PromQL.
+    assert r.promql == (
+        'avg ({otel_metric_name="postgresql.backends", otel_metric_type="sum", '
+        'postgresql_database_name=~"^($db)$"})'
+    )
+    assert check_promql_syntax(r.promql) is None
     assert codes(r) == []
