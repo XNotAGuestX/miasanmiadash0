@@ -5,8 +5,8 @@ fixtures/expected/<service>/<dashboard>/expected.yaml (`requests:`), with the
 input resolved from the pinned source dashboard by `source_path`.
 
 Interface under test:
-    converter.source.datadog.load_mapping(path) -> Mapping
-    converter.source.datadog.translate_request(
+    migrator.source.datadog.load_mapping(path) -> Mapping
+    migrator.source.datadog.translate_request(
         request: dict, *, mapping, variables: list[dict], source_path: str
     ) -> RequestResult
     RequestResult: dataclass with outcome ("translated" | "blocked"),
@@ -24,7 +24,7 @@ from support import as_plain, assert_diagnostics, canonical_list, case_params
 
 
 def _translate(case):
-    from converter.source.datadog import load_mapping, translate_request
+    from migrator.source.datadog import load_mapping, translate_request
 
     return as_plain(
         translate_request(

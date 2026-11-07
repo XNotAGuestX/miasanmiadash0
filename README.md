@@ -24,9 +24,10 @@ Build a working vertical slice before expanding feature coverage. Business resea
 
 ## Proposed implementation defaults
 
-- TypeScript, Node.js 22+, npm, one CLI package.
-- Commander for CLI arguments, Zod for boundary validation, Vitest for tests, tsx for local execution, tsc for type checking/building.
-- Built-in `fetch` for HTTP. Small deterministic parser and explicit mapping files for translation.
+- Python ≥ 3.13, one CLI package (`src/migrator`), managed with [uv](https://docs.astral.sh/uv/): `pyproject.toml`, a committed `uv.lock`, and `.python-version`.
+- argparse for CLI arguments, pydantic for boundary validation, pyyaml for YAML, `promql-parser` for the PromQL syntax check; pytest, mypy --strict and ruff for checks.
+- One entry point for everything: `uv sync` once, then `uv run migrator <command>` (`convert`, `test`, `typecheck`, `lint`, `check`).
+- Standard library for HTTP. Small deterministic parser and explicit mapping files for translation.
 - One `SourceProvider` interface selected with `--source` (only `datadog` for now). Each provider owns its own translation; shared code handles the report, manifest, and Dash0 import.
 - JSON inputs/outputs first. No frontend, database, or hosted service. LLM involvement in conversion is prohibited, not merely unnecessary.
 

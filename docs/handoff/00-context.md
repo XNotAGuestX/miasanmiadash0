@@ -40,28 +40,30 @@ Build a **deterministic converter from Datadog dashboards to Perses**, the open-
 ## 4. Repository layout (agreed module boundaries)
 
 Stack switched from TypeScript to Python on 2026-11-07 (user decision). The plans 01–10 still name
-TypeScript files and vitest commands; read them through this table: `src/<x>.ts` → `src/converter/<x>.py`,
-`src/source/datadog/<x>.ts` → `src/converter/source/datadog/<x>.py` (dashes become underscores),
+TypeScript files and vitest commands; read them through this table: `src/<x>.ts` → `src/migrator/<x>.py`,
+`src/source/datadog/<x>.ts` → `src/migrator/source/datadog/<x>.py` (dashes become underscores),
 `tests/**/*.test.ts` → `tests/unit/**/test_*.py`, `npx vitest run <path>` / `npm test` → `uv run pytest <path>`,
 `zod` → explicit validation functions, `npm run typecheck` → none required for the MVP.
 
 ```text
-src/converter/
-  __init__.py
-  cli.py                     # argparse wiring, exit codes
+pyproject.toml                     # package metadata, deps, mypy/ruff/pytest config, uv_build backend
+uv.lock                            # committed lockfile (uv)
+.python-version                    # 3.13, the interpreter uv uses
+src/migrator/
+  cli.py                     # argparse wiring, exit codes; also the test/typecheck/lint/check commands
   convert.py                 # run_convert(): input → provider → writers → report
   input.py                   # collect files from --input paths (sorted, recursive)
-  target.py                  # shared output types as dataclasses (Perses, rules, Diagnostic, outcomes)
+  target.py                  # shared output types (Perses, rules, Diagnostic, outcomes)
   promql.py                  # label-value escaping and selector rendering
   write.py                   # stable JSON/YAML writers, slugs, sha256
   report.py                  # report.json, manifest.json, terminal summary
-  validation.py              # schema checks for emitted Perses dashboards and rules
+  validation.py              # pydantic models for emitted Perses dashboards and rules
   version.py                 # COMPILER_VERSION
-  source/provider.py         # SourceProvider protocol + static table
+  source/provider.py         # SourceProvider interface + static table
   source/datadog/__init__.py # datadog provider; exports parse_metric_query, load_mapping,
                              # translate_request, translate_widget, translate_dashboard (tests/README.md)
   source/datadog/assets.py   # recognize, unwrap and identify Datadog assets
-  source/datadog/model.py    # parsed query/monitor dataclasses
+  source/datadog/model.py    # parsed query/monitor types
   source/datadog/parse_query.py
   source/datadog/mapping.py
   source/datadog/compile_query.py
@@ -77,15 +79,21 @@ fixtures/expected/<service>/<dashboard>/           # expected.yaml (generated) +
 scripts/                          # dev-time fixture tooling only; never imported by the converter or tests
 tests/unit/requests/              # pytest: query parser, single request, single widget
 tests/unit/dashboards/            # pytest: whole dashboard
+tests/scripts/                    # pytest: dev-time scripts (oracle runner)
 ```
 
 ## 5. Stack
 
-- Python ≥ 3.11, one package `converter` under `src/` (`pyproject.toml`, setuptools). uv manages the interpreter (`.python-version`, uv-managed only) and all dependencies (`uv.lock`); no pip, venv or requirements files.
-- Runtime library: `PyYAML`. No network or credentials in the compiler.
-- Dev tooling (uv dependency group `dev`): `pytest`, `promql-parser` (PromQL syntax check and canonical comparison in tests). Group `oracle`: `mcp`, for the development-time `scripts/run_oracle.py` only.
-- Setup: `uv sync`. Add dependencies with `uv add <pkg>` (runtime) or `uv add --group dev <pkg>`.
-- Run: `uv run pytest` (skips unreviewed oracle cases) or `uv run pytest --include-unreviewed`. See `tests/README.md`.
+- Python ≥ 3.13 (`requires-python = ">=3.13"` in `pyproject.toml`, pinned to `3.13` in `.python-version`), one package `migrator` under `src/`, fully typed (`py.typed`, `mypy --strict`).
+- **uv** manages the interpreter, the virtualenv, dependencies and the build (`uv_build` backend). Commit `uv.lock`; add dependencies with `uv add <pkg>` (dev: `uv add --dev <pkg>`), never with `pip install`.
+- Libraries: `pydantic` (boundary validation), `pyyaml` (YAML output), `promql-parser` (PromQL syntax check). The CLI uses the standard-library `argparse`; HTTP uses the standard library.
+- Dev tooling: `pytest`, `mypy`, `ruff`, `types-pyyaml`.
+- Commands, all through one entry point (`[project.scripts] migrator = "migrator.cli:main"`):
+  - `uv sync`: create `.venv` and install runtime + dev dependencies.
+  - `uv run migrator convert --source datadog --input <path>... --mapping <file> --out <dir>`
+  - `uv run migrator test [pytest args]`, for example `uv run migrator test tests/datadog -k parse`.
+  - `uv run migrator typecheck` (mypy --strict), `uv run migrator lint` (ruff), `uv run migrator check` (lint + typecheck + test).
+- **Reading the plans.** Some interface and test snippets in plans 01–10 are still written as TypeScript. They specify behaviour and names, not syntax: implement them in Python with snake_case names (`runConvert` → `run_convert`), dataclasses or pydantic models for interfaces, `Literal` unions for string-literal types, and pytest tests. Zod maps to pydantic, Lezer PromQL to `promql-parser`, `node:crypto` to `hashlib`, `fetch` to `urllib.request`.
 
 ## 6. Source facts (Datadog)
 

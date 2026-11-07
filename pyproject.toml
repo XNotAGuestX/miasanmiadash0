@@ -1,5 +1,5 @@
 [project]
-name = "converter"
+name = "migrator"
 version = "0.0.0"
 description = "Deterministic Datadog -> Perses dashboard converter (no LLM in any conversion step)"
 requires-python = ">=3.11"

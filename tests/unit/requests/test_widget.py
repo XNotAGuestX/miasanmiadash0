@@ -3,7 +3,7 @@
 A widget is all or nothing: never drop a series (00-context.md §8).
 
 Interface under test:
-    converter.source.datadog.translate_widget(
+    migrator.source.datadog.translate_widget(
         widget: dict, *, mapping, variables: list[dict], source_path: str
     ) -> WidgetResult
     WidgetResult: dataclass with outcome ("translated" | "blocked"),
@@ -20,7 +20,7 @@ from support import as_plain, assert_diagnostics, canonical_list, case_params
 
 
 def _translate(case):
-    from converter.source.datadog import load_mapping, translate_widget
+    from migrator.source.datadog import load_mapping, translate_widget
 
     return as_plain(
         translate_widget(

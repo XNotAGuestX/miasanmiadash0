@@ -1,7 +1,7 @@
 """Unit tests: Datadog metric query string -> parsed model (plan 02).
 
 Interface under test:
-    converter.source.datadog.parse_metric_query(text: str) -> ParseResult
+    migrator.source.datadog.parse_metric_query(text: str) -> ParseResult
     ParseResult: dataclass with ok: bool, query: MetricQuery | None,
                  code: str | None, offset: int | None, message: str | None
     MetricQuery: aggregator, metric, filters[{kind, key, value} | {kind, name}],
@@ -31,7 +31,7 @@ def _subset(expected, actual, path="result"):
 
 
 def _parse(text: str):
-    from converter.source.datadog import parse_metric_query
+    from migrator.source.datadog import parse_metric_query
 
     return as_plain(parse_metric_query(text))
 

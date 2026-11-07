@@ -6,11 +6,11 @@
 
 **Architecture:**
 
-- `destination/dash0.ts` holds HTTP calls only; there's no translation logic in it.
+- `destination/dash0.py` holds HTTP calls only; there's no translation logic in it.
 - `publish` validates the manifest and artifact hashes before any write, then publishes sequentially in manifest order.
 - Receipts prevent duplicates. An ambiguous timeout is recorded as `unknown` and never retried.
 
-**Tech Stack:** TypeScript, built-in `fetch`, vitest (with mocked fetch).
+**Tech Stack:** Python 3.13 (uv), standard-library `urllib.request`, pytest (with the HTTP call mocked).
 
 **Spec:** [00-context.md](00-context.md) §2 (rules 5–6) and §7, plus the destination rules in `AGENTS.md` ("Credentials and live operations").
 
@@ -78,8 +78,8 @@ Tasks 2–4 can be built offline with mocks.
 ### Task 2: The Dash0 client
 
 **Files:**
-- Create: `src/destination/dash0.ts`
-- Test: `tests/destination/dash0.test.ts`
+- Create: `src/migrator/destination/dash0.py`
+- Test: `tests/destination/test_dash0.py`
 
 **Interfaces:**
 - Produces:
@@ -111,8 +111,8 @@ export function readBack(kind: "dashboard" | "check-rule", id: string, cfg: Dash
 ### Task 3: Receipts
 
 **Files:**
-- Create: `src/receipts.ts`
-- Test: `tests/receipts.test.ts`
+- Create: `src/migrator/receipts.py`
+- Test: `tests/test_receipts.py`
 
 **Interfaces:**
 - Produces:
@@ -135,9 +135,9 @@ export function decide(r: Receipt[], path: string, sha256: string, apiUrl: strin
 ### Task 4: The publish command
 
 **Files:**
-- Create: `src/publish.ts`
-- Modify: `src/cli.ts`
-- Test: `tests/publish.test.ts`
+- Create: `src/migrator/publish.py`
+- Modify: `src/migrator/cli.py`
+- Test: `tests/test_publish.py`
 
 **Interfaces:**
 - Produces:
@@ -165,11 +165,11 @@ export function decide(r: Receipt[], path: string, sha256: string, apiUrl: strin
   - `stops on auth failure`: after the first 401 there are no further calls, and the exit code is 1.
   - `partial requires allow-partial`: exit 2 and the partial dashboard is skipped; with the flag, it's published.
   - `writes receipts per asset`: the second asset fails, so the receipts show `imported` and `failed`, and the exit code is 1.
-- [ ] **Step 2: Run it.** It must FAIL. **Step 3: Implement it.** **Step 4: Verify.** `npm test && npm run typecheck` must pass. **Step 5: Commit.**
+- [ ] **Step 2: Run it.** It must FAIL. **Step 3: Implement it.** **Step 4: Verify.** `uv run migrator check` must pass. **Step 5: Commit.**
 
 ### Task 5: Live publish and evidence (needs the token and the user's go-ahead)
 
-- [ ] **Step 1:** Run `npm run dev -- publish --from <golden run dir> --dry-run`, and review the plan with the user.
+- [ ] **Step 1:** Run `uv run migrator publish --from <golden run dir> --dry-run`, and review the plan with the user.
 - [ ] **Step 2:** With the user's go-ahead, run it without `--dry-run`. Record the returned IDs from `import-results.json`.
 - [ ] **Step 3:** Read each resource back. In the Dash0 UI, confirm the Connections chart shows `astronomy_db` and `postgres`, and the check rule shows the expression, window and thresholds, and is disabled.
 - [ ] **Step 4:** Update `docs/STATUS.md` with the IDs (sanitized), the evidence location and `api: passed`. Set `semantics` only after the plan 09 threshold demo. Mark plan 07 Done in `docs/handoff/README.md`, and commit.

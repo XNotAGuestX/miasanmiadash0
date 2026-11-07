@@ -2,7 +2,7 @@
 
 Test-first suite for the deterministic Datadog → Perses (Dash0 PromQL) converter. It is written
 before the engine exists: today every test fails red with `ModuleNotFoundError: No module named
-'converter.source'`. A case turns green when the converter implements the interface below and
+'migrator.source'`. A case turns green when the converter implements the interface below and
 produces exactly the expected outcome.
 
 No LLM takes part in conversion (`AGENTS.md`). Agent0 was used **only at development time** to
@@ -36,7 +36,7 @@ Tests are offline: an autouse fixture in `conftest.py` replaces `socket.socket` 
 
 ## Interfaces under test
 
-All from `converter.source.datadog` (layout: `docs/handoff/00-context.md` §4). Results are
+All from `migrator.source.datadog` (layout: `docs/handoff/00-context.md` §4). Results are
 dataclasses; tests convert them to plain dicts with `support.as_plain`, so field names matter and
 class names do not.
 

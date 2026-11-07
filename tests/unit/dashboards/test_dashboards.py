@@ -1,7 +1,7 @@
 """Unit tests: a whole Datadog dashboard -> a Perses dashboard + per-widget outcomes.
 
 Interface under test:
-    converter.source.datadog.translate_dashboard(
+    migrator.source.datadog.translate_dashboard(
         dashboard: dict, *, mapping, project: str
     ) -> DashboardResult
     DashboardResult: dataclass with outcome ("translated" | "partial" | "blocked"),
@@ -22,7 +22,7 @@ from support import as_plain, canonical_json, canonical_list, case_params, leaf_
 
 
 def _translate(case):
-    from converter.source.datadog import load_mapping, translate_dashboard
+    from migrator.source.datadog import load_mapping, translate_dashboard
 
     return as_plain(
         translate_dashboard(

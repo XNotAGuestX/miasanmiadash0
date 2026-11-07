@@ -155,7 +155,7 @@ wheels = [
 ]
 
 [[package]]
-name = "converter"
+name = "migrator"
 version = "0.0.0"
 source = { editable = "." }
 default-groups = ["dev", "oracle"]
