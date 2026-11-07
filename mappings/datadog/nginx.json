@@ -1,0 +1,42 @@
+{
+  "metrics": {
+    "nginx.net.connections": {
+      "kind": "gauge",
+      "labels": {
+        "host": "host_name"
+      },
+      "matchers": {
+        "state": "active"
+      },
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/#metrics-mappings (nginxreceiver row nginx.connections_current <-> nginx.net.connections, filter state:active); integrations-core@a9b9e42 nginx/metadata.csv: gauge, connection, 'The total number of active connections'; Dash0 default, 2026-11-07 (read-only): count by (otel_metric_name) (last_over_time({otel_metric_type=\"sum\", otel_metric_name=~\"...\"}[24h])) returned series for nginx.connections_current with state in (active, reading, waiting, writing); host_name=docker-desktop",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "connection",
+      "target": {
+        "name": "nginx.connections_current",
+        "type": "sum"
+      },
+      "targetUnit": "{connections}"
+    },
+    "nginx.net.waiting": {
+      "kind": "gauge",
+      "labels": {
+        "host": "host_name"
+      },
+      "matchers": {
+        "state": "waiting"
+      },
+      "ref": "https://docs.datadoghq.com/opentelemetry/guide/metrics_mapping/#metrics-mappings (nginxreceiver row nginx.connections_current <-> nginx.net.waiting, filter state:waiting); integrations-core@a9b9e42 nginx/metadata.csv: gauge, connection, 'keep-alive connections waiting for work'; Dash0 default, 2026-11-07 (read-only): count by (otel_metric_name) (last_over_time({otel_metric_type=\"sum\", otel_metric_name=~\"...\"}[24h])) returned series for nginx.connections_current with state in (active, reading, waiting, writing); host_name=docker-desktop",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "connection",
+      "target": {
+        "name": "nginx.connections_current",
+        "type": "sum"
+      },
+      "targetUnit": "{connections}"
+    }
+  },
+  "source": "datadog",
+  "version": 1
+}
