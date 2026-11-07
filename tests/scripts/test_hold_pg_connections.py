@@ -16,12 +16,17 @@ PASSWORD = "s3cret-pw"
 
 
 def make_stub(
-    directory: Path, max_conn: int = 100, current: int = 8, sessions_fail: bool = False
+    directory: Path,
+    max_conn: int = 100,
+    current: int = 8,
+    sessions_fail: bool = False,
+    report_open: bool = True,
 ) -> Path:
     """A stub `docker` that answers the read-only queries, records every call, and
     for pg_sleep sessions records its pid and sleeps until killed (or, with
     sessions_fail, exits at once like psql with bad credentials)."""
     session = "exit 2" if sessions_fail else f'echo $$ > "{directory}/child-$$.pid"; exec sleep 300'
+    open_count = f'ls "{directory}" | grep -c "^child-"' if report_open else "echo 0"
     stub = directory / "docker"
     stub.write_text(
         "#!/bin/sh\n"
@@ -29,8 +34,7 @@ def make_stub(
         'case "$*" in\n'
         f'  *"show max_connections"*) echo {max_conn} ;;\n'
         '  *"show superuser_reserved_connections"*) echo 3 ;;\n'
-        f'  *"count(*) from pg_stat_activity where application_name"*) '
-        f'ls "{directory}" | grep -c "^child-" ;;\n'
+        f'  *"count(*) from pg_stat_activity where application_name"*) {open_count} ;;\n'
         f'  *"count(*) from pg_stat_activity"*) echo {current} ;;\n'
         "  *pg_terminate_backend*) echo t ;;\n"
         f"  *pg_sleep*) {session} ;;\n"
@@ -66,6 +70,16 @@ def run(directory: Path, *args: str, **env: str) -> subprocess.CompletedProcess[
 def calls(directory: Path) -> str:
     log = directory / "calls.log"
     return log.read_text() if log.exists() else ""
+
+
+def default_sigint() -> None:
+    """Run in the child before exec: restore SIGINT's default action.
+
+    A process started in the background of a non-interactive shell (a CI step,
+    `pytest &`) inherits SIGINT as ignored, and a POSIX shell can't trap a
+    signal that was ignored on entry, so the script would never see Ctrl-C.
+    """
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 
 def alive(pid: int) -> bool:
@@ -147,19 +161,22 @@ def test_rejects_missing_container(tmp_path: Path) -> None:
 
 def test_sigint_cleanup_releases_connections(tmp_path: Path) -> None:
     stub = make_stub(tmp_path)
+    # Its own session, so the SIGINT goes to the whole process group, like Ctrl-C.
     proc = subprocess.Popen(
         ["sh", str(SCRIPT), "3", "900"],
         env=env_for(stub),
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
+        start_new_session=True,
+        preexec_fn=default_sigint,
     )
     try:
         wait_for(lambda: len(list(stub.glob("child-*.pid"))) == 3)
         pids = [int(p.read_text()) for p in stub.glob("child-*.pid")]
         assert all(alive(p) for p in pids)
 
-        proc.send_signal(signal.SIGINT)
+        os.killpg(proc.pid, signal.SIGINT)
         proc.wait(timeout=10)
         wait_for(lambda: not any(alive(p) for p in pids))
         # Server-side sessions are terminated too: killing `docker exec` does not end psql.
@@ -167,3 +184,43 @@ def test_sigint_cleanup_releases_connections(tmp_path: Path) -> None:
     finally:
         if proc.poll() is None:
             proc.kill()
+
+
+@pytest.mark.parametrize(
+    ("to_group", "sig", "code"),
+    [(True, signal.SIGINT, 130), (False, signal.SIGTERM, 143)],
+    ids=["ctrl-c-to-group", "term-to-pid"],
+)
+def test_signal_during_startup_poll_is_handled_at_once(
+    tmp_path: Path, to_group: bool, sig: signal.Signals, code: int
+) -> None:
+    # Sessions start but are never reported open, so the script stays in its
+    # 10 s startup poll. Ctrl-C (SIGINT to the whole group) or TERM to the PID
+    # must run the trap at once. (A SIGINT to the PID alone is not tested: bash
+    # discards it while a foreground child that didn't die of it is running.)
+    stub = make_stub(tmp_path, report_open=False)
+    proc = subprocess.Popen(
+        ["sh", str(SCRIPT), "2", "900"],
+        env=env_for(stub),
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+        preexec_fn=default_sigint,
+    )
+    try:
+        wait_for(lambda: len(list(stub.glob("child-*.pid"))) == 2)
+        pids = [int(p.read_text()) for p in stub.glob("child-*.pid")]
+        time.sleep(1.5)  # inside the poll loop
+        started = time.monotonic()
+        if to_group:
+            os.killpg(proc.pid, sig)
+        else:
+            proc.send_signal(sig)
+        assert proc.wait(timeout=5) == code
+        assert time.monotonic() - started < 3
+        wait_for(lambda: not any(alive(p) for p in pids))
+        assert "pg_terminate_backend" in calls(stub)
+    finally:
+        if proc.poll() is None:
+            os.killpg(proc.pid, signal.SIGKILL)
