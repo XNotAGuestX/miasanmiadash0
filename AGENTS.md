@@ -70,12 +70,14 @@ From now on, every task is tracked as a GitHub issue in `XNotAGuestX/thinchackda
 - No secrets, raw live responses or run artifacts committed.
 - Docs touched by the change are updated (README, plan status in `docs/handoff/README.md`, `docs/STATUS.md` when a plan finishes).
 - Work is on its own branch; the PR says `Closes #<this issue>`; follow-ups are filed as new issues.
-- Merged into `main` by Felix.
+- Reviewed by XNotAGuestX (a PR approval, or Felix's explicit go-ahead when the PR comes from his own account).
+- Merged into `main` by Felix or an agent acting for him.
 
 ## Branches and merging
 
 - By default every agent works on its own branch, one per issue, created from current `main` and named `<issue-number>-<short-slug>` (for example `17-query-parser`). Push it and open a PR to `main`.
-- **Only Felix merges into `main`.** Agents never merge their own or anyone's branch, unless the user explicitly forces that specific merge; that covers only the named branch at that time and is not standing permission.
+- **XNotAGuestX (Felix) is the required reviewer on every PR and every task issue.** `.github/CODEOWNERS` requests the review automatically on PRs from other accounts. GitHub doesn't let an account approve its own PR, so for a PR opened from Felix's account, his explicit go-ahead (a PR comment, or his instruction in the agent session) counts as the review.
+- **Merging into `main`:** Felix, or an agent acting for Felix, merges a PR once it is reviewed as above and its checks pass. Other contributors and their agents never merge. Without the review, an agent merges only when Felix explicitly forces that specific merge.
 - Do not commit directly to `main`. Never force-push or rewrite `main`'s history, and stop to report conflicts or failing checks instead of resolving them by discarding changes.
 - Submission to the challenge follows the fork → feature branch → upstream PR workflow (plan 09 Task 5), only on Felix's explicit request. Do not push or open a PR upstream merely because this document describes submission.
 

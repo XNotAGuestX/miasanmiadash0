@@ -82,6 +82,7 @@ body:
         - [ ] No secrets, raw live responses or run artifacts committed
         - [ ] Docs touched by the change are updated (README, plan status in `docs/handoff/README.md`, `docs/STATUS.md` when a plan finishes)
         - [ ] Work is on its own branch; the PR says `Closes #<this issue>`; follow-ups are filed as new issues
-        - [ ] Merged into `main` by Felix
+        - [ ] Reviewed by XNotAGuestX (a PR approval, or Felix's explicit go-ahead when the PR comes from his own account)
+        - [ ] Merged into `main` by Felix or an agent acting for him
     validations:
       required: true

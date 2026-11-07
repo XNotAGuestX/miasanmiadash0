@@ -10,6 +10,6 @@ Then read:
 2. [Current status and ownership](docs/STATUS.md).
 3. Background: [project handoff](docs/PROJECT_HANDOFF.md) and [execution plan](docs/EXECUTION_PLAN.md). `docs/handoff/` wins where they conflict.
 
-Keep shared instructions in `AGENTS.md`. Use tool-neutral code, task, and subsystem names. Respect existing work and file ownership, finish the MVP before expanding scope, track and discuss work in GitHub issues, work on your own branch (only Felix merges), and comment the handoff on the issue.
+Keep shared instructions in `AGENTS.md`. Use tool-neutral code, task, and subsystem names. Respect existing work and file ownership, finish the MVP before expanding scope, track and discuss work in GitHub issues, work on your own branch (XNotAGuestX reviews every PR; Felix or his agent merges), and comment the handoff on the issue.
 
 This file adds no separate architecture or workflow. Explicit user instructions take precedence over project defaults.

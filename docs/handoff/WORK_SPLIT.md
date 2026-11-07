@@ -14,7 +14,7 @@ by assigning their issues.
 
 ## Day 0 (together)
 
-- [ ] The integration branch is `main`: one branch and PR per issue, merged by Felix (`AGENTS.md`).
+- [ ] The integration branch is `main`: one branch and PR per issue, reviewed by XNotAGuestX and merged by Felix or his agent (`AGENTS.md`).
       The starter/fork decision is [#2](https://github.com/XNotAGuestX/thinchackdash/issues/2).
 - [ ] Track B lands 01.T1–T2 first (S1).
 

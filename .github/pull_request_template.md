@@ -18,4 +18,4 @@ Closes #
 
 ## For the reviewer
 
-<!-- Golden diffs to look at, open questions, follow-up issues filed. Only Felix merges. -->
+<!-- Golden diffs to look at, open questions, follow-up issues filed. XNotAGuestX reviews every PR; Felix or his agent merges after that review. -->
