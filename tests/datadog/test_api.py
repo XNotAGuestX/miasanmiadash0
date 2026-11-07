@@ -6,9 +6,8 @@ import pytest
 
 from migrator.http import HttpRequest, HttpResponse, HttpTransportError
 from migrator.input import InputError
-from migrator.source.asset import FetchSelection
+from migrator.source.asset import FetchSelection, SourceFetchError
 from migrator.source.datadog.api import (
-    SourceFetchError,
     fetch_datadog_assets,
     read_datadog_config,
 )
