@@ -30,11 +30,11 @@ Do not spend the presentation waiting for an entire five-minute window to elapse
 Use the proposed CLI sequence in [the handoff](PROJECT_HANDOFF.md#cli-and-artifact-contract) until README contains executable setup/usage instructions. For offline review, the final project should provide:
 
 ```sh
-npm ci
-npm run typecheck
-npm test
-npm run build
-npm run dev -- compile --source datadog --dashboard fixtures/datadog/dashboard.json --monitor fixtures/datadog/monitor.json --mapping fixtures/mappings/demo.json --out artifacts/review
+uv sync
+uv run migrator typecheck
+uv run migrator test
+uv build
+uv run migrator compile --source datadog --dashboard fixtures/datadog/dashboard.json --monitor fixtures/datadog/monitor.json --mapping fixtures/mappings/demo.json --out artifacts/review
 ```
 
 These scripts and fixtures must be created and verified before this sequence is marked usable. The offline path must not need Datadog, Dash0, Codex, Claude, or model API credentials.

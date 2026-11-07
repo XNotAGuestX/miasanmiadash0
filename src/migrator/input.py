@@ -22,7 +22,14 @@ class InputFile:
 
 
 def _read(path: Path, source_id: str) -> InputFile:
-    text = path.read_text(encoding="utf-8")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as err:
+        raise InputError(
+            f"input is not valid UTF-8: {source_id} (byte {err.start}: {err.reason})"
+        ) from None
+    except OSError as err:
+        raise InputError(f"cannot read input: {source_id} ({err.strerror or err})") from None
     return InputFile(source_id=source_id, path=str(path), text=text, sha256=sha256(text))
 
 

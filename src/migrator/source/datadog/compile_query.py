@@ -158,7 +158,23 @@ def compile_metric_query(
             and var.prefix is not None
             and entry.labels.get(var.prefix) == promoted
         ):
-            matchers.append(Matcher(promoted, f"${var.name}", "=~"))
+            # Datadog `$var` filters are exact tag matches. The dashboard substitutes the
+            # value at view time, so the closest documented form is the anchored
+            # alternation `=~"^($name)$"`: Dash0 does not anchor `=~` and documents exactly
+            # this form for whole-value matching
+            # (dash0.com/docs/dash0/dashboards/bind-variables-to-queries). Under Prometheus
+            # semantics (`=~` is fully anchored) the anchors change nothing.
+            # Assumptions and residual gaps (PR #85):
+            # - Values are not regex-escaped: a selected `a.b` also matches `aXb`. Perses
+            #   documents `${name:regex}`, but its single-backslash output (`(a\.b)`) is an
+            #   invalid escape in a double-quoted PromQL string; the double-backslash
+            #   `regexliteral` format exists only in Perses' source, is undocumented, and
+            #   Dash0 documents no format modifiers. If Dash0 lacked it, `${name:...}` would
+            #   stay literal and match nothing, which is worse than a wider match.
+            # - What Dash0 substitutes for the "All" default (`$__all`) is undocumented;
+            #   Perses expands it to the alternation of all values, which the anchors keep.
+            #   Confirm in the Dash0 ListVariable render check (plan 07 Task 1).
+            matchers.append(Matcher(promoted, f"^(${var.name})$", "=~"))
         elif var.default is None or var.default == "*":
             default_note = "default '*'" if var.default == "*" else "no default"
             d.add(
