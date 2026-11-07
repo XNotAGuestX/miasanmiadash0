@@ -24,23 +24,44 @@ DASH_METRICS = "dashboards/postgres-metrics.json"
 DASH_OVERVIEW = "dashboards/postgres-overview.json"
 
 
-class FakeSend:
-    """Answers POSTs in order from `responses`; records every request."""
+class DashOk:
+    """A successful dashboard import; like live Dash0, its response carries no id."""
 
-    def __init__(self, *responses: HttpResponse | Exception) -> None:
+    def __init__(self, new_id: str) -> None:
+        self.new_id = new_id
+
+
+class FakeSend:
+    """A stand-in Dash0. Answers POSTs in order from `responses` and records them in
+    `requests`; answers GET /api/dashboards from its own state (recorded in `gets`).
+    A DashOk response registers the posted dashboard under its metadata.name.
+    """
+
+    def __init__(self, *responses: HttpResponse | DashOk | Exception) -> None:
         self.responses = list(responses)
         self.requests: list[HttpRequest] = []
+        self.gets: list[HttpRequest] = []
+        self.dashboards: list[dict[str, str]] = []
 
     def __call__(self, req: HttpRequest) -> HttpResponse:
+        if req.method == "GET":
+            self.gets.append(req)
+            assert req.url.split("?")[0].endswith("/api/dashboards")
+            return HttpResponse(200, json.dumps(self.dashboards).encode())
         self.requests.append(req)
         res = self.responses.pop(0)
         if isinstance(res, Exception):
             raise res
+        if isinstance(res, DashOk):
+            body = json.loads(req.body or b"{}")
+            name = body["metadata"]["name"]
+            self.dashboards.append({"id": res.new_id, "name": name, "dataset": "default"})
+            return HttpResponse(200, json.dumps(body).encode())
         return res
 
 
-def dashboard_ok(i: str) -> HttpResponse:
-    return HttpResponse(200, json.dumps({"metadata": {"dash0Extensions": {"id": i}}}).encode())
+def dashboard_ok(i: str) -> DashOk:
+    return DashOk(i)
 
 
 def rule_ok(i: str) -> HttpResponse:
@@ -146,7 +167,9 @@ def test_writes_receipts_per_asset(run_dir: Path) -> None:
     saved = {x.path: x for x in load_receipts(run_dir)}
     assert (saved[CHECK].status, saved[CHECK].id) == ("imported", "r1")
     assert (saved[DASH_METRICS].status, saved[DASH_METRICS].http_status) == ("failed", 400)
-    assert saved[DASH_OVERVIEW].status == "imported"
+    # The dashboard id comes from listing Dash0 before and after the import.
+    assert (saved[DASH_OVERVIEW].status, saved[DASH_OVERVIEW].id) == ("imported", "d2")
+    assert len(send.gets) == 3  # before each dashboard import; after only on a 2xx
     assert r.receipts == sorted(saved.values(), key=lambda x: x.key)
 
 
@@ -221,6 +244,12 @@ def test_name_prefix_renames_sent_bodies_not_files(run_dir: Path) -> None:
     assert all(r.name_prefix == "demo-" for r in run.receipts)
     saved = json.loads((run_dir / "import-results.json").read_text())
     assert {r["namePrefix"] for r in saved} == {"demo-"}
+    # The listing matches the prefixed metadata.name, so the right ids are recorded.
+    assert {r["path"]: r["id"] for r in saved} == {
+        CHECK: "r1",
+        DASH_METRICS: "d1",
+        DASH_OVERVIEW: "d2",
+    }
 
 
 def test_name_prefix_shows_in_dry_run(run_dir: Path) -> None:
