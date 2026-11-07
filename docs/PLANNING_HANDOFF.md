@@ -2,6 +2,8 @@
 
 Written for the next planning session from the approved planning session of 2026-11-07. It describes planned behavior; nothing below is implemented unless stated.
 
+> **Update (2026-11-07, about 14:50 UTC): M0 is done.** The Dash0 inventory is in [DASH0_INVENTORY.md](DASH0_INVENTORY.md). It corrects §5.2, §6 and §8 (the real Postgres labels are `postgresql_database_name` and `postgresql_table_name`, and series must be deduplicated), adds the gaps in [§8a](#8a-gaps-found-by-the-inventory), and sets the service order in [§9](#9-draft-development-plan-finalize-after-m0). The open decisions are now §7 items 1–5.
+
 ## 1. Purpose and read order
 
 This document hands planning to a new session. The next session must:
@@ -28,7 +30,7 @@ Read first: `AGENTS.md`, `docs/PROJECT_HANDOFF.md`, `docs/STATUS.md`, `docs/EXEC
 | 7 | Output is **JSON, YAML, or direct publish** to an authenticated Dash0 user. | Planned. The docs still say YAML is P2; update them |
 | 8 | The target ("our side") telemetry fields come from https://opentelemetry.io/docs/specs/semconv/db/postgresql/ | Researched: there's a gap (§5.2), decision open (§7.1) |
 | 9 | **If not stated otherwise, output is in Perses format.** | Planned. Perses has no alert format (§7.2) |
-| 10 | **Order the development plan and services by the example data that exists in the default Dash0 environment.** | **Blocked**: no data access (§4) |
+| 10 | **Order the development plan and services by the example data that exists in the default Dash0 environment.** | **Done**: Postgres → host → Kafka → Redis → Nginx → Docker ([DASH0_INVENTORY.md](DASH0_INVENTORY.md#service-order)) |
 | 11 | Wanted: a short list of what's missing for Postgres and other services. | §8 |
 | — | Working preference: clarify with free-text questions; the user twice rejected multiple-choice prompts. | Note for the next session |
 
@@ -44,8 +46,8 @@ Read first: `AGENTS.md`, `docs/PROJECT_HANDOFF.md`, `docs/STATUS.md`, `docs/EXEC
 
 | Access | State |
 |---|---|
-| Dash0 MCP server | Configured at user scope: `dash0` → `https://api.eu-west-1.aws.dash0.com/mcp` (HTTP). `claude mcp list` shows **✔ Connected** after OAuth sign-in. **Its tools never loaded into this session**, even after `/exit` and resume, probably because the server was added after the session was created. **A brand-new session should load them.** Check with ToolSearch `dash0`. |
-| Dash0 API token | None. No `.env`; no `DASH0_*` environment variables. |
+| Dash0 MCP server | Configured at user scope: `dash0` → `https://api.eu-west-1.aws.dash0.com/mcp` (HTTP). **The tools load in a new session (verified 2026-11-07).** They're **read-only**: catalog, attributes, PromQL, SQL, `listDashboards`. They **can't** export a dashboard's JSON, list or import check rules, or import anything. |
+| Dash0 API token | None. No `.env`; no `DASH0_*` environment variables. **Still needed** for the known-good dashboard export (or a manual UI export), publish and read-back. |
 | Dash0 CLI (`dash0`) | Not installed. Available via Homebrew tap `dash0hq/homebrew-dash0-cli`, v1.20.0. |
 | Datadog API | No credentials (`DD_API_KEY`/`DD_APP_KEY` unset). Not needed for offline work with integrations-core assets. |
 | GitHub reads | `gh api` works for public repos (integrations-core, semconv, collector-contrib, perses, dash0hq). |
@@ -108,6 +110,12 @@ The folder contains `configuration/`, `dashboards/`, `dataflows.yaml`, `logs/`, 
   - Columns: `otel | datadog | description | filter | transform | Integration`. About 3,900 rows covering postgres, mysql, redis, kafka, hostmetrics, kubeletstats, docker, jvm and more.
   - Examples: `postgresql.connections` ↔ `postgresql.backends`; `postgresql.rows_hot_updated` ↔ `postgresql.operations` with filter `operation: hot_upd`.
   - Use it as the cited source for reviewed mapping entries. Still check each pair's meaning and units.
+- **What Dash0 actually has (M0).** The receiver data in `default` is **postgresqlreceiver 0.160.0**, not 0.165.0. It uses the **legacy resource attributes**: `postgresql_database_name` and `postgresql_table_name`, with no `db_namespace`, `db_collection_name` or `server_address`.
+  - Other labels: `operation`, `source`, `service_instance_id`, `host_name`.
+  - The optional `tup_*`, `blks_*` and `deadlocks` metrics **are enabled** in this stack.
+  - The replication and WAL metrics are absent (there's no replica).
+  - Host metrics use the newer semconv labels `cpu_mode`, `system_memory_state` and `system_network_direction`.
+  - Details: [DASH0_INVENTORY.md](DASH0_INVENTORY.md#postgresqlreceiver-01600-27-metrics).
 - `postgresql.percent_usage_connections` has **no 1:1 OTel metric**. It needs a reviewed derived expression, e.g. `sum by (server_address, server_port) (backends) / max by (…) (connection.max)`. Check the grouping labels against real data.
 
 ### 5.3 Dash0 (OpenAPI `https://www.dash0.com/docs/api-reference/openapi.json`, plus docs)
@@ -168,16 +176,30 @@ The folder contains `configuration/`, `dashboards/`, `dataflows.yaml`, `logs/`, 
 **Widget.** `avg:postgresql.connections{$scope} by {db}` becomes:
 
 ```
-avg by (db_namespace) ({otel_metric_name="postgresql.backends", otel_metric_type="sum"})
+avg by (postgresql_database_name) ({otel_metric_name="postgresql.backends", otel_metric_type="sum"})
 ```
 
+(Corrected after M0: the data has no `db_namespace` label.)
+
+- Label mapping: Datadog `db` → `postgresql_database_name`, `host` → `host_name`.
 - `$scope` is free-form with default `*`. It's dropped, with the warning `TEMPLATE_VARIABLE_DROPPED`.
 - The panel is a `TimeSeriesChart` with `PrometheusTimeSeriesQuery`, in a 24-column grid.
-- The other 8 widgets are reported per widget. The `system.*` ones are blocked as `MISSING_METRIC_MAPPING`, or as `UNSUPPORTED_UNIT_CONVERSION` because of the percent ↔ 0–1 scale.
+- The other 8 widgets are reported per widget, following the ladder in [DASH0_INVENTORY.md](DASH0_INVENTORY.md#postgres-postgres---metrics-widget-ladder):
+  - Rows, inserts/updates/deletes, load and network are iteration 2. They need the `rate` kind, several queries per widget and default aggregators.
+  - CPU, I/O wait, disk utilization and memory stay blocked in P0, as `UNSUPPORTED_UNIT_CONVERSION` (percent ↔ 0–1), `MISSING_METRIC_MAPPING`, or a formula.
 
 **Monitor.** `percent_usage_connections` becomes the condition `avg_over_time((avg(<reviewed ratio expression>))[15m:1m]) > $__threshold`.
 
+- **The ratio must deduplicate series.** The collector restart rotated resource hashes, so a plain `sum` double-counts during a handover (seen: 5 → 10).
+  - Candidate for review:
+    ```
+    sum by (service_instance_id) (max by (service_instance_id, postgresql_database_name) (backends))
+      / max by (service_instance_id) (connection.max)
+    ```
+  - Verify it at a 1m step against real data.
+- **Semantic note for the review:** `postgresql.backends` counts all backend types, including autovacuum and parallel workers. Datadog's `postgresql.connections` counts per-database connections (`numbackends`).
 - Thresholds are `{degraded: 0.8, failed: 0.9}`, interval 1m, `for: 0s`, and `enabled: false` at first.
+- **Real usage is about 0.08** (about 8 of 100), so the demo needs a controlled crossing (§8a).
 - The subquery keeps Datadog's order: aggregate across series first, then over time.
 - Approximations listed in the report: `require_full_window`, `new_host_delay`, the subquery step, and message templates (kept as escaped literal text).
 
@@ -185,9 +207,13 @@ avg by (db_namespace) ({otel_metric_name="postgresql.backends", otel_metric_type
 
 ## 7. Open decisions (ask the user in free text)
 
-1. **Target metric names, given the semconv gap.** Recommended: attribute names from semconv, server metric names, types and units from `postgresqlreceiver@v0.165.0`, and pairs cited from Datadog's metrics_mapping table. Whatever the inventory actually finds in Dash0 takes precedence. The alternative, strict semconv only, blocks nearly every Postgres widget and both monitors.
+1. **Target metric names, given the semconv gap.** Updated after M0. Recommended: target the metric names and labels **exactly as found in Dash0** (postgresqlreceiver 0.160.0, with its legacy resource-attribute labels). Cite each pair from Datadog's metrics_mapping table, and have a human review it. The alternative, strict semconv only, blocks nearly every Postgres widget and both monitors.
 2. **Alert file format** (Perses has none). Recommended: a standard Prometheus rule group, where warning and critical become two rules with a `severity` label; it's valid in Dash0 as is. Publishing renders one Dash0 check rule (`thresholds{degraded, failed}` + `$__threshold`) from the same internal condition. The alternative is writing the Dash0 check-rule body directly.
 3. **Monitor strictness.** Recommended: approximate and warn, for a reviewed allowlist only (`require_full_window`, `new_host_delay`, message templates as literal text; warning threshold → `degraded`). Everything else blocks import. The alternative is strict blocking, which leaves the golden monitor unpublished.
+4. **Demo telemetry owner** (new after M0).
+   - Who keeps the local OTel Demo stack running? It's the only source of `default` data.
+   - Recommended: add a connection-holder script against `astronomy-db` for the threshold crossing, rather than changing `max_connections`.
+5. **Dash0 token** (new after M0). Can someone create an API token scoped to `default`, or export one dashboard's JSON from the UI as the emitter reference?
 
 ## 8. What's missing
 
@@ -195,27 +221,57 @@ avg by (db_namespace) ({otel_metric_name="postgresql.backends", otel_metric_type
 
 | Area | Missing |
 |---|---|
-| Telemetry in Dash0 | **Unknown, the inventory is blocked.** If `postgresql.*` is absent, a demo feed is needed: `demo/docker-compose.yaml` with Postgres (`max_connections=20`) + otelcol-contrib v0.165.0 (`postgresqlreceiver`, `hostmetrics`) → Dash0 OTLP (`https://ingress.eu-west-1.aws.dash0.com`). It needs an ingest token, plus a script that opens idle connections to push usage past 0.8 and 0.9. |
-| Mapping | No reviewed `mappings/datadog/postgres.json`. Golden entries: `postgresql.connections`→`postgresql.backends` (`db`→`db_namespace`, `host`→`server_address`), and `postgresql.percent_usage_connections`→ a derived ratio. Iteration 2 adds `rows_*` → `postgresql.operations{operation=…}` with `rate()`; the `tup_*` metrics are disabled by default. |
-| Decisions | §7 items 1–3. |
+| Telemetry in Dash0 | **Present but ephemeral** (M0). `default` has 27 live `postgresql.*` metrics from a local OTel Demo run that started at 14:06 UTC. It still needs a durable source or an owner, plus a connection-holder script to push usage past 0.8 and 0.9 (real usage is about 0.08). See §8a. |
+| Mapping | No reviewed `mappings/datadog/postgres.json`. Golden entries: `postgresql.connections` → `postgresql.backends` (`db` → `postgresql_database_name`, `host` → `host_name`), and `postgresql.percent_usage_connections` → a deduplicated derived ratio (§6). Iteration 2 adds `rows_*` → `rate(postgresql.tup_*)`, which **are enabled** in this stack. |
+| Decisions | §7 items 1–5. |
 | Dash0 format | One real dashboard export (gives variable, Markdown and Table kinds), and confirmation of the check-rule `thresholds`. |
 | Fixtures | Postgres assets pinned to an integrations-core SHA, plus the license. |
 | Code | Everything: package, provider, folder input, parser, Perses and rule writers, publish, tests. |
 | Blocked by design | `replication_delay` (`anomalies`), `log_stream`, `top()` and `query_table` until they're supported. |
 
-**Other services.** These are unknown until the inventory runs. Each one needs:
+**Other services.** The M0 order and outcomes are in [DASH0_INVENTORY.md](DASH0_INVENTORY.md#service-order).
 
-- target metrics present in Dash0;
-- an integrations-core dashboard and monitor;
+- **Kafka:** 20 broker JMX metrics plus consumer-group lag. **2 of 3 monitors have direct counterparts:** `offline_partitions_count` → `kafka.partition.offline`, and the produce p99 latency → `kafka.request.time.99p{type="Produce"}` (grouped by instance, so P1). These are the best second-monitor candidates.
+- **Redis:** 29 metrics. Most overview widgets map. `high_mem` is blocked: there's no `redis.maxmemory`, and it uses a formula.
+- **Nginx:** 4 metrics. Connection states and request rate map; every monitor uses `anomalies` or is Plus-only, so all are blocked.
+- **Docker:** `container.*` data is present; there are no monitors.
+- **MySQL:** no data. Skip.
+
+Each service still needs:
+
 - rows in the metrics_mapping table;
 - a reviewed mapping file;
 - support for whichever widget and function types it uses.
 
 The core pipeline is shared, so a new service is mostly a new mapping file.
 
+## 8a. Gaps found by the inventory
+
+1. **The demo telemetry isn't durable.** `default` exists only while one Mac (`docker-desktop`) runs the OTel Demo. A dashboard is empty and a check has no data when it's off, and the 15-minute monitor window needs at least 15 continuous minutes of data. Needs an owner, or an always-on host (§7.4).
+2. **No controlled threshold crossing.** Usage is about 0.08 against thresholds of 0.8 and 0.9. Needs a connection-holder script, holding about 82, then about 92, idle connections, or a deliberate demo `max_connections`. Changing the source thresholds isn't allowed.
+3. **Label names differ from the plan.** The data has `postgresql_database_name` and `postgresql_table_name`, not `db_namespace` and `db_collection_name`. Corrected in §6 and §8.
+4. **Series deduplication.** Resource-hash churn after a collector restart makes `sum` double-count. Coarse-step queries over long ranges gave false values (48 backends and a 0.805 ratio, instead of 5 and 0.08). Deduplicate, and verify at a 1m step.
+5. **The MCP server is read-only.** It has no dashboard export and no check-rule list or import. A `DASH0_AUTH_TOKEN`, or a manual UI export, is still needed for the emitter reference, publish and read-back (§7.5).
+6. **No Datadog account or credentials.** Use integrations-core files pinned to `a9b9e42b7e484861ecbd1f5919da7c52a694b74d`, plus the license, for P0. API fetch stays at M4+.
+7. **Feature gaps the real assets expose:**
+   - unit scale (Datadog % vs OTel 0–1);
+   - the `rate` kind (Datadog per-second vs OTel monotonic sums);
+   - several queries per widget;
+   - default aggregators;
+   - formulas.
+8. **Repo:**
+   - The fork of `vimouzin/dash0-dashboard-migrator` is still unresolved.
+   - This branch is 2 `.gitignore` commits behind `main`.
+   - No deadline is recorded.
+
 ## 9. Draft development plan (finalize after M0)
 
-- **M0, Dash0 inventory (read-only).** Use the MCP tools in a new session, or a script with the endpoints in §5.3. Collect:
+- **M0, Dash0 inventory (read-only): DONE 2026-11-07**, through the MCP tools. Result: [DASH0_INVENTORY.md](DASH0_INVENTORY.md).
+  - Postgres metrics are present, so **Postgres is the golden case**. Then host, Kafka, Redis, Nginx, Docker.
+  - M0b (a separate demo feed) isn't needed. The existing feed still needs an owner and a controlled crossing (§8a).
+  - The one remaining item is the full dashboard read for the emitter reference, which needs a token or a UI export.
+
+  Original M0 scope, kept for reference. Collect:
   - datasets;
   - `otel_metric_name` values;
   - `service_name` values;
@@ -271,7 +327,7 @@ The core pipeline is shared, so a new service is mostly a new mapping file.
 
 ## 10. First steps for the next session
 
-1. Start a **new** session, not a resume, in `/Users/felix/tum/artemis/thinchackdash`, and confirm the `dash0` MCP tools load (ToolSearch `dash0`). Otherwise ask the user for a `.env` with a read-only token.
-2. Run M0 and record the sanitized inventory in `docs/STATUS.md`.
-3. Ask the user the §7 decisions in free text, and confirm the service order.
-4. Finalize §9 and update the docs on a feature branch based on `worktree-provider-interface-docs`.
+1. ~~Start a new session and confirm the `dash0` MCP tools load.~~ Done.
+2. ~~Run M0 and record the sanitized inventory.~~ Done: [DASH0_INVENTORY.md](DASH0_INVENTORY.md) and `docs/STATUS.md`.
+3. Ask the user the §7 decisions 1–5 in free text, and confirm the service order.
+4. Finalize §9 and update `PROJECT_HANDOFF.md`, `EXECUTION_PLAN.md` and `DEMO.md` on a feature branch based on `worktree-provider-interface-docs`. Then start M1.
