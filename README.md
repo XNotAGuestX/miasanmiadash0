@@ -4,7 +4,24 @@
 
 Hackathon project: a deterministic CLI that migrates Datadog dashboards and metric monitors to Dash0 using Perses, PromQL, and explicit telemetry mappings.
 
-**Current state: project handoff only. The CLI, fixtures, tests, and live integrations are not implemented yet.** Commands and source paths in the handoff describe the intended implementation.
+**Current state: the offline `convert` command works for Datadog dashboards (Track A: query parser, mapping, PromQL, Perses dashboards). Monitors are still reported as blocked, and `publish` and `fetch` don't exist yet.** See [STATUS.md](docs/STATUS.md).
+
+## Install, test, convert
+
+Everything runs through one entry point, `uv run migrator <command>`:
+
+```bash
+uv sync                      # install runtime and dev dependencies (Python ≥ 3.13)
+uv run migrator test         # pytest; extra args pass through, e.g. `uv run migrator test -k parse`
+uv run migrator typecheck    # mypy --strict over src and tests
+uv run migrator lint         # ruff
+uv run migrator check        # lint + typecheck + test
+uv run migrator convert --source datadog \
+  --input fixtures/datadog/integrations-core/postgres \
+  --mapping mappings/datadog/postgres.json --out /tmp/pg-out   # --format yaml, --project <name>
+```
+
+`convert` is offline. It writes `dashboards/`, `source/` copies, `report.json` and `manifest.json` into an empty `--out` directory, and exits `0` (all translated), `2` (some item partial or blocked) or `1` (bad input, mapping or arguments).
 
 ## Start here
 
@@ -22,7 +39,7 @@ Fetch one selected Datadog dashboard and one selected metric monitor, compile th
 
 Build a working vertical slice before expanding feature coverage. Business research, pricing, positioning, and pitch work are handled separately.
 
-## Proposed implementation defaults
+## Implementation stack
 
 - Python ≥ 3.13, one CLI package (`src/migrator`), managed with [uv](https://docs.astral.sh/uv/): `pyproject.toml`, a committed `uv.lock`, and `.python-version`.
 - argparse for CLI arguments, pydantic for boundary validation, pyyaml for YAML, `promql-parser` for the PromQL syntax check; pytest, mypy --strict and ruff for checks.

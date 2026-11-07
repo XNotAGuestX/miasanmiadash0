@@ -1,6 +1,6 @@
 # Shared project status
 
-Last updated: 2026-11-07: all plan tasks, open decisions and blockers filed as GitHub issues (#1–#62); from now on work is tracked and discussed in [issues](https://github.com/XNotAGuestX/thinchackdash/issues). Earlier: two-person work split added ([`handoff/WORK_SPLIT.md`](handoff/WORK_SPLIT.md)). Earlier: implementation plan written and split into handoffs in [`handoff/`](handoff/README.md). Dash0 inventory (M0) done ([DASH0_INVENTORY.md](DASH0_INVENTORY.md)).
+Last updated: 2026-11-07: Track A implemented on branch `worktree-track-a` (Python/uv converter; see the Track A handoff entry below). Earlier: all plan tasks, open decisions and blockers filed as GitHub issues (#1–#62); from now on work is tracked and discussed in [issues](https://github.com/XNotAGuestX/thinchackdash/issues). Earlier: two-person work split added ([`handoff/WORK_SPLIT.md`](handoff/WORK_SPLIT.md)). Earlier: implementation plan written and split into handoffs in [`handoff/`](handoff/README.md). Dash0 inventory (M0) done ([DASH0_INVENTORY.md](DASH0_INVENTORY.md)).
 
 Highest-priority requirement: deterministic conversion before all other objectives. No LLM involvement in source-to-Perses or query/alert conversion, including optional inference, repair, and fallback paths. Shared rules, handoff, kickoff prompt, and acceptance gates now state this explicitly. Codex and Claude remain implementation assistants only.
 
@@ -14,12 +14,12 @@ Highest-priority requirement: deterministic conversion before all other objectiv
 | Shared Codex/Claude rules | Written | Root `AGENTS.md`; `CLAUDE.md` refers to it |
 | Local configuration template | Written | Root `.env.example` and `.gitignore` |
 | Starter/fork relationship | Unresolved | Current remote is `XNotAGuestX/thinchackdash`; required starter differs |
-| CLI/runtime/package | Not started | No implementation files or package manifest |
-| Fixtures/parser/compiler | Not started | Paths and contracts are proposed only |
+| CLI/runtime/package | Working offline (`convert`); no `publish`/`fetch` | Python ≥ 3.13 + uv; single entry point `uv run migrator {convert,test,typecheck,lint,check}` (`pyproject.toml`, `uv.lock`) |
+| Fixtures/parser/compiler | Dashboards done (plans 02–04, 05.T2–T8, 06.T3); monitors still blocked (plan 06 Track B) | Pinned integrations-core postgres, kafka, docker_daemon at `a9b9e42`; synthetic fixtures; mappings `postgres.json`, `kafka.json`, `docker.json`, all `reviewed: null` |
 | Datadog API integration | Not started | No credentials or live source evidence checked |
 | Dash0 API/schema spike | Docs researched | API, PromQL naming, and CLI facts in `PLANNING_HANDOFF.md` §5.3; no live request made |
 | Telemetry and semantic validation | Data present, not durable | `default` has data since 2026-11-07 14:06 UTC from one `docker-desktop` host. Connection usage is about 0.08; no controlled threshold crossing exists yet |
-| Automated checks | Not available | No application tests/build exist yet |
+| Automated checks | Green | `uv run migrator check`: ruff clean, mypy --strict clean, pytest unit tests passing. No golden/oracle tests yet (owned by another contributor) |
 | Submission | Not started | No commit, push, fork, or PR created by the handoff task |
 
 Handoff verification: all eight Markdown files passed local link, heading-anchor, and code-fence checks. Git ignore checks confirmed that `.env`, `.env.local`, run artifacts, and private inputs are excluded. These are documentation/configuration checks, not application or live migration tests.
@@ -77,7 +77,10 @@ The starter/fork workflow is still unresolved; settle it before the first implem
 - **Datadog credentials unset.** P0 uses integrations-core files pinned to `a9b9e42b7e484861ecbd1f5919da7c52a694b74d`. API fetch stays at M4+.
 - Target labels are settled by the data: postgresqlreceiver 0.160.0, legacy `postgresql_database_name` and `postgresql_table_name`. The user still needs to confirm this (`PLANNING_HANDOFF.md` §7.1).
 - This branch is 2 `.gitignore` commits behind `main`. Reconcile it before implementation.
-- Stack defaults are proposed for an empty repository; no package versions have been installed or tested.
+- Stack changed to Python + uv (user instruction, 2026-11-07). The handoff's TypeScript names map to Python modules; pydantic replaces Zod, `promql-parser` replaces Lezer PromQL. `00-context.md` §5 still describes TypeScript.
+- `AGENTS.md` Definition of Done still says `npm test` / `npm run typecheck`; with the Python stack the equivalent is `uv run migrator check` (ruff + mypy --strict + pytest).
+- Semantics, manual read-only check (2026-11-07, dataset `default`, data until ~15:10 UTC): the converted Connections query (with grain) returned `astronomy_db` ≈ 5 and `postgres` ≈ 3–4; the `percent_usage_connections` ratio returned ≈ 0.08. Not recorded in `report.validation.semantics`.
+- Every mapping entry (`postgres.json`, `kafka.json`, `docker.json`) has `reviewed: null` and needs a human review before goldens are frozen.
 - The official check-rule documentation has differing ID references in prose and schema; verify the actual request shape during the destination spike.
 
 ## Handoff entry template
