@@ -59,6 +59,24 @@ def _cmd_publish(args: argparse.Namespace) -> int:
     return run.exit_code
 
 
+def _cmd_fetch(args: argparse.Namespace) -> int:
+    import os
+
+    from migrator.fetch import run_fetch
+    from migrator.source.asset import FetchSelection
+    from migrator.source.datadog.api import SourceFetchError
+
+    sel = FetchSelection(tuple(args.dashboard_id or ()), tuple(args.monitor_id or ()))
+    try:
+        written = run_fetch(args.source, sel, args.out, os.environ)
+    except (InputError, SourceFetchError) as err:
+        print(f"error: {err}", file=sys.stderr)
+        return 1
+    for rel in written:
+        print(f"FETCHED {rel}")
+    return 0
+
+
 def _run_tool(argv: list[str]) -> int:
     return subprocess.call([sys.executable, "-m", *argv])
 
@@ -102,6 +120,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--allow-partial", action="store_true", help="also publish partially translated dashboards"
     )
 
+    fet = sub.add_parser("fetch", help="download selected source assets by ID (read-only)")
+    fet.add_argument("--source", required=True, help="source provider id, e.g. datadog")
+    fet.add_argument("--dashboard-id", action="append", help="dashboard ID (repeatable)")
+    fet.add_argument("--monitor-id", action="append", help="monitor ID (repeatable)")
+    fet.add_argument("--out", required=True, help="output directory (must be empty)")
+
     sub.add_parser("test", help="run the test suite; extra args go to pytest")
     sub.add_parser("typecheck", help="run mypy")
     sub.add_parser("lint", help="run ruff")
@@ -124,6 +148,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "publish":
         return _cmd_publish(args)
+    if args.command == "fetch":
+        return _cmd_fetch(args)
     return _cmd_convert(args)
 
 
