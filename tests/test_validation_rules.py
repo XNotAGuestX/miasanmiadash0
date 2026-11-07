@@ -59,3 +59,25 @@ def test_rule_group_rejects_bad_expr_and_extra_keys() -> None:
     g = copy.deepcopy(rule_group())
     g["groups"][0]["rules"][0]["for"] = "15m"
     assert validate_prometheus_rule_group(g)
+
+
+@pytest.mark.parametrize("variable", ["$__rate_interval", "$__interval", "$__range"])
+def test_rule_group_rejects_dashboard_variables(variable: str) -> None:
+    g = copy.deepcopy(rule_group())
+    g["groups"][0]["rules"][0]["expr"] = (
+        f'avg_over_time((avg (rate({{a="b"}}[{variable}])))[5m:1m]) > 1000'
+    )
+    assert any("syntax error" in p for p in validate_prometheus_rule_group(g))
+
+
+@pytest.mark.parametrize("variable", ["$__rate_interval", "$__interval", "$__range"])
+def test_check_rule_rejects_dashboard_variables(variable: str) -> None:
+    r = copy.deepcopy(check_rule())
+    r["expression"] = f'avg_over_time((avg (rate({{a="b"}}[{variable}])))[5m:1m]) > $__threshold'
+    assert any("syntax error" in p for p in validate_check_rule(r))
+
+
+def test_check_rule_with_fixed_rate_range_is_valid() -> None:
+    r = copy.deepcopy(check_rule())
+    r["expression"] = 'avg_over_time((avg (rate({a="b"}[5m])))[5m:1m]) > $__threshold'
+    assert validate_check_rule(r) == []
