@@ -96,20 +96,8 @@ results:
   cache: 269cc40cc284b00f
 - source_path: widgets[2].definition.requests[0]
   verdict: pass
-  reasons:
-  - postgresql.rows_inserted, rows_deleted and rows_updated map to postgresql.tup_inserted, tup_deleted and tup_updated, which are monotonic sums counting the same rows.
-  - The per-second display is matched by rate() over the monotonic sums, with avg() aggregation and no grouping, consistent with the Datadog request.
-  - The unprefixed $scope template variable with default * is correctly dropped, so no matcher is needed.
-  - All three formulas are translated; no function appears in the Datadog request, so translating is the correct outcome.
-  checks:
-    quantity: ok
-    unit: ok
-    aggregation: ok
-    grouping: ok
-    series_count: ok
-    outcome: ok
-  method: haiku
-  cache: aacfa9f65d503c0e
+  reasons: []
+  method: rule
 - source_path: widgets[3].definition.requests[0]
   verdict: block
   reasons:
@@ -129,71 +117,20 @@ results:
   cache: 55e7eb347d2a5563
 - source_path: widgets[4].definition.requests[0]
   verdict: pass
-  reasons:
-  - system.load.1 is the 1-minute system load average; system.cpu.load_average.1m is the OpenTelemetry gauge for the same 1-minute load average, so the quantity matches.
-  - Both are unitless load values (OTel unit {thread} is an annotation for the same count), so no scale is needed.
-  - Datadog's default for an ungrouped query is a single average across hosts, which matches avg() with no by-clause.
-  - The unprefixed $scope variable with default * is correctly dropped, so no matcher is needed.
-  - The gauge is selected with otel_metric_type="gauge" and no rate() is applied, which is correct.
-  - The translated outcome is correct because an exact mapping exists.
-  checks:
-    quantity: ok
-    unit: ok
-    aggregation: ok
-    grouping: ok
-    series_count: ok
-    outcome: ok
-  method: haiku
-  cache: d3d6aed03d188810
+  reasons: []
+  method: rule
 - source_path: widgets[4].definition.requests[1]
   verdict: pass
-  reasons:
-  - Datadog system.load.5 is the 5-minute system load average; system.cpu.load_average.5m is the same quantity as a gauge, so the metric mapping is correct.
-  - Both are dimensionless load counts (the OTel {thread} unit is an annotation, not a scale difference), so no conversion is needed.
-  - The Datadog query has no group-by, so the default cross-series avg matches the candidate's avg() with no grouping.
-  - The $scope template variable has no prefix and default *, so dropping it is correct.
-  - No Datadog function is involved and no rate() is applied to the gauge, so the translated outcome is correct.
-  checks:
-    quantity: ok
-    unit: ok
-    aggregation: ok
-    grouping: ok
-    series_count: ok
-    outcome: ok
-  method: haiku
-  cache: 52673a53bf4eb6bd
+  reasons: []
+  method: rule
 - source_path: widgets[4].definition.requests[2]
   verdict: pass
-  reasons:
-  - system.load.15 is the 15-minute load average, which matches the OTel gauge system.cpu.load_average.15m (unit {thread}); same quantity.
-  - The candidate uses avg() over the gauge with no grouping, matching the Datadog default aggregation across the unscoped series.
-  - The unprefixed template variable $scope with default * is correctly dropped, so no matcher is added.
-  - No rate() is applied to the gauge, and the outcome is translated as required for a mapped metric in the dataset.
-  checks:
-    quantity: ok
-    unit: ok
-    aggregation: ok
-    grouping: ok
-    series_count: ok
-    outcome: ok
-  method: haiku
-  cache: e103a7a62cb40edf
+  reasons: []
+  method: rule
 - source_path: widgets[5].definition.requests[0]
   verdict: pass
-  reasons:
-  - Datadog system.cpu.idle/system/iowait/user/stolen/guest are agent-computed CPU percentages, not a single OTel metric.
-  - The closest OTel metric, system.cpu.time (sum, seconds, per state), measures cumulative CPU time. A percent would need rate() divided by the core count and multiplied by 100, which is derived from other metrics and includes a constant not in the Datadog source.
-  - Blocking with MISSING_METRIC_MAPPING is the correct outcome under the hard rules. A proposed expression such as rate(system_cpu_time by state) / cores * 100 could go in notes.
-  - otel_metric_definitions is empty, so the metric definitions and label names could not be checked directly; the verdict relies on the known OTel hostmetrics definition of system.cpu.time.
-  checks:
-    quantity: n/a
-    unit: n/a
-    aggregation: n/a
-    grouping: n/a
-    series_count: n/a
-    outcome: ok
-  method: haiku
-  cache: 1937388c01d489ac
+  reasons: []
+  method: rule
 - source_path: widgets[6].definition.requests[0]
   verdict: block
   reasons:

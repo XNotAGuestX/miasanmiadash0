@@ -19,16 +19,16 @@ Agent0 live checks ran against `default`, where receiver data only exists 2026-1
 
 | Dashboard | Requests (translated / total) | Leaf widgets (translated / total) | Dashboard | Agent0 thread |
 |---|---|---|---|---|
-| `postgres/postgresql_dashboard` | 13 / 15 | 7 / 9 | partial | Dash0 UI chat (not linked) |
+| `postgres/postgresql_dashboard` | 9 / 15 | 5 / 9 | partial | Dash0 UI chat (not linked) |
 | `postgres/postgresql_screenboard_dashboard` | 11 / 29 | 9 / 30 | partial | Dash0 UI chat (not linked) |
 | `nginx/NGINX-Metrics_dashboard` | 6 / 7 | 4 / 5 | partial | Dash0 UI chat (not linked) |
-| `nginx/NGINX-Overview_dashboard` | 7 / 9 | 14 / 21 | partial | [703b3c8a](https://app.dash0.com/goto/agent0?thread_id=703b3c8a-9b01-4b2a-b5e1-9117b7291f5f) |
+| `nginx/NGINX-Overview_dashboard` | 7 / 9 | 11 / 21 | partial | [703b3c8a](https://app.dash0.com/goto/agent0?thread_id=703b3c8a-9b01-4b2a-b5e1-9117b7291f5f) |
 | `nginx/plus_overview` | 5 / 22 | 9 / 24 | partial | [5a13bb42](https://app.dash0.com/goto/agent0?thread_id=5a13bb42-7dc1-43f3-ad05-3bd866e4981a) |
 | `redisdb/overview` | 18 / 29 | 25 / 36 | partial | [9fb34f78](https://app.dash0.com/goto/agent0?thread_id=9fb34f78-2637-45dd-aa0a-2d8ac8bf7ff3) |
-| `docker_daemon/docker_dashboard` | 6 / 20 | 9 / 28 | partial | [aff1389d](https://app.dash0.com/goto/agent0?thread_id=aff1389d-e057-40ae-bf62-0a1063ccc8be) |
+| `docker_daemon/docker_dashboard` | 6 / 20 | 5 / 28 | partial | [aff1389d](https://app.dash0.com/goto/agent0?thread_id=aff1389d-e057-40ae-bf62-0a1063ccc8be) |
 | `kafka/kafka_dashboard` | 1 / 35 | 10 / 46 | partial | [bbe01e64](https://app.dash0.com/goto/agent0?thread_id=bbe01e64-a0b8-40ec-88a7-95fbb50095ba) |
 | `kafka/kafka_kraft_dashboard` | 2 / 41 | 11 / 52 | partial | [0919eed0](https://app.dash0.com/goto/agent0?thread_id=0919eed0-9c07-4f86-9d85-ed8528ee0d2f) |
-| **Total** | **69 / 207** | **98 / 251** | | |
+| **Total** | **65 / 207** | **89 / 251** | | |
 
 Leaf-widget counts include `note` widgets (always translated to Markdown) and unsupported widget types
 (always blocked with `UNSUPPORTED_WIDGET`).
@@ -106,6 +106,47 @@ Not translated anywhere (blocked by Agent0, usually because the metric is missin
 5. **Template variables dropped.** All variables default to `*`; Agent0 dropped every `$scope`/`$host`/`$env`
    filter (warning `TEMPLATE_VARIABLE_DROPPED`) instead of emitting Perses variables. Kafka `$env`: no `env`
    label exists in the dataset.
+
+## Converter rules and disagreements (PR #85, 2026-11-07)
+
+PR #85 is the source of truth for the converter. `scripts/build_expected.py` now applies its
+mapping-independent rules on top of Agent0 (details: `tests/README.md`, "Provenance pipeline"). The
+per-dashboard tables further down predate this and still show the old warnings.
+
+- **No default aggregator:** a query without `avg:`/`sum:`/`min:`/`max:` blocks with `MISSING_AGGREGATOR`
+  (#85 documents why plan 05 Task 1 is not implemented). This flipped 4 Postgres Metrics requests
+  (inserts/updates/deletes, system load 1/5/15) to blocked; `DEFAULT_AGGREGATOR_APPLIED` is gone.
+- **Widget option `time` blocks the widget** (`UNSUPPORTED_WIDGET`): 4 Docker and 3 NGINX Overview widgets.
+- **Parse errors** (`count:`, `p95:`, `100*(...)`, `-sum:...`) are `UNSUPPORTED_QUERY_SYNTAX`; a formula
+  that references a non-metric query adds `UNSUPPORTED_FORMULA` to `UNSUPPORTED_DATA_SOURCE`.
+- **Template variables:** only unprefixed `*` variables are dropped (`TEMPLATE_VARIABLE_DROPPED`); prefixed
+  ones are promoted to a Perses ListVariable.
+- **Error codes are compared as sets.** A blocked request that no rule explains keeps
+  `MISSING_METRIC_MAPPING` with a note that the code is a proposal (65 requests).
+- **Mapping files:** `docker_daemon` → `mappings/datadog/docker.json`, `redisdb` → `redis.json` (PR #76).
+- **Request-less widgets** (notes, images, event streams; 61 of 251) can now be reviewed with an
+  override keyed by the widget's `source_path`.
+
+`uv run pytest --include-unreviewed` against #85 covers Postgres, Docker and Kafka (nginx and Redis wait
+for the PR #76 mappings). Apart from the `UNREVIEWED_MAPPING` warning (every #85 mapping entry has
+`reviewed: null`; expectations assume the reviewed end state), these 23 requests disagree (PR #85 at
+`a6010fb`). Decide each in `overrides.yaml` or in the mapping:
+
+| Request | Expected (Agent0 + rules) | Converter (PR #85) |
+|---|---|---|
+| `docker_daemon/docker_dashboard/widgets[14].definition.requests[0]` | blocked `MISSING_METRIC_MAPPING` | translated |
+| `docker_daemon/docker_dashboard/widgets[20]`, `[21]`, `[23]`, `[24]` `.definition.requests[0]` | `avg by (container_image_name) (rate(...))` | same with an inner `sum by (container_image_name, container_name)` grain |
+| `kafka/kafka_dashboard/widgets[3].definition.widgets[2].definition.requests[0]` | no warning (`$env` promoted) | `TEMPLATE_VARIABLE_DROPPED` (`$env` not promoted) |
+| `kafka/kafka_kraft_dashboard/widgets[3].definition.widgets[2].definition.requests[0]` | no warning (`$env` promoted) | `TEMPLATE_VARIABLE_DROPPED` |
+| `kafka/kafka_dashboard/widgets[6].definition.widgets[1].definition.requests[0]` | blocked `MISSING_METRIC_MAPPING` | blocked `MISSING_LABEL_MAPPING`, `MISSING_METRIC_MAPPING` |
+| `kafka/kafka_kraft_dashboard/widgets[6].definition.widgets[1].definition.requests[0]` | translated | blocked `MISSING_LABEL_MAPPING`, `MISSING_METRIC_MAPPING` |
+| `postgres/postgresql_dashboard/widgets[1].definition.requests[0]` (p0) | `avg by (postgresql_database_name) (backends)` | same with `max by (postgresql_database_name, service_instance_id)` grain (plan 05 dedup, see A) |
+| `postgres/postgresql_dashboard/widgets[0].definition.requests[0..3]`; `postgresql_screenboard_dashboard/widgets[1].definition.widgets[1]`, `widgets[4].definition.widgets[0]`, `[1]`, `[3]` `.definition.requests[0]` | `postgresql.tup_*` rates without a grain | same with `max by (service_instance_id, postgresql_database_name)` grain on `postgresql.rows_*` (#85 `a6010fb`, see A) |
+| `postgres/postgresql_dashboard/widgets[3].definition.requests[0]` | translated | blocked `MISSING_METRIC_MAPPING` |
+| `postgres/postgresql_dashboard/widgets[6].definition.requests[0]` | `100 * max(avg by (host_name) (rate(system.cpu.time{cpu_mode="wait"})))` | `(max(avg by (host_name) (system.cpu.utilization{cpu_mode="wait"}))) * 100` (see A) |
+| `postgres/postgresql_screenboard_dashboard/widgets[1].definition.widgets[0].definition.requests[0]` | blocked `MISSING_METRIC_MAPPING` | translated |
+| `postgres/postgresql_screenboard_dashboard/widgets[2].definition.widgets[0].definition.requests[0]` | translated | blocked `MISSING_METRIC_MAPPING` |
+| `postgres/postgresql_screenboard_dashboard/widgets[4].definition.widgets[4].definition.requests[0]` | translated | blocked `MISSING_METRIC_MAPPING` |
 
 ## Per-dashboard tables
 

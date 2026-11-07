@@ -477,12 +477,14 @@ def lint_entry(
 ) -> list[Finding]:
     """Findings for one request: `request` from the case, `expected` the entry's `expected` block."""
     outcome = expected.get("outcome")
+    variables = {v["name"]: v for v in case.get("template_variables") or []}
     labels_map = answer_item.get("labels") if answer_item and isinstance(answer_item.get("labels"), dict) else None
     if outcome == "blocked":
         errors = list(expected.get("errors") or [])
         if not errors:
             return [Finding("block", "errors", "blocked without an error code")]
-        derived = be.rule_errors(request)
+        # No source-text rule error means only the mapping lookup can block the request.
+        derived = be.rule_errors(request, variables) or ["MISSING_METRIC_MAPPING"]
         if errors != derived:
             # The overlay derives the code from the source text; a different code (only possible via
             # overrides.yaml or hand edits) is worth a look but not wrong per se -> nit.
@@ -490,8 +492,11 @@ def lint_entry(
         return []
     if outcome != "translated":
         return [Finding("block", "outcome", f"unknown outcome {outcome!r}")]
+    rules = be.rule_errors(request, variables)
+    if rules:
+        # The deterministic overlay (and the converter) block this request from its source text.
+        return [Finding("block", "outcome", f"translated, but the overlay blocks it with {rules}")]
     out = lint_translated(request, expected, labels_map)
-    variables = {v["name"]: v for v in case.get("template_variables") or []}
     warnings = sorted(expected.get("warnings") or [])
     derived_w = be.rule_warnings(request, variables)
     if warnings != derived_w:

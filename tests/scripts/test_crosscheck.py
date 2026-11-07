@@ -68,8 +68,11 @@ def test_source_writes_one_verdict_per_request_in_case_order() -> None:
     doc = verdict_doc(KEY, "haiku")
     want = [r["source_path"] for r in vc.load_expected(KEY)["requests"]]
     assert [r["source_path"] for r in doc["results"]] == want
-    assert len(judge.calls) == len(want)
-    assert all(r["verdict"] == "pass" and r["method"] == "haiku" for r in doc["results"])
+    case = vc.load_case(KEY)
+    ruled = {r["source_path"] for r in case["requests"] if cc.rule_blocked(r, cc.case_variables(case))}
+    assert len(judge.calls) == len(want) - len(ruled)
+    assert all(r["verdict"] == "pass" for r in doc["results"])
+    assert all(r["method"] == ("rule" if r["source_path"] in ruled else "haiku") for r in doc["results"])
     assert doc["meta"]["model"] == cc.MODEL
     assert doc["meta"]["system_prompt_sha256"] == cc.sha256(cc.source_system_prompt())
 
@@ -97,8 +100,9 @@ def test_cache_key_covers_model_prompt_user_and_schema() -> None:
 
 
 def test_rule_blocked_requests_are_decided_without_llm() -> None:
+    variables = cc.case_variables(vc.load_case(RULE_KEY))
     case = vc.case_requests(vc.load_case(RULE_KEY))
-    rule = {sp for sp, r in case.items() if cc.rule_blocked(r)}
+    rule = {sp for sp, r in case.items() if cc.rule_blocked(r, variables)}
     assert rule  # fixture assumption
     judge = FakeJudge()
     assert cc.main([SOURCE, RULE_KEY], judge=judge) == 0
@@ -111,7 +115,7 @@ def test_rule_blocked_requests_are_decided_without_llm() -> None:
 
 def test_rule_blocked_mutation_flipped_to_translated_is_blocked(tmp_verify: Path) -> None:
     case = vc.load_case(RULE_KEY)
-    sp = next(r["source_path"] for r in case["requests"] if cc.rule_blocked(r))
+    sp = next(r["source_path"] for r in case["requests"] if cc.rule_blocked(r, cc.case_variables(case)))
     mutations = [
         {"id": "m-flip", "source_path": sp, "mutation": "flip_outcome", "structural": True,
          "expected": {"outcome": "translated", "promql": ['sum({otel_metric_name="nginx.requests"})'], "errors": [], "warnings": []}},
@@ -200,8 +204,11 @@ def test_dry_run_makes_no_calls(capsys: pytest.CaptureFixture[str]) -> None:
     capsys.readouterr()
     assert cc.main([SOURCE, KEY, RULE_KEY, "--dry-run"], judge=FakeJudge(RuntimeError("no"))) == 0
     out = capsys.readouterr().out
-    n = len(vc.load_case(KEY)["requests"])
-    assert f"{KEY}: {n} rows, 0 decided without LLM, {n} Haiku calls ({n} cached)" in out
+    case = vc.load_case(KEY)
+    n = len(case["requests"])
+    ruled = sum(cc.rule_blocked(r, cc.case_variables(case)) for r in case["requests"])
+    calls = n - ruled
+    assert f"{KEY}: {n} rows, {ruled} decided without LLM, {calls} Haiku calls ({calls} cached)" in out
     assert "would send" in out  # RULE_KEY is not cached
 
 
@@ -269,8 +276,9 @@ def test_rerun_overlay_ignores_rule_blocked_requests(tmp_path: Path, monkeypatch
         (d / RULE_KEY).mkdir(parents=True)
         shutil.copy(cc.AGENT0_DIR / RULE_KEY / "answer.yaml", d / RULE_KEY / "answer.yaml")
     monkeypatch.setattr(cc, "AGENT0_DIR", r1)
+    variables = cc.case_variables(vc.load_case(RULE_KEY))
     case = vc.case_requests(vc.load_case(RULE_KEY))
-    rule = {sp for sp, r in case.items() if cc.rule_blocked(r)}
+    rule = {sp for sp, r in case.items() if cc.rule_blocked(r, variables)}
     path = r2 / RULE_KEY / "answer.yaml"
     items = [i for i in yaml.safe_load(path.read_text()) if i["source_path"] not in rule]  # round 2 dropped them
     path.write_text(yaml.safe_dump(items, sort_keys=False))

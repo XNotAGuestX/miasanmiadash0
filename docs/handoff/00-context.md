@@ -39,12 +39,6 @@ Build a **deterministic converter from Datadog dashboards to Perses**, the open-
 
 ## 4. Repository layout (agreed module boundaries)
 
-Stack switched from TypeScript to Python on 2026-11-07 (user decision). The plans 01–10 still name
-TypeScript files and vitest commands; read them through this table: `src/<x>.ts` → `src/migrator/<x>.py`,
-`src/source/datadog/<x>.ts` → `src/migrator/source/datadog/<x>.py` (dashes become underscores),
-`tests/**/*.test.ts` → `tests/unit/**/test_*.py`, `npx vitest run <path>` / `npm test` → `uv run pytest <path>`,
-`zod` → explicit validation functions, `npm run typecheck` → none required for the MVP.
-
 ```text
 pyproject.toml                     # package metadata, deps, mypy/ruff/pytest config, uv_build backend
 uv.lock                            # committed lockfile (uv)
@@ -60,8 +54,7 @@ src/migrator/
   validation.py              # pydantic models for emitted Perses dashboards and rules
   version.py                 # COMPILER_VERSION
   source/provider.py         # SourceProvider interface + static table
-  source/datadog/__init__.py # datadog provider; exports parse_metric_query, load_mapping,
-                             # translate_request, translate_widget, translate_dashboard (tests/README.md)
+  source/datadog/__init__.py # datadogProvider
   source/datadog/assets.py   # recognize, unwrap and identify Datadog assets
   source/datadog/model.py    # parsed query/monitor types
   source/datadog/parse_query.py
@@ -72,14 +65,16 @@ src/migrator/
   destination/dash0.py       # publish + read-back (plan 07 only)
 mappings/datadog/<service>.json   # reviewed mapping files
 fixtures/datadog/integrations-core/<service>/...   # pinned source assets
-fixtures/synthetic/...            # small hand-written edge cases (queries.yaml)
+fixtures/datadog/synthetic/...    # small hand-written edge cases
+fixtures/synthetic/queries.yaml   # hand-written parser spec cases (oracle suite)
+fixtures/otel/                    # pinned OTel metric definitions + catalog.yaml (oracle suite)
 fixtures/cases/<service>/<dashboard>.yaml          # deterministic case inventory (scripts/extract_cases.py)
 fixtures/oracle/agent0/<service>/<dashboard>/      # dev-time oracle prompt + frozen Agent0 answer (provenance only)
 fixtures/expected/<service>/<dashboard>/           # expected.yaml (generated) + overrides.yaml (human review)
-scripts/                          # dev-time fixture tooling only; never imported by the converter or tests
-tests/unit/requests/              # pytest: query parser, single request, single widget
-tests/unit/dashboards/            # pytest: whole dashboard
-tests/scripts/                    # pytest: dev-time scripts (oracle runner)
+scripts/                          # dev-time fixture tooling; never imported by the converter
+tests/...                         # pytest (test_*.py); converter unit tests
+tests/unit/requests/, tests/unit/dashboards/       # oracle suite via the public API (tests/README.md)
+tests/scripts/                    # pytest: dev-time scripts (build_expected rules, oracle runner)
 ```
 
 ## 5. Stack

@@ -11,9 +11,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[1].definition.widgets[0].definition.requests[0]#rate_on_gauge
   source_path: widgets[1].definition.widgets[0].definition.requests[0]
   mutation: rate_on_gauge
@@ -24,9 +21,6 @@
     - (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="gauge"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])))) * 100
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[1].definition.widgets[0].definition.requests[0]#range_change
   source_path: widgets[1].definition.widgets[0].definition.requests[0]
@@ -39,9 +33,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[1].definition.widgets[0].definition.requests[0]#sibling_metric
   source_path: widgets[1].definition.widgets[0].definition.requests[0]
   mutation: sibling_metric
@@ -52,9 +43,6 @@
     - (avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])))) * 100
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[1].definition.widgets[0].definition.requests[0]#outcome_flip
   source_path: widgets[1].definition.widgets[0].definition.requests[0]
@@ -75,7 +63,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[1].definition.widgets[1].definition.requests[0]#add_scale
   source_path: widgets[1].definition.widgets[1].definition.requests[0]
   mutation: add_scale
@@ -87,7 +74,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[1].definition.widgets[1].definition.requests[0]#sibling_metric
   source_path: widgets[1].definition.widgets[1].definition.requests[0]
   mutation: sibling_metric
@@ -98,7 +84,6 @@
     - sum({otel_metric_name="redis.clients.connected", otel_metric_type="sum"})
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[1].definition.widgets[1].definition.requests[0]#outcome_flip
   source_path: widgets[1].definition.widgets[1].definition.requests[0]
@@ -119,7 +104,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[1].definition.widgets[2].definition.requests[0]#add_scale
   source_path: widgets[1].definition.widgets[2].definition.requests[0]
   mutation: add_scale
@@ -131,7 +115,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[1].definition.widgets[2].definition.requests[0]#sibling_metric
   source_path: widgets[1].definition.widgets[2].definition.requests[0]
   mutation: sibling_metric
@@ -142,7 +125,6 @@
     - sum({otel_metric_name="redis.db.avg_ttl", otel_metric_type="gauge"})
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[1].definition.widgets[2].definition.requests[0]#outcome_flip
   source_path: widgets[1].definition.widgets[2].definition.requests[0]
@@ -163,7 +145,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[1].definition.widgets[3].definition.requests[0]#add_scale
   source_path: widgets[1].definition.widgets[3].definition.requests[0]
   mutation: add_scale
@@ -174,7 +155,6 @@
     - 100 * (sum({otel_metric_name="redis.rdb.changes_since_last_save", otel_metric_type="sum"}))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[1].definition.widgets[3].definition.requests[0]#outcome_flip
   source_path: widgets[1].definition.widgets[3].definition.requests[0]
@@ -196,9 +176,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[5].definition.requests[0]#rate_on_gauge
   source_path: widgets[2].definition.widgets[5].definition.requests[0]
   mutation: rate_on_gauge
@@ -210,9 +187,6 @@
     - avg(rate({otel_metric_name="redis.cpu.time", otel_metric_type="sum", state="user"}[$__rate_interval]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[5].definition.requests[0]#add_scale
   source_path: widgets[2].definition.widgets[5].definition.requests[0]
@@ -226,9 +200,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[5].definition.requests[0]#range_change
   source_path: widgets[2].definition.widgets[5].definition.requests[0]
   mutation: range_change
@@ -240,9 +211,6 @@
     - avg(rate({otel_metric_name="redis.cpu.time", otel_metric_type="sum", state="user"}[$__rate_interval]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[5].definition.requests[0]#outcome_flip
   source_path: widgets[2].definition.widgets[5].definition.requests[0]
@@ -263,9 +231,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[6].definition.requests[0]#rate_on_gauge
   source_path: widgets[2].definition.widgets[6].definition.requests[0]
   mutation: rate_on_gauge
@@ -276,9 +241,6 @@
     - (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="gauge"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])))) * 100
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[6].definition.requests[0]#range_change
   source_path: widgets[2].definition.widgets[6].definition.requests[0]
@@ -291,9 +253,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[6].definition.requests[0]#sibling_metric
   source_path: widgets[2].definition.widgets[6].definition.requests[0]
   mutation: sibling_metric
@@ -304,9 +263,6 @@
     - (avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])))) * 100
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[6].definition.requests[0]#outcome_flip
   source_path: widgets[2].definition.widgets[6].definition.requests[0]
@@ -327,9 +283,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[7].definition.requests[0]#rate_on_gauge
   source_path: widgets[2].definition.widgets[7].definition.requests[0]
   mutation: rate_on_gauge
@@ -340,9 +293,6 @@
     - (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="gauge"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.hits", otel_metric_type="sum"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])))) * 100
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[7].definition.requests[0]#range_change
   source_path: widgets[2].definition.widgets[7].definition.requests[0]
@@ -355,9 +305,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[7].definition.requests[0]#sibling_metric
   source_path: widgets[2].definition.widgets[7].definition.requests[0]
   mutation: sibling_metric
@@ -368,9 +315,6 @@
     - (avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])) / (avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])) + avg(rate({otel_metric_name="redis.keyspace.misses", otel_metric_type="sum"}[$__rate_interval])))) * 100
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[7].definition.requests[0]#outcome_flip
   source_path: widgets[2].definition.widgets[7].definition.requests[0]
@@ -391,7 +335,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[3].definition.widgets[3].definition.requests[0]#add_scale
   source_path: widgets[3].definition.widgets[3].definition.requests[0]
   mutation: add_scale
@@ -403,7 +346,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[3].definition.widgets[3].definition.requests[0]#sibling_metric
   source_path: widgets[3].definition.widgets[3].definition.requests[0]
   mutation: sibling_metric
@@ -414,7 +356,6 @@
     - sum({otel_metric_name="redis.memory.used", otel_metric_type="gauge"})
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[3].definition.widgets[3].definition.requests[0]#outcome_flip
   source_path: widgets[3].definition.widgets[3].definition.requests[0]
@@ -435,7 +376,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[3].definition.widgets[4].definition.requests[0]#add_scale
   source_path: widgets[3].definition.widgets[4].definition.requests[0]
   mutation: add_scale
@@ -447,7 +387,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[3].definition.widgets[4].definition.requests[0]#sibling_metric
   source_path: widgets[3].definition.widgets[4].definition.requests[0]
   mutation: sibling_metric
@@ -458,7 +397,6 @@
     - avg({otel_metric_name="redis.memory.lua", otel_metric_type="gauge"})
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[3].definition.widgets[4].definition.requests[0]#outcome_flip
   source_path: widgets[3].definition.widgets[4].definition.requests[0]
@@ -479,7 +417,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[3].definition.widgets[5].definition.requests[0]#add_scale
   source_path: widgets[3].definition.widgets[5].definition.requests[0]
   mutation: add_scale
@@ -491,7 +428,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[3].definition.widgets[5].definition.requests[0]#sibling_metric
   source_path: widgets[3].definition.widgets[5].definition.requests[0]
   mutation: sibling_metric
@@ -502,7 +438,6 @@
     - avg({otel_metric_name="redis.memory.lua", otel_metric_type="gauge"})
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[3].definition.widgets[5].definition.requests[0]#outcome_flip
   source_path: widgets[3].definition.widgets[5].definition.requests[0]
@@ -523,7 +458,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[0].definition.requests[0]#add_scale
   source_path: widgets[4].definition.widgets[0].definition.requests[0]
   mutation: add_scale
@@ -535,7 +469,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[0].definition.requests[0]#sibling_metric
   source_path: widgets[4].definition.widgets[0].definition.requests[0]
   mutation: sibling_metric
@@ -546,7 +479,6 @@
     - sum({otel_metric_name="redis.clients.blocked", otel_metric_type="sum"})
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[0].definition.requests[0]#outcome_flip
   source_path: widgets[4].definition.widgets[0].definition.requests[0]
@@ -567,7 +499,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[2].definition.requests[0]#add_scale
   source_path: widgets[4].definition.widgets[2].definition.requests[0]
   mutation: add_scale
@@ -579,7 +510,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[2].definition.requests[0]#sibling_metric
   source_path: widgets[4].definition.widgets[2].definition.requests[0]
   mutation: sibling_metric
@@ -590,7 +520,6 @@
     - sum({otel_metric_name="redis.clients.connected", otel_metric_type="sum"})
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[2].definition.requests[0]#outcome_flip
   source_path: widgets[4].definition.widgets[2].definition.requests[0]
@@ -611,7 +540,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[3].definition.requests[0]#add_scale
   source_path: widgets[4].definition.widgets[3].definition.requests[0]
   mutation: add_scale
@@ -622,7 +550,6 @@
     - 100 * (sum({otel_metric_name="redis.slaves.connected", otel_metric_type="sum"}))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[3].definition.requests[0]#outcome_flip
   source_path: widgets[4].definition.widgets[3].definition.requests[0]
@@ -643,7 +570,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[5].definition.requests[0]#rate_on_gauge
   source_path: widgets[4].definition.widgets[5].definition.requests[0]
   mutation: rate_on_gauge
@@ -654,7 +580,6 @@
     - sum(rate({otel_metric_name="redis.commands.processed", otel_metric_type="gauge"}[$__rate_interval]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[5].definition.requests[0]#add_scale
   source_path: widgets[4].definition.widgets[5].definition.requests[0]
@@ -667,7 +592,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[5].definition.requests[0]#range_change
   source_path: widgets[4].definition.widgets[5].definition.requests[0]
   mutation: range_change
@@ -678,7 +602,6 @@
     - sum(rate({otel_metric_name="redis.commands.processed", otel_metric_type="sum"}[5m]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[5].definition.requests[0]#outcome_flip
   source_path: widgets[4].definition.widgets[5].definition.requests[0]
@@ -699,7 +622,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[5].definition.widgets[0].definition.requests[0]#add_scale
   source_path: widgets[5].definition.widgets[0].definition.requests[0]
   mutation: add_scale
@@ -711,7 +633,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[5].definition.widgets[0].definition.requests[0]#sibling_metric
   source_path: widgets[5].definition.widgets[0].definition.requests[0]
   mutation: sibling_metric
@@ -722,7 +643,6 @@
     - sum({otel_metric_name="redis.db.avg_ttl", otel_metric_type="gauge"})
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[5].definition.widgets[0].definition.requests[0]#outcome_flip
   source_path: widgets[5].definition.widgets[0].definition.requests[0]
@@ -743,7 +663,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[5].definition.widgets[1].definition.requests[0]#add_scale
   source_path: widgets[5].definition.widgets[1].definition.requests[0]
   mutation: add_scale
@@ -755,7 +674,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[5].definition.widgets[1].definition.requests[0]#sibling_metric
   source_path: widgets[5].definition.widgets[1].definition.requests[0]
   mutation: sibling_metric
@@ -766,7 +684,6 @@
     - sum({otel_metric_name="redis.db.avg_ttl", otel_metric_type="gauge"})
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[5].definition.widgets[1].definition.requests[0]#outcome_flip
   source_path: widgets[5].definition.widgets[1].definition.requests[0]
@@ -787,7 +704,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[5].definition.widgets[3].definition.requests[0]#add_scale
   source_path: widgets[5].definition.widgets[3].definition.requests[0]
   mutation: add_scale
@@ -799,7 +715,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[5].definition.widgets[3].definition.requests[0]#sibling_metric
   source_path: widgets[5].definition.widgets[3].definition.requests[0]
   mutation: sibling_metric
@@ -810,7 +725,6 @@
     - sum({otel_metric_name="redis.keys.evicted", otel_metric_type="sum"})
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[5].definition.widgets[3].definition.requests[0]#outcome_flip
   source_path: widgets[5].definition.widgets[3].definition.requests[0]
@@ -831,7 +745,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[5].definition.widgets[4].definition.requests[0]#add_scale
   source_path: widgets[5].definition.widgets[4].definition.requests[0]
   mutation: add_scale
@@ -843,7 +756,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[5].definition.widgets[4].definition.requests[0]#sibling_metric
   source_path: widgets[5].definition.widgets[4].definition.requests[0]
   mutation: sibling_metric
@@ -854,7 +766,6 @@
     - sum({otel_metric_name="redis.db.keys", otel_metric_type="gauge"})
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[5].definition.widgets[4].definition.requests[0]#outcome_flip
   source_path: widgets[5].definition.widgets[4].definition.requests[0]

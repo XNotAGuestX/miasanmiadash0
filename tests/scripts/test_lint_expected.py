@@ -49,15 +49,12 @@ def test_simple_counter_passes() -> None:
     assert lint(request("avg:postgresql.rows_fetched{*}"), translated(f"avg({COUNTER})")) == ("pass", [])
 
 
-def test_default_aggregator_is_avg() -> None:
+def test_missing_aggregator_must_be_blocked() -> None:
+    """PR #85 has no default aggregator: the overlay blocks with MISSING_AGGREGATOR."""
     req = request("postgresql.rows_fetched{*}")
-    req["queries"][0]["query"] = "postgresql.rows_fetched{*}"
-    exp = translated(f"avg({COUNTER})")
-    exp["warnings"] = ["DEFAULT_AGGREGATOR_APPLIED"]
-    assert lint(req, exp)[0] == "pass"
-    exp["promql"] = [f"sum({COUNTER})"]
-    verdict, reasons = lint(req, exp)
-    assert verdict == "block" and any("avg (Datadog default)" in r for r in reasons)
+    verdict, reasons = lint(req, translated(f"avg({COUNTER})"))
+    assert verdict == "block" and any("MISSING_AGGREGATOR" in r for r in reasons)
+    assert lint(req, {"outcome": "blocked", "errors": ["MISSING_AGGREGATOR"]}) == ("pass", [])
 
 
 def test_unnamed_query_without_formula() -> None:

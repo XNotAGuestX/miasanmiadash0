@@ -135,8 +135,7 @@
     promql:
     - avg({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="reading"})
     errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
+    warnings: []
 - id: widgets[4].definition.widgets[4].definition.requests[0]#add_scale
   source_path: widgets[4].definition.widgets[4].definition.requests[0]
   mutation: add_scale
@@ -146,8 +145,7 @@
     promql:
     - 100 * (sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="reading"}))
     errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
+    warnings: []
 - id: widgets[4].definition.widgets[4].definition.requests[0]#outcome_flip
   source_path: widgets[4].definition.widgets[4].definition.requests[0]
   mutation: outcome_flip
@@ -165,8 +163,7 @@
     promql:
     - avg({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="writing"})
     errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
+    warnings: []
 - id: widgets[4].definition.widgets[4].definition.requests[1]#add_scale
   source_path: widgets[4].definition.widgets[4].definition.requests[1]
   mutation: add_scale
@@ -176,8 +173,7 @@
     promql:
     - 100 * (sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="writing"}))
     errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
+    warnings: []
 - id: widgets[4].definition.widgets[4].definition.requests[1]#outcome_flip
   source_path: widgets[4].definition.widgets[4].definition.requests[1]
   mutation: outcome_flip
@@ -195,8 +191,7 @@
     promql:
     - avg({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting"})
     errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
+    warnings: []
 - id: widgets[4].definition.widgets[4].definition.requests[2]#add_scale
   source_path: widgets[4].definition.widgets[4].definition.requests[2]
   mutation: add_scale
@@ -206,8 +201,7 @@
     promql:
     - 100 * (sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="waiting"}))
     errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
+    warnings: []
 - id: widgets[4].definition.widgets[4].definition.requests[2]#outcome_flip
   source_path: widgets[4].definition.widgets[4].definition.requests[2]
   mutation: outcome_flip
@@ -225,8 +219,7 @@
     promql:
     - avg(rate({otel_metric_name="nginx.connections_accepted", otel_metric_type="sum"}[$__rate_interval])) - sum(rate({otel_metric_name="nginx.connections_handled", otel_metric_type="sum"}[$__rate_interval]))
     errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
+    warnings: []
 - id: widgets[5].definition.widgets[0].definition.requests[0]#rate_on_gauge
   source_path: widgets[5].definition.widgets[0].definition.requests[0]
   mutation: rate_on_gauge
@@ -236,8 +229,7 @@
     promql:
     - sum(rate({otel_metric_name="nginx.connections_accepted", otel_metric_type="gauge"}[$__rate_interval])) - sum(rate({otel_metric_name="nginx.connections_handled", otel_metric_type="sum"}[$__rate_interval]))
     errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
+    warnings: []
 - id: widgets[5].definition.widgets[0].definition.requests[0]#add_scale
   source_path: widgets[5].definition.widgets[0].definition.requests[0]
   mutation: add_scale
@@ -247,8 +239,7 @@
     promql:
     - 100 * (sum(rate({otel_metric_name="nginx.connections_accepted", otel_metric_type="sum"}[$__rate_interval])) - sum(rate({otel_metric_name="nginx.connections_handled", otel_metric_type="sum"}[$__rate_interval])))
     errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
+    warnings: []
 - id: widgets[5].definition.widgets[0].definition.requests[0]#range_change
   source_path: widgets[5].definition.widgets[0].definition.requests[0]
   mutation: range_change
@@ -258,8 +249,7 @@
     promql:
     - sum(rate({otel_metric_name="nginx.connections_accepted", otel_metric_type="sum"}[5m])) - sum(rate({otel_metric_name="nginx.connections_handled", otel_metric_type="sum"}[$__rate_interval]))
     errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
+    warnings: []
 - id: widgets[5].definition.widgets[0].definition.requests[0]#sibling_metric
   source_path: widgets[5].definition.widgets[0].definition.requests[0]
   mutation: sibling_metric
@@ -269,8 +259,7 @@
     promql:
     - sum(rate({otel_metric_name="nginx.connections_handled", otel_metric_type="sum"}[$__rate_interval])) - sum(rate({otel_metric_name="nginx.connections_handled", otel_metric_type="sum"}[$__rate_interval]))
     errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
+    warnings: []
 - id: widgets[5].definition.widgets[0].definition.requests[0]#outcome_flip
   source_path: widgets[5].definition.widgets[0].definition.requests[0]
   mutation: outcome_flip
@@ -288,8 +277,7 @@
     promql:
     - avg({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="active"})
     errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
+    warnings: []
 - id: widgets[5].definition.widgets[1].definition.requests[0]#add_scale
   source_path: widgets[5].definition.widgets[1].definition.requests[0]
   mutation: add_scale
@@ -299,8 +287,7 @@
     promql:
     - 100 * (sum({otel_metric_name="nginx.connections_current", otel_metric_type="sum", state="active"}))
     errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
+    warnings: []
 - id: widgets[5].definition.widgets[1].definition.requests[0]#outcome_flip
   source_path: widgets[5].definition.widgets[1].definition.requests[0]
   mutation: outcome_flip

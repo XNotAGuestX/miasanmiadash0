@@ -1,25 +1,27 @@
 """Unit tests: Datadog metric query string -> parsed model (plan 02).
 
-Interface under test:
-    migrator.source.datadog.parse_metric_query(text: str) -> ParseResult
-    ParseResult: dataclass with ok: bool, query: MetricQuery | None,
-                 code: str | None, offset: int | None, message: str | None
+Interface under test (PR #85):
+    migrator.source.datadog.parse_query.parse_metric_query(text: str) -> ParseOk | ParseError
+    ParseOk: ok=True, query: MetricQuery
+    ParseError: ok=False, code, offset, message
     MetricQuery: aggregator, metric, filters[{kind, key, value} | {kind, name}],
                  group_by: list[str], functions[{name, args}]
 """
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 import yaml
 
-from support import SYNTHETIC_DIR, as_plain, load_json, source_dashboards
+from tests.support import SYNTHETIC_DIR, as_plain, load_json, source_dashboards
 
 SPEC = yaml.safe_load((SYNTHETIC_DIR / "queries.yaml").read_text())
 PARSE_CODES = {"UNSUPPORTED_QUERY_SYNTAX", "UNSUPPORTED_QUERY_FUNCTION"}
 
 
-def _subset(expected, actual, path="result"):
+def _subset(expected: Any, actual: Any, path: str = "result") -> None:
     """Assert every key in `expected` matches `actual` (toMatchObject semantics)."""
     if isinstance(expected, dict):
         assert isinstance(actual, dict), f"{path}: expected object, got {actual!r}"
@@ -30,8 +32,8 @@ def _subset(expected, actual, path="result"):
         assert actual == expected, f"{path}: expected {expected!r}, got {actual!r}"
 
 
-def _parse(text: str):
-    from migrator.source.datadog import parse_metric_query
+def _parse(text: str) -> Any:
+    from migrator.source.datadog.parse_query import parse_metric_query
 
     return as_plain(parse_metric_query(text))
 
@@ -42,8 +44,8 @@ def test_parser_spec_case(case):
     _subset(case["expected"], _parse(case["query"]))
 
 
-def _corpus():
-    seen = []
+def _corpus() -> list[str]:
+    seen: list[str] = []
     for path in source_dashboards():
         stack = list(load_json(path).get("widgets", []))
         while stack:
@@ -68,7 +70,7 @@ CORPUS = _corpus()
 @pytest.mark.p0
 @pytest.mark.parametrize("text", CORPUS)
 def test_corpus_query_never_crashes_and_is_total(text):
-    """Every real metric query yields ok or exactly one of the two parse codes; never a prefix match."""
+    """Every real metric query parses or yields exactly one of the two parse codes."""
     result = _parse(text)
     if result["ok"]:
         assert result["query"]["metric"], "a successful parse must name a metric"

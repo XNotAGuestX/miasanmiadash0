@@ -14,7 +14,7 @@ import yaml
 import render_judge_prompt as rjp
 import run_oracle as ro
 import verify_common as vc
-from test_run_oracle import THREAD_A, THREAD_B, FakeAgent0, fenced, good_answer, no_sleep, started
+from tests.scripts.test_run_oracle import THREAD_A, THREAD_B, FakeAgent0, fenced, good_answer, no_sleep, started
 
 KEY = "postgres/postgresql_dashboard"
 ALL_KEYS = [s.key for s in ro.load_input(ro.DEFAULT_INPUT)]

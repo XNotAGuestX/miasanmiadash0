@@ -9,9 +9,7 @@
     promql:
     - min(rate({otel_metric_name="kafka.isr.operation.count", otel_metric_type="sum", operation="expand"}[$__rate_interval])) - max(rate({otel_metric_name="kafka.isr.operation.count", otel_metric_type="sum", operation="shrink"}[$__rate_interval]))
     errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
+    warnings: []
 - id: widgets[3].definition.widgets[2].definition.requests[0]#rate_on_gauge
   source_path: widgets[3].definition.widgets[2].definition.requests[0]
   mutation: rate_on_gauge
@@ -21,9 +19,7 @@
     promql:
     - max(rate({otel_metric_name="kafka.isr.operation.count", otel_metric_type="gauge", operation="expand"}[$__rate_interval])) - max(rate({otel_metric_name="kafka.isr.operation.count", otel_metric_type="sum", operation="shrink"}[$__rate_interval]))
     errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
+    warnings: []
 - id: widgets[3].definition.widgets[2].definition.requests[0]#add_scale
   source_path: widgets[3].definition.widgets[2].definition.requests[0]
   mutation: add_scale
@@ -33,9 +29,7 @@
     promql:
     - 100 * (max(rate({otel_metric_name="kafka.isr.operation.count", otel_metric_type="sum", operation="expand"}[$__rate_interval])) - max(rate({otel_metric_name="kafka.isr.operation.count", otel_metric_type="sum", operation="shrink"}[$__rate_interval])))
     errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
+    warnings: []
 - id: widgets[3].definition.widgets[2].definition.requests[0]#range_change
   source_path: widgets[3].definition.widgets[2].definition.requests[0]
   mutation: range_change
@@ -45,9 +39,7 @@
     promql:
     - max(rate({otel_metric_name="kafka.isr.operation.count", otel_metric_type="sum", operation="expand"}[5m])) - max(rate({otel_metric_name="kafka.isr.operation.count", otel_metric_type="sum", operation="shrink"}[$__rate_interval]))
     errors: []
-    warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
+    warnings: []
 - id: widgets[3].definition.widgets[2].definition.requests[0]#outcome_flip
   source_path: widgets[3].definition.widgets[2].definition.requests[0]
   mutation: outcome_flip

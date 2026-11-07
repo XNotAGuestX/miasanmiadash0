@@ -31,25 +31,25 @@ errors, not that its findings are wrong), but its pass is not evidence for green
 
 | Verifier | Caught / total | Rate | Structural | Trusted |
 |---|---|---|---|---|
-| lint | 233 / 341 | 68% | 223 / 223 (100%) | no |
-| haiku | 304 / 341 | 89% | 223 / 223 (100%) | yes |
+| lint | 223 / 323 | 69% | 213 / 213 (100%) | no |
+| haiku | 286 / 323 | 89% | 213 / 213 (100%) | yes |
 
 | Verifier | Mutation | Caught / total | Rate |
 |---|---|---|---|
-| lint | `add_scale` | 65 / 65 | 100% |
-| lint | `agg_swap` | 69 / 69 | 100% |
+| lint | `add_scale` | 61 / 61 | 100% |
+| lint | `agg_swap` | 65 / 65 | 100% |
 | lint | `drop_by_label` | 19 / 19 | 100% |
-| lint | `outcome_flip` | 0 / 69 | 0% |
-| lint | `range_change` | 35 / 35 | 100% |
-| lint | `rate_on_gauge` | 35 / 35 | 100% |
-| lint | `sibling_metric` | 10 / 49 | 20% |
-| haiku | `add_scale` | 65 / 65 | 100% |
-| haiku | `agg_swap` | 69 / 69 | 100% |
+| lint | `outcome_flip` | 0 / 65 | 0% |
+| lint | `range_change` | 34 / 34 | 100% |
+| lint | `rate_on_gauge` | 34 / 34 | 100% |
+| lint | `sibling_metric` | 10 / 45 | 22% |
+| haiku | `add_scale` | 61 / 61 | 100% |
+| haiku | `agg_swap` | 65 / 65 | 100% |
 | haiku | `drop_by_label` | 19 / 19 | 100% |
-| haiku | `outcome_flip` | 32 / 69 | 46% |
-| haiku | `range_change` | 35 / 35 | 100% |
-| haiku | `rate_on_gauge` | 35 / 35 | 100% |
-| haiku | `sibling_metric` | 49 / 49 | 100% |
+| haiku | `outcome_flip` | 28 / 65 | 43% |
+| haiku | `range_change` | 34 / 34 | 100% |
+| haiku | `rate_on_gauge` | 34 / 34 | 100% |
+| haiku | `sibling_metric` | 45 / 45 | 100% |
 
 ## postgres/postgresql_dashboard
 
@@ -93,29 +93,24 @@ errors, not that its findings are wrong), but its pass is not evidence for green
   - candidate: `avg(rate({otel_metric_name="postgresql.tup_updated", otel_metric_type="sum"}[$__rate_interval]))`
 - **green** `widgets[2].definition.requests[0]` (timeseries: Inserts / updates / deletes (per sec))
   - signals: lint pass (untrusted), haiku pass
-  - haiku: postgresql.rows_inserted, rows_deleted and rows_updated map to postgresql.tup_inserted, tup_deleted and tup_updated, which are monotonic sums counting the same rows.; The per-second display is matched by rate() over the monotonic sums, with avg() aggregation and no grouping, consistent with the Datadog request.; The unprefixed $scope template variable with default * is correctly dropped, so no matcher is needed.; All three formulas are translated; no function appears in the Datadog request, so translating is the correct outcome.
   - Datadog: query1: `postgresql.rows_inserted{$scope}`; query2: `postgresql.rows_deleted{$scope}`; query3: `postgresql.rows_updated{$scope}`; formulas: `query1`, `query2`, `query3`
-  - candidate: `avg(rate({otel_metric_name="postgresql.tup_inserted", otel_metric_type="sum"}[$__rate_interval]))`; `avg(rate({otel_metric_name="postgresql.tup_deleted", otel_metric_type="sum"}[$__rate_interval]))`; `avg(rate({otel_metric_name="postgresql.tup_updated", otel_metric_type="sum"}[$__rate_interval]))`
+  - candidate: blocked MISSING_AGGREGATOR
 - **green** `widgets[4].definition.requests[0]` (timeseries: System load)
   - signals: lint pass (untrusted), haiku pass
-  - haiku: system.load.1 is the 1-minute system load average; system.cpu.load_average.1m is the OpenTelemetry gauge for the same 1-minute load average, so the quantity matches.; Both are unitless load values (OTel unit {thread} is an annotation for the same count), so no scale is needed.; Datadog's default for an ungrouped query is a single average across hosts, which matches avg() with no by-clause.; The unprefixed $scope variable with default * is correctly dropped, so no matcher is needed.; The gauge is selected with otel_metric_type="gauge" and no rate() is applied, which is correct.; The translated outcome is correct because an exact mapping exists.
   - Datadog: query1: `system.load.1{$scope}`; formulas: `query1`
-  - candidate: `avg({otel_metric_name="system.cpu.load_average.1m", otel_metric_type="gauge"})`
+  - candidate: blocked MISSING_AGGREGATOR
 - **green** `widgets[4].definition.requests[1]` (timeseries: System load)
   - signals: lint pass (untrusted), haiku pass
-  - haiku: Datadog system.load.5 is the 5-minute system load average; system.cpu.load_average.5m is the same quantity as a gauge, so the metric mapping is correct.; Both are dimensionless load counts (the OTel {thread} unit is an annotation, not a scale difference), so no conversion is needed.; The Datadog query has no group-by, so the default cross-series avg matches the candidate's avg() with no grouping.; The $scope template variable has no prefix and default *, so dropping it is correct.; No Datadog function is involved and no rate() is applied to the gauge, so the translated outcome is correct.
   - Datadog: query1: `system.load.5{$scope}`; formulas: `query1`
-  - candidate: `avg({otel_metric_name="system.cpu.load_average.5m", otel_metric_type="gauge"})`
+  - candidate: blocked MISSING_AGGREGATOR
 - **green** `widgets[4].definition.requests[2]` (timeseries: System load)
   - signals: lint pass (untrusted), haiku pass
-  - haiku: system.load.15 is the 15-minute load average, which matches the OTel gauge system.cpu.load_average.15m (unit {thread}); same quantity.; The candidate uses avg() over the gauge with no grouping, matching the Datadog default aggregation across the unscoped series.; The unprefixed template variable $scope with default * is correctly dropped, so no matcher is added.; No rate() is applied to the gauge, and the outcome is translated as required for a mapped metric in the dataset.
   - Datadog: query1: `system.load.15{$scope}`; formulas: `query1`
-  - candidate: `avg({otel_metric_name="system.cpu.load_average.15m", otel_metric_type="gauge"})`
+  - candidate: blocked MISSING_AGGREGATOR
 - **green** `widgets[5].definition.requests[0]` (timeseries: CPU usage (%))
   - signals: lint pass (untrusted), haiku pass
-  - haiku: Datadog system.cpu.idle/system/iowait/user/stolen/guest are agent-computed CPU percentages, not a single OTel metric.; The closest OTel metric, system.cpu.time (sum, seconds, per state), measures cumulative CPU time. A percent would need rate() divided by the core count and multiplied by 100, which is derived from other metrics and includes a constant not …; Blocking with MISSING_METRIC_MAPPING is the correct outcome under the hard rules. A proposed expression such as rate(system_cpu_time by state) / cores * 100 could go in notes.; otel_metric_definitions is empty, so the metric definitions and label names could not be checked directly; the verdict relies on the known OTel hostmetrics definition of system.cpu.time.
   - Datadog: query1: `system.cpu.idle{$scope}`; query2: `system.cpu.system{$scope}`; query3: `system.cpu.iowait{$scope}`; query4: `system.cpu.user{$scope}`; query5: `system.cpu.stolen{$scope}`; query6: `system.cpu.guest{$scope}`; formulas: `query1`, `query2`, `query3`, `query4`, `query5`, `query6`
-  - candidate: blocked MISSING_METRIC_MAPPING
+  - candidate: blocked MISSING_AGGREGATOR
 - **green** `widgets[7].definition.requests[0]` (timeseries: System memory)
   - signals: lint pass (untrusted), haiku pass
   - haiku: system.mem.usable (available memory, including reclaimable cache) has no direct OpenTelemetry gauge equivalent; OTel system.memory.usage is split by state and would need a computed expression, so blocking with MISSING_METRIC_MAPPING is the…; The request is blocked, so quantity, unit, aggregation, grouping and series checks do not apply.; The otel_metric_definitions block is empty, so the candidate's omission cannot be checked against the catalog; the verdict rests on the known semantics of the metrics.; The $scope template variable has no prefix and default *, so dropping it is correct and does not affect the block decision.
@@ -418,7 +413,7 @@ errors, not that its findings are wrong), but its pass is not evidence for green
 - **unverified** `widgets[7].definition.widgets[1].definition.requests[1]` (timeseries: Successful vs failed SSL handshakes)
   - signals: lint pass (untrusted)
   - Datadog: q: `-sum:nginx.ssl.handshakes_failed_count{*} by {host}.as_count()`
-  - candidate: blocked UNSUPPORTED_QUERY_FUNCTION
+  - candidate: blocked UNSUPPORTED_QUERY_SYNTAX
 
 ## redisdb/overview
 
@@ -534,11 +529,11 @@ errors, not that its findings are wrong), but its pass is not evidence for green
 - **unverified** `widgets[6].definition.widgets[0].definition.requests[0]` (list_stream: Error Logs)
   - signals: lint pass (untrusted)
   - Datadog: none (not a metrics request)
-  - candidate: blocked UNSUPPORTED_DATA_SOURCE
+  - candidate: blocked UNSUPPORTED_WIDGET
 - **unverified** `widgets[6].definition.widgets[1].definition.requests[0]` (list_stream: All Logs)
   - signals: lint pass (untrusted)
   - Datadog: none (not a metrics request)
-  - candidate: blocked UNSUPPORTED_DATA_SOURCE
+  - candidate: blocked UNSUPPORTED_WIDGET
 
 ## docker_daemon/docker_dashboard
 
@@ -582,7 +577,7 @@ errors, not that its findings are wrong), but its pass is not evidence for green
 - **unverified** `widgets[11].definition.requests[0]` (query_value: Running container change)
   - signals: lint pass (untrusted)
   - Datadog: q: `100*(sum:docker.containers.running{$scope}/timeshift(sum:docker.containers.running{$scope}, -300))`
-  - candidate: blocked MISSING_METRIC_MAPPING
+  - candidate: blocked UNSUPPORTED_QUERY_SYNTAX
 - **unverified** `widgets[12].definition.requests[0]` (timeseries: CPU system by image)
   - signals: lint pass (untrusted)
   - Datadog: q: `avg:docker.cpu.system{$scope} by {docker_image}.fill(0)`
@@ -629,11 +624,11 @@ errors, not that its findings are wrong), but its pass is not evidence for green
 - **unverified** `widgets[2].definition.widgets[1].definition.requests[0]` (topology_map: Kafka Topology for $topic, $env)
   - signals: lint pass (untrusted)
   - Datadog: none (not a metrics request)
-  - candidate: blocked UNSUPPORTED_DATA_SOURCE
+  - candidate: blocked UNSUPPORTED_WIDGET
 - **unverified** `widgets[2].definition.widgets[2].definition.requests[0]` (query_table: Topic Health)
   - signals: lint pass (untrusted)
   - Datadog: query1: `count:data_streams.latency{type:kafka AND direction:out AND (pathway_type:edge OR pathway_type:partial_edge) AND $topic AND $env} by {topic,env}.as_rate()`; query2: `count:data_streams.latency{type:kafka AND direction:in AND (pathway_type:edge OR pathway_type:partial_edge) AND $topic AND $env} by {topic,env}.as_rate()`; query3: `max:data_streams.kafka.lag_seconds{$topic,$env} by {topic,env}`; formulas: `query1`, `query2`, `query3`
-  - candidate: blocked UNSUPPORTED_QUERY_FUNCTION
+  - candidate: blocked UNSUPPORTED_QUERY_SYNTAX
 - **unverified** `widgets[3].definition.widgets[0].definition.requests[0]` (query_value: Offline Partitions)
   - signals: lint pass (untrusted)
   - Datadog: query1: `sum:kafka.replication.offline_partitions_count{*}.weighted()`; formulas: `query1`
@@ -725,7 +720,7 @@ errors, not that its findings are wrong), but its pass is not evidence for green
 - **unverified** `widgets[7].definition.widgets[5].definition.requests[0]` (distribution: Distribution of message size for $topic)
   - signals: lint pass (untrusted)
   - Datadog: none (not a metrics request)
-  - candidate: blocked UNSUPPORTED_DATA_SOURCE
+  - candidate: blocked UNSUPPORTED_WIDGET
 - **unverified** `widgets[8].definition.widgets[1].definition.requests[0]` (timeseries: ZK File Descriptors)
   - signals: lint pass (untrusted)
   - Datadog: query1: `avg:zookeeper.max_file_descriptor_count{$env} by {host}`; query2: `avg:zookeeper.open_file_descriptor_count{$env} by {host}`; formulas: `query1`, `query2`
@@ -761,11 +756,11 @@ errors, not that its findings are wrong), but its pass is not evidence for green
 - **unverified** `widgets[10].definition.widgets[1].definition.requests[0]` (timeseries: Count per Log Status)
   - signals: lint pass (untrusted)
   - Datadog: a: ``; formulas: `a`
-  - candidate: blocked UNSUPPORTED_DATA_SOURCE
+  - candidate: blocked UNSUPPORTED_DATA_SOURCE, UNSUPPORTED_FORMULA
 - **unverified** `widgets[10].definition.widgets[2].definition.requests[0]` (list_stream: Error Logs)
   - signals: lint pass (untrusted)
   - Datadog: none (not a metrics request)
-  - candidate: blocked UNSUPPORTED_DATA_SOURCE
+  - candidate: blocked UNSUPPORTED_WIDGET
 
 ## kafka/kafka_kraft_dashboard
 
@@ -777,11 +772,11 @@ errors, not that its findings are wrong), but its pass is not evidence for green
 - **unverified** `widgets[2].definition.widgets[1].definition.requests[0]` (topology_map: Kafka Topology for $topic, $env)
   - signals: lint pass (untrusted)
   - Datadog: none (not a metrics request)
-  - candidate: blocked UNSUPPORTED_DATA_SOURCE
+  - candidate: blocked UNSUPPORTED_WIDGET
 - **unverified** `widgets[2].definition.widgets[2].definition.requests[0]` (query_table: Topic Health)
   - signals: lint pass (untrusted)
   - Datadog: query1: `count:data_streams.latency{type:kafka AND direction:out AND (pathway_type:edge OR pathway_type:partial_edge) AND $topic AND $env} by {topic,env}.as_rate()`; query2: `count:data_streams.latency{type:kafka AND direction:in AND (pathway_type:edge OR pathway_type:partial_edge) AND $topic AND $env} by {topic,env}.as_rate()`; query3: `max:data_streams.kafka.lag_seconds{$topic,$env} by {topic,env}`; formulas: `query1`, `query2`, `query3`
-  - candidate: blocked UNSUPPORTED_QUERY_FUNCTION
+  - candidate: blocked UNSUPPORTED_QUERY_SYNTAX
 - **unverified** `widgets[3].definition.widgets[0].definition.requests[0]` (query_value: Offline Partitions)
   - signals: lint pass (untrusted)
   - Datadog: query1: `sum:kafka.replication.offline_partitions_count{*}.weighted()`; formulas: `query1`
@@ -869,7 +864,7 @@ errors, not that its findings are wrong), but its pass is not evidence for green
 - **unverified** `widgets[7].definition.widgets[5].definition.requests[0]` (distribution: Distribution of message size for $topic)
   - signals: lint pass (untrusted)
   - Datadog: none (not a metrics request)
-  - candidate: blocked UNSUPPORTED_DATA_SOURCE
+  - candidate: blocked UNSUPPORTED_WIDGET
 - **unverified** `widgets[8].definition.widgets[1].definition.requests[0]` (query_value: Current Leader)
   - signals: lint pass (untrusted)
   - Datadog: query1: `avg:kafka.kraft.current_leader{$env}`; formulas: `query1`
@@ -929,8 +924,8 @@ errors, not that its findings are wrong), but its pass is not evidence for green
 - **unverified** `widgets[10].definition.widgets[1].definition.requests[0]` (timeseries: Count per Log Status)
   - signals: lint pass (untrusted)
   - Datadog: a: ``; formulas: `a`
-  - candidate: blocked UNSUPPORTED_DATA_SOURCE
+  - candidate: blocked UNSUPPORTED_DATA_SOURCE, UNSUPPORTED_FORMULA
 - **unverified** `widgets[10].definition.widgets[2].definition.requests[0]` (list_stream: Error Logs)
   - signals: lint pass (untrusted)
   - Datadog: none (not a metrics request)
-  - candidate: blocked UNSUPPORTED_DATA_SOURCE
+  - candidate: blocked UNSUPPORTED_WIDGET

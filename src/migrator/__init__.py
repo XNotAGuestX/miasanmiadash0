@@ -1,1 +1,1 @@
-"""Deterministic Datadog -> Perses converter. Implementation pending (TDD: see tests/README.md)."""
+"""Deterministic Datadog -> Perses dashboard migrator."""

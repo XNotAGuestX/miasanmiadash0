@@ -72,22 +72,22 @@ Requests (15):
   candidate: {outcome: translated, promql: ['avg by (postgresql_database_name) ({otel_metric_name="postgresql.backends", otel_metric_type="sum"})']}
 - source_path: widgets[2].definition.requests[0]
   datadog: {widget: 'timeseries: Inserts / updates / deletes (per sec)', queries: {query1: 'postgresql.rows_inserted{$scope}', query2: 'postgresql.rows_deleted{$scope}', query3: 'postgresql.rows_updated{$scope}'}, formulas: [query1, query2, query3]}
-  candidate: {outcome: translated, promql: ['avg(rate({otel_metric_name="postgresql.tup_inserted", otel_metric_type="sum"}[$__rate_interval]))', 'avg(rate({otel_metric_name="postgresql.tup_deleted", otel_metric_type="sum"}[$__rate_interval]))', 'avg(rate({otel_metric_name="postgresql.tup_updated", otel_metric_type="sum"}[$__rate_interval]))']}
+  candidate: {outcome: blocked, errors: [MISSING_AGGREGATOR]}
 - source_path: widgets[3].definition.requests[0]
   datadog: {widget: 'timeseries: Disk utilization (%)', queries: {query1: 'avg:system.io.util{$scope}'}, formulas: [query1]}
   candidate: {outcome: translated, promql: ['100 * avg(rate({otel_metric_name="system.disk.io_time", otel_metric_type="sum"}[$__rate_interval]))']}
 - source_path: widgets[4].definition.requests[0]
   datadog: {widget: 'timeseries: System load', queries: {query1: 'system.load.1{$scope}'}, formulas: [query1]}
-  candidate: {outcome: translated, promql: ['avg({otel_metric_name="system.cpu.load_average.1m", otel_metric_type="gauge"})']}
+  candidate: {outcome: blocked, errors: [MISSING_AGGREGATOR]}
 - source_path: widgets[4].definition.requests[1]
   datadog: {widget: 'timeseries: System load', queries: {query1: 'system.load.5{$scope}'}, formulas: [query1]}
-  candidate: {outcome: translated, promql: ['avg({otel_metric_name="system.cpu.load_average.5m", otel_metric_type="gauge"})']}
+  candidate: {outcome: blocked, errors: [MISSING_AGGREGATOR]}
 - source_path: widgets[4].definition.requests[2]
   datadog: {widget: 'timeseries: System load', queries: {query1: 'system.load.15{$scope}'}, formulas: [query1]}
-  candidate: {outcome: translated, promql: ['avg({otel_metric_name="system.cpu.load_average.15m", otel_metric_type="gauge"})']}
+  candidate: {outcome: blocked, errors: [MISSING_AGGREGATOR]}
 - source_path: widgets[5].definition.requests[0]
   datadog: {widget: 'timeseries: CPU usage (%)', queries: {query1: 'system.cpu.idle{$scope}', query2: 'system.cpu.system{$scope}', query3: 'system.cpu.iowait{$scope}', query4: 'system.cpu.user{$scope}', query5: 'system.cpu.stolen{$scope}', query6: 'system.cpu.guest{$scope}'}, formulas: [query1, query2, query3, query4, query5, query6]}
-  candidate: {outcome: blocked, errors: [MISSING_METRIC_MAPPING]}
+  candidate: {outcome: blocked, errors: [MISSING_AGGREGATOR]}
 - source_path: widgets[6].definition.requests[0]
   datadog: {widget: 'timeseries: I/O wait (%)', queries: {query1: 'max:system.cpu.iowait{$scope}'}, formulas: [query1]}
   candidate: {outcome: translated, promql: ['100 * max(avg by (host_name) (rate({otel_metric_name="system.cpu.time", otel_metric_type="sum", cpu_mode="wait"}[$__rate_interval])))']}

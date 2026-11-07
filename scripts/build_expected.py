@@ -13,8 +13,13 @@ adds the project's deterministic rules on top:
     (fixtures/otel/catalog.yaml),
   * a `dataset` block for translations whose OTel metrics are defined but missing from the dataset
     (they stay translated; only the live check is impossible),
-  * diagnostic codes derived from the source text (not from Agent0's prose),
-  * warnings (template variables dropped, default aggregator applied),
+  * the converter's mapping-independent checks (PR #85 is the source of truth): request read
+    errors (data source, formula syntax) first, then per displayed query a function, a missing
+    space aggregator (MISSING_AGGREGATOR; #85 has no default aggregator) or an unsupported
+    template variable,
+  * diagnostic codes derived from the source text (not from Agent0's prose); a block that no rule
+    explains gets MISSING_METRIC_MAPPING with a note that the code is a proposal,
+  * warnings: TEMPLATE_VARIABLE_DROPPED for unprefixed `*` variables (prefixed ones are promoted),
   * widget and dashboard expectations derived from the request expectations,
   * milestones.
 Nothing here is ever called by the converter or by the tests.
@@ -41,11 +46,21 @@ PANEL_PLUGIN = {"timeseries": "TimeSeriesChart", "query_value": "StatChart", "no
 # Task 5. No plan lifts this for dashboards. A function may only move into this allowlist through
 # its own plan task with an exact test; until then the list stays empty, whatever Agent0 proposes.
 ALLOWED_FUNCTIONS: frozenset[str] = frozenset()
+AGGREGATORS = {"avg", "sum", "min", "max"}
 AGGREGATOR = re.compile(r"^(avg|sum|min|max):")
+LEADING_WORD = re.compile(r"\s*([A-Za-z_][A-Za-z0-9_]*):")
+# Widget definition keys the converter rejects although the widget type is supported (PR #85
+# option allowlist, dashboard._DEF_KEYS). Only keys that occur in the pinned dashboards are listed.
+BLOCKING_WIDGET_KEYS = {"time"}
 WRAPPING_FN = re.compile(r"^\s*([a-z_]+)\(")
 TRAILING_FN = re.compile(r"\.([a-z_]+)\(")
 FORMULA_FN = re.compile(r"\b([a-z_]+)\(")
 VARIABLE = re.compile(r"\$([A-Za-z_][A-Za-z0-9_]*)")
+IDENTIFIER = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)\b")
+UNANCHORED_VARIABLE = re.compile(r'=~"\$([A-Za-z_][A-Za-z0-9_]*)"')
+# Mapping file per integrations-core directory, as named in the converter (PR #85: docker.json)
+# and the mapping PR (#76: redis.json). Same name when not listed.
+MAPPING_FILE = {"docker_daemon": "docker", "redisdb": "redis"}
 METRIC_SELECTOR = re.compile(r'otel_metric_name="([^"]+)"(?:\s*,\s*otel_metric_type="([^"]+)")?')
 
 P0_CASES = {("postgres/postgresql_dashboard", "widgets[1]")}
@@ -70,19 +85,59 @@ def resolve(doc, path: str):
     return node
 
 
-def rule_errors(request: dict) -> list[str]:
-    """Deterministic error code for a blocked request, derived from the source text only."""
+def read_errors(request: dict) -> list[str]:
+    """Request-level errors the converter (PR #85, dashboard._read_request) reports before it
+    compiles any query. When one is present, no query of the widget is compiled."""
     queries = request["queries"]
+    if not queries:
+        return ["UNSUPPORTED_WIDGET"]  # neither `q` nor `queries`
+    codes = set()
+    other = {q.get("name") for q in queries if q.get("data_source") not in (None, "metrics")}
+    if other:
+        codes.add("UNSUPPORTED_DATA_SOURCE")
+    for f in request["formulas"]:
+        # A function, or a reference to a non-metric query (the converter skips those queries).
+        if f and (FORMULA_FN.search(f) or other & set(IDENTIFIER.findall(f))):
+            codes.add("UNSUPPORTED_FORMULA")
+    return sorted(codes)
+
+
+def displayed_queries(request: dict) -> list[dict]:
+    """Queries the converter compiles: all of them without formulas, else only those referenced."""
+    metric = [q for q in request["queries"] if q.get("data_source") in (None, "metrics")]
     formulas = [f for f in request["formulas"] if f]
-    if not queries or any(q.get("data_source") not in (None, "metrics") for q in queries):
-        return ["UNSUPPORTED_DATA_SOURCE"]
-    if any(FORMULA_FN.search(f) for f in formulas):
-        return ["UNSUPPORTED_FORMULA"]
-    for q in queries:
-        text = q["query"] or ""
-        if WRAPPING_FN.match(text) or TRAILING_FN.search(text):
-            return ["UNSUPPORTED_QUERY_FUNCTION"]
-    return ["MISSING_METRIC_MAPPING"]
+    if not formulas:
+        return metric
+    names = {n for f in formulas for n in IDENTIFIER.findall(f)}
+    return [q for q in metric if q.get("name") in names]
+
+
+def query_error(text: str, variables: dict[str, dict]) -> str | None:
+    """First mapping-independent blocking check that fails, in PR #85's order: parse_metric_query
+    (wrapping function, then syntax), then compile_metric_query (function, aggregator, ...)."""
+    if WRAPPING_FN.match(text):
+        return "UNSUPPORTED_QUERY_FUNCTION"
+    prefix = LEADING_WORD.match(text)
+    if not re.match(r"\s*[A-Za-z_]", text) or (prefix and prefix.group(1) not in AGGREGATORS):
+        return "UNSUPPORTED_QUERY_SYNTAX"  # e.g. `100*(...)`, `-sum:...`, `count:`, `p95:`
+    if TRAILING_FN.search(text):
+        return "UNSUPPORTED_QUERY_FUNCTION"
+    if not AGGREGATOR.match(text):
+        return "MISSING_AGGREGATOR"  # #85 deliberately has no default aggregator
+    for name in VARIABLE.findall(text.split("}")[0]):
+        var = variables.get(name)
+        if var is None or var.get("default") not in (None, "*"):
+            return "UNSUPPORTED_TEMPLATE_VARIABLE"
+    return None
+
+
+def rule_errors(request: dict, variables: dict[str, dict]) -> list[str]:
+    """Error codes the converter must report for this request, derived from the source text only
+    (no mapping, no Agent0). Empty means only a mapping lookup can block the request."""
+    codes = read_errors(request)
+    if codes:
+        return codes
+    return sorted({c for q in displayed_queries(request) if (c := query_error(q["query"] or "", variables))})
 
 
 def blocked_functions(request: dict) -> list[str]:
@@ -119,15 +174,26 @@ def metric_availability(promql: list[str]) -> tuple[list[str], list[str], list[s
     return undefined, absent, mismatched
 
 
+def anchor_variable_matchers(promql: list[str], variables: dict[str, dict]) -> list[str]:
+    """Render promoted-variable matchers like the converter (PR #85): `=~"^($name)$"`, because
+    Dash0 does not anchor `=~`. PROMPT.md asks Agent0 for the unanchored `=~"$name"`."""
+
+    def anchor(m: re.Match[str]) -> str:
+        return f'=~"^(${m.group(1)})$"' if m.group(1) in variables else m.group(0)
+
+    return [UNANCHORED_VARIABLE.sub(anchor, q) for q in promql]
+
+
 def rule_warnings(request: dict, variables: dict[str, dict]) -> list[str]:
-    warnings = []
-    for q in request["queries"]:
-        text = q["query"] or ""
-        for name in VARIABLE.findall(text):
-            if name in variables and variables[name].get("default") in (None, "*"):
-                warnings.append("TEMPLATE_VARIABLE_DROPPED")
-        if not AGGREGATOR.match(text) and not WRAPPING_FN.match(text):
-            warnings.append("DEFAULT_AGGREGATOR_APPLIED")
+    """Warning codes (as a set) for a translated request. PR #85 drops an unprefixed `*` variable
+    with TEMPLATE_VARIABLE_DROPPED and promotes a prefixed one to a Perses ListVariable (matcher
+    `<label>=~"^($name)$"`, no warning), assuming the reviewed mapping maps the prefix tag."""
+    warnings = set()
+    for q in displayed_queries(request):
+        for name in VARIABLE.findall((q["query"] or "").split("}")[0]):
+            var = variables.get(name)
+            if var is not None and var.get("prefix") is None and var.get("default") in (None, "*"):
+                warnings.add("TEMPLATE_VARIABLE_DROPPED")
     return sorted(warnings)
 
 
@@ -140,6 +206,7 @@ def build(key: str) -> dict:
     overrides = overrides or {}
     source = json.loads((ROOT / case["source"]["fixture"]).read_text())
     variables = {v["name"]: v for v in case["template_variables"]}
+    case_requests = {r["source_path"]: r for r in case["requests"]}
     service = case["service"]
 
     requests_out = []
@@ -161,12 +228,19 @@ def build(key: str) -> dict:
         else:
             outcome, promql = agent["outcome"], list(agent.get("promql") or [])
         functions = blocked_functions(req)
+        rules = rule_errors(req, variables)
         if outcome == "translated" and not req["queries"]:
             notes.append("rule overlay: Agent0 translated a request without a metrics query")
             outcome, promql = "blocked", []
         elif outcome == "translated" and functions:
             notes.append(
                 f"rule overlay: Datadog function(s) {', '.join(functions)} block the request (plans 02/03/05);"
+                f" Agent0's translation is discarded: {' ; '.join(promql)}"
+            )
+            outcome, promql = "blocked", []
+        elif outcome == "translated" and rules:
+            notes.append(
+                f"rule overlay: {', '.join(rules)} blocks the request (converter, PR #85);"
                 f" Agent0's translation is discarded: {' ; '.join(promql)}"
             )
             outcome, promql = "blocked", []
@@ -191,11 +265,16 @@ def build(key: str) -> dict:
                 notes.extend(f"type mismatch: {m}" for m in mismatched)
         expected = {"outcome": outcome}
         if outcome == "translated":
-            expected["promql"] = promql
+            expected["promql"] = anchor_variable_matchers(promql, variables)
             expected["errors"] = []
             expected["warnings"] = rule_warnings(req, variables)
         else:
-            expected["errors"] = rule_errors(req)
+            expected["errors"] = rules or ["MISSING_METRIC_MAPPING"]
+            if not rules:
+                notes.append(
+                    "error code is a proposal: Agent0 blocked the request and no source-text rule applies;"
+                    " the converter's code depends on the reviewed mapping"
+                )
         entry["expected"] = expected
         if notes:
             entry["notes"] = notes
@@ -220,7 +299,8 @@ def build(key: str) -> dict:
             wtype = wdef.get("type")
             reqs = by_widget.get(path, [])
             supported = wtype in PANEL_PLUGIN
-            translated = supported and all(r["expected"]["outcome"] == "translated" for r in reqs)
+            bad_keys = sorted(BLOCKING_WIDGET_KEYS & set(wdef)) if supported else []
+            translated = supported and not bad_keys and all(r["expected"]["outcome"] == "translated" for r in reqs)
             if wtype == "note":
                 translated = True
             expected = {"outcome": "translated" if translated else "blocked"}
@@ -231,22 +311,33 @@ def build(key: str) -> dict:
                     panel_plugin=PANEL_PLUGIN[wtype],
                     promql=[q for r in reqs for q in r["expected"]["promql"]],
                     errors=[],
-                    warnings=sorted(c for r in reqs for c in r["expected"].get("warnings", [])),
+                    warnings=sorted({c for r in reqs for c in r["expected"].get("warnings", [])}),
                 )
+            elif not supported:
+                expected["errors"] = ["UNSUPPORTED_WIDGET"]
             else:
-                errs = ["UNSUPPORTED_WIDGET"] if not supported else sorted(
-                    c for r in reqs for c in r["expected"]["errors"]
-                )
-                expected["errors"] = errs
-            widgets_out.append(
-                {
-                    "source_path": path,
-                    "type": wtype,
-                    "milestone": milestone(key, path),
-                    "reviewed": all(r["reviewed"] for r in reqs) if reqs else False,
-                    "expected": expected,
-                }
-            )
+                # A widget option or request read error stops the converter before any query of
+                # the widget compiles.
+                read = {c for r in reqs for c in read_errors(case_requests[r["source_path"]])}
+                if bad_keys:
+                    read.add("UNSUPPORTED_WIDGET")
+                expected["errors"] = sorted(read or {c for r in reqs for c in r["expected"]["errors"]})
+                if bad_keys and not wtype == "note":
+                    expected["notes"] = [f"widget option(s) {', '.join(bad_keys)} block the widget (converter, PR #85)"]
+            out = {
+                "source_path": path,
+                "type": wtype,
+                "milestone": milestone(key, path),
+                # A widget without requests (note, image, ...) is reviewed through its own override.
+                "reviewed": all(r["reviewed"] for r in reqs) if reqs else False,
+                "expected": expected,
+            }
+            override = overrides.get(path)
+            if override:
+                out.update({k: v for k, v in override.items() if k != "expected"})
+                out["expected"].update(override.get("expected", {}))
+                out["provenance"] = {"kind": "human", "ref": str(overrides_path.relative_to(ROOT))}
+            widgets_out.append(out)
 
     n_translated = sum(w["expected"]["outcome"] == "translated" for w in widgets_out)
     dash_outcome = "blocked" if n_translated == 0 else ("translated" if n_translated == len(widgets_out) else "partial")
@@ -268,7 +359,7 @@ def build(key: str) -> dict:
 
     return {
         "source_fixture": case["source"]["fixture"],
-        "mapping": f"mappings/datadog/{service}.json",
+        "mapping": f"mappings/datadog/{MAPPING_FILE.get(service, service)}.json",
         "project": "datadog-migration",
         "requests": requests_out,
         "widgets": widgets_out,
@@ -279,7 +370,7 @@ def build(key: str) -> dict:
 HEADER = """\
 # GENERATED by scripts/build_expected.py from Agent0's answer + project rules. Do not edit by hand:
 # put human decisions (corrections, `reviewed: true`) in overrides.yaml next to this file, keyed
-# by request source_path, then re-run the script.
+# by request source_path (or widget source_path for widgets without requests), then re-run.
 # Expectations describe the END STATE with the complete, human-reviewed mapping file named below.
 # `milestone` says when a case must turn green. Unreviewed cases are skipped by default.
 """

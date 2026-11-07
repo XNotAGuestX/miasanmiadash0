@@ -5,11 +5,11 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
-import yaml
-
 import run_oracle as ro
+import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 KEY = "nginx/NGINX-Metrics_dashboard"
@@ -28,7 +28,12 @@ def job(key: str = KEY, resume: str | None = None) -> ro.Job:
 def good_answer(key: str = KEY) -> str:
     case = ro.load_case(key)
     items = [
-        {"source_path": r["source_path"], "outcome": "blocked", "reason": "test", "otel_metrics": []}
+        {
+            "source_path": r["source_path"],
+            "outcome": "blocked",
+            "reason": "test",
+            "otel_metrics": [],
+        }
         for r in case["requests"]
     ]
     return yaml.safe_dump(items, sort_keys=False)
@@ -45,7 +50,7 @@ def started(thread: str) -> str:
 class FakeAgent0:
     """Scripted runTask / waitForTask: each list item is returned or raised in order."""
 
-    def __init__(self, starts: list, waits: list):
+    def __init__(self, starts: list[Any], waits: list[Any]) -> None:
         self.starts = list(starts)
         self.waits = list(waits)
         self.start_calls: list[str] = []
@@ -53,7 +58,7 @@ class FakeAgent0:
         self.active = 0
         self.max_active = 0
 
-    async def _next(self, queue: list) -> str:
+    async def _next(self, queue: list[Any]) -> str:
         self.active += 1
         self.max_active = max(self.max_active, self.active)
         try:
@@ -61,7 +66,7 @@ class FakeAgent0:
             item = queue.pop(0)
             if isinstance(item, BaseException):
                 raise item
-            return item
+            return str(item)
         finally:
             self.active -= 1
 
@@ -82,7 +87,7 @@ def make_runner(tmp_path: Path, agent: object, **opts) -> tuple[ro.Runner, ro.St
     state = ro.State(tmp_path / "state.json")
     built: list[str] = []
     runner = ro.Runner(
-        agent,  # type: ignore[arg-type]
+        agent,
         state,
         ro.Options(**{"backoff_s": 0, **opts}),
         agent0_dir=tmp_path / "agent0",
@@ -98,7 +103,10 @@ def make_runner(tmp_path: Path, agent: object, **opts) -> tuple[ro.Runner, ro.St
 
 def test_default_input_lists_every_extracted_case() -> None:
     specs = ro.load_input(ro.DEFAULT_INPUT)
-    extracted = sorted(str(p.relative_to(ROOT / "fixtures" / "cases"))[:-5] for p in (ROOT / "fixtures" / "cases").rglob("*.yaml"))
+    extracted = sorted(
+        str(p.relative_to(ROOT / "fixtures" / "cases"))[:-5]
+        for p in (ROOT / "fixtures" / "cases").rglob("*.yaml")
+    )
     assert sorted(s.key for s in specs) == extracted
     assert all(s.dataset == "default" for s in specs)
 
@@ -110,11 +118,14 @@ def test_default_input_lists_every_extracted_case() -> None:
         ({"dataset": "default", "dashboards": [{"case": KEY}, {"case": KEY}]}, "duplicate"),
         ({"dataset": "default", "dashboards": [{"case": KEY, "extra": 1}]}, "unknown keys"),
         ({"dashboards": [{"case": KEY}]}, "no dataset"),
-        ({"dataset": "default", "model_class": "huge", "dashboards": [{"case": KEY}]}, "model_class"),
+        (
+            {"dataset": "default", "model_class": "huge", "dashboards": [{"case": KEY}]},
+            "model_class",
+        ),
         ({"dataset": "default", "dashboards": []}, "non-empty"),
     ],
 )
-def test_invalid_input_is_rejected(tmp_path: Path, doc: dict, message: str) -> None:
+def test_invalid_input_is_rejected(tmp_path: Path, doc: dict[str, Any], message: str) -> None:
     path = tmp_path / "in.json"
     path.write_text(json.dumps(doc))
     with pytest.raises(ro.InputError, match=message):
@@ -125,16 +136,29 @@ def test_invalid_input_is_rejected(tmp_path: Path, doc: dict, message: str) -> N
 
 
 def test_standard_run_selects_only_new_cases_and_resumes_pending(tmp_path: Path) -> None:
-    keys = ["nginx/NGINX-Metrics_dashboard", "nginx/plus_overview", "redisdb/overview", "kafka/kafka_dashboard"]
+    keys = [
+        "nginx/NGINX-Metrics_dashboard",
+        "nginx/plus_overview",
+        "redisdb/overview",
+        "kafka/kafka_dashboard",
+    ]
     specs = [spec(k) for k in keys]
     prompts = {k: ro.render_oracle_prompt.render(k) for k in keys}
     state = ro.State(tmp_path / "state.json")
     state.update(keys[0], status="done", prompt_sha256=ro.prompt_sha256(prompts[keys[0]]))
     state.update(keys[1], status="done", prompt_sha256="stale")
-    state.update(keys[2], status="pending", thread_id=THREAD_A, prompt_sha256=ro.prompt_sha256(prompts[keys[2]]))
+    state.update(
+        keys[2],
+        status="pending",
+        thread_id=THREAD_A,
+        prompt_sha256=ro.prompt_sha256(prompts[keys[2]]),
+    )
 
     jobs, warnings = ro.select_jobs(specs, state, prompts)
-    assert [(j.spec.key, j.resume_thread_id) for j in jobs] == [(keys[2], THREAD_A), (keys[3], None)]
+    assert [(j.spec.key, j.resume_thread_id) for j in jobs] == [
+        (keys[2], THREAD_A),
+        (keys[3], None),
+    ]
     assert len(warnings) == 1 and keys[1] in warnings[0]
 
     full, _ = ro.select_jobs(specs, state, prompts, full=True)
@@ -167,7 +191,11 @@ def test_validation_reports_missing_and_miscounted_requests() -> None:
     case = ro.load_case(KEY)
     items = yaml.safe_load(good_answer())
     first = case["requests"][0]
-    items[0] = {"source_path": first["source_path"], "outcome": "translated", "promql": ["a", "b", "c", "d", "e"]}
+    items[0] = {
+        "source_path": first["source_path"],
+        "outcome": "translated",
+        "promql": ["a", "b", "c", "d", "e"],
+    }
     with pytest.raises(ro.AnswerError, match="PromQL strings"):
         ro.validate_answer(yaml.safe_dump(items), case)
     with pytest.raises(ro.AnswerError, match="no answer for 1"):
@@ -204,7 +232,10 @@ def test_happy_path_writes_verbatim_answer_and_marks_done(tmp_path: Path) -> Non
 
 
 def test_transport_error_while_waiting_retries_the_same_thread(tmp_path: Path) -> None:
-    agent = FakeAgent0([started(THREAD_A)], [ConnectionError("reset"), started(THREAD_A), fenced(good_answer(), THREAD_A)])
+    agent = FakeAgent0(
+        [started(THREAD_A)],
+        [ConnectionError("reset"), started(THREAD_A), fenced(good_answer(), THREAD_A)],
+    )
     runner, state, _ = make_runner(tmp_path, agent)
     [result] = asyncio.run(runner.run([job()]))
     assert result.status == "done"
@@ -213,7 +244,10 @@ def test_transport_error_while_waiting_retries_the_same_thread(tmp_path: Path) -
 
 
 def test_invalid_answer_retries_on_a_new_thread(tmp_path: Path) -> None:
-    agent = FakeAgent0([started(THREAD_A), started(THREAD_B)], [fenced("- nonsense: 1\n", THREAD_A), fenced(good_answer(), THREAD_B)])
+    agent = FakeAgent0(
+        [started(THREAD_A), started(THREAD_B)],
+        [fenced("- nonsense: 1\n", THREAD_A), fenced(good_answer(), THREAD_B)],
+    )
     runner, state, _ = make_runner(tmp_path, agent)
     [result] = asyncio.run(runner.run([job()]))
     assert result.status == "done"
@@ -252,7 +286,7 @@ def test_parallelism_is_bounded_by_jobs(tmp_path: Path) -> None:
     keys = [s.key for s in ro.load_input(ro.DEFAULT_INPUT)][:5]
     threads = [f"{i}{i}{i}{i}{i}{i}{i}{i}-0000-4000-8000-000000000000" for i in range(5)]
     agent = FakeAgent0([started(t) for t in threads], [])
-    answers = {t: fenced(good_answer(k), t) for t, k in zip(threads, keys)}
+    answers = {t: fenced(good_answer(k), t) for t, k in zip(threads, keys, strict=True)}
 
     async def wait(thread_id: str, dataset: str, timeout_s: int) -> str:
         agent.wait_calls.append(thread_id)
@@ -270,7 +304,9 @@ def test_parallelism_is_bounded_by_jobs(tmp_path: Path) -> None:
 def test_adopt_existing_records_answers_without_asking(tmp_path: Path) -> None:
     agent0_dir = tmp_path / "agent0"
     (agent0_dir / KEY).mkdir(parents=True)
-    (agent0_dir / KEY / "answer.yaml").write_text(f"# thread: https://x/?thread_id={THREAD_A}\n- a: 1\n")
+    (agent0_dir / KEY / "answer.yaml").write_text(
+        f"# thread: https://x/?thread_id={THREAD_A}\n- a: 1\n"
+    )
     (agent0_dir / KEY / "prompt.md").write_text("p")
     state = ro.State(tmp_path / "state.json")
     adopted = ro.adopt_existing([spec(), spec("redisdb/overview")], state, {}, agent0_dir)
@@ -279,19 +315,31 @@ def test_adopt_existing_records_answers_without_asking(tmp_path: Path) -> None:
     assert state.get(KEY)["prompt_sha256"] == ro.prompt_sha256("p")
 
 
-# --------------------------------------------------------------------------- real MCP client, in-process server
+# ------------------------------------------------- real MCP client, in-process server
 
 
 def test_mcp_client_calls_runtask_and_waitfortask_through_the_sdk() -> None:
+    pytest.importorskip("mcp", reason="opt-in uv group: uv sync --group oracle")
     from mcp import Client
     from mcp.server.mcpserver import MCPServer
 
     server = MCPServer("fake-dash0")
-    seen: dict[str, dict] = {}
+    seen: dict[str, dict[str, Any]] = {}
 
     @server.tool()
-    def runTask(message: str, dataset: str, timeoutSeconds: int = 25, modelClass: str = "", reasoningEffort: str = "") -> str:  # noqa: N802,N803
-        seen["runTask"] = {"dataset": dataset, "timeoutSeconds": timeoutSeconds, "modelClass": modelClass, "reasoningEffort": reasoningEffort}
+    def runTask(
+        message: str,
+        dataset: str,
+        timeoutSeconds: int = 25,
+        modelClass: str = "",
+        reasoningEffort: str = "",
+    ) -> str:  # noqa: N802,N803
+        seen["runTask"] = {
+            "dataset": dataset,
+            "timeoutSeconds": timeoutSeconds,
+            "modelClass": modelClass,
+            "reasoningEffort": reasoningEffort,
+        }
         return started(THREAD_A)
 
     @server.tool()
@@ -309,7 +357,12 @@ def test_mcp_client_calls_runtask_and_waitfortask_through_the_sdk() -> None:
     start_text, wait_text = asyncio.run(go())
     assert ro.extract_thread_id(start_text) == THREAD_A
     assert ro.extract_yaml_block(wait_text) == "- a: 1\n"
-    assert seen["runTask"] == {"dataset": "default", "timeoutSeconds": 1, "modelClass": "advanced", "reasoningEffort": "high"}
+    assert seen["runTask"] == {
+        "dataset": "default",
+        "timeoutSeconds": 1,
+        "modelClass": "advanced",
+        "reasoningEffort": "high",
+    }
 
     with pytest.raises(ro.ToolError, match="waitForTask failed"):
         asyncio.run(agent.wait(THREAD_B, "default", 5))

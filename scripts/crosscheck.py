@@ -369,14 +369,24 @@ def dataset_labels(name: str) -> dict[str, list[str]] | None:
     return None
 
 
-def rule_blocked(request: dict[str, Any]) -> bool:
+def case_variables(case: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Template variables by name, as build_expected.py passes them to its overlay."""
+    return {v["name"]: v for v in case.get("template_variables") or []}
+
+
+def rule_blocked(request: dict[str, Any], variables: dict[str, dict[str, Any]]) -> bool:
     """The overlay of build_expected.py blocks this request from its source text alone."""
-    return not request["queries"] or bool(build_expected.blocked_functions(request))
+    return (
+        not request["queries"]
+        or bool(build_expected.blocked_functions(request))
+        or bool(build_expected.rule_errors(request, variables))
+    )
 
 
 def plan_source(key: str, *, mutations: bool = False) -> list[Item]:
     case = vc.load_case(key)
     requests = vc.case_requests(case)
+    variables = case_variables(case)
     if mutations:
         entries = [(m["id"], m["source_path"], {"expected": m["expected"]}) for m in vc.load_mutations(key)]
     else:
@@ -386,8 +396,8 @@ def plan_source(key: str, *, mutations: bool = False) -> list[Item]:
     for row_id, sp, entry in entries:
         req = requests[sp]
         cand = vc.candidate(entry)
-        if rule_blocked(req):
-            want = build_expected.rule_errors(req)
+        if rule_blocked(req, variables):
+            want = build_expected.rule_errors(req, variables)
             ok = cand["outcome"] == "blocked" and cand.get("errors") == want
             reason = [] if ok else [f"the rule overlay blocks this request with {want}; candidate is {cand['outcome']} {cand.get('errors', '')}".strip()]
             items.append(Item(row_id, {"source_path": row_id, "verdict": "pass" if ok else "block", "reasons": reason, "method": "rule"}))
@@ -447,7 +457,7 @@ def plan_rerun(key: str, round2_dir: Path, agent0_dir: Path | None = None) -> li
         def row(verdict: str, method: str, reasons: list[str], sp: str = sp, **extra: Any) -> Item:
             return Item(sp, {"source_path": sp, "verdict": verdict, "reasons": reasons, "method": method, **extra})
 
-        if rule_blocked(req):
+        if rule_blocked(req, case_variables(case)):
             items.append(row("pass", "rule", []))
             continue
         if sp not in second:

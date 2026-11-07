@@ -11,9 +11,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[1].definition.widgets[1].definition.requests[0]#rate_on_gauge
   source_path: widgets[1].definition.widgets[1].definition.requests[0]
   mutation: rate_on_gauge
@@ -24,9 +21,6 @@
     - sum(rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="gauge"}[$__rate_interval])) / (sum(rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum"}[$__rate_interval])) + sum(rate({otel_metric_name="postgresql.tup_returned", otel_metric_type="sum"}[$__rate_interval]))) * 100
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[1].definition.widgets[1].definition.requests[0]#range_change
   source_path: widgets[1].definition.widgets[1].definition.requests[0]
@@ -39,9 +33,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[1].definition.widgets[1].definition.requests[0]#sibling_metric
   source_path: widgets[1].definition.widgets[1].definition.requests[0]
   mutation: sibling_metric
@@ -52,9 +43,6 @@
     - sum(rate({otel_metric_name="postgresql.tup_inserted", otel_metric_type="sum"}[$__rate_interval])) / (sum(rate({otel_metric_name="postgresql.tup_inserted", otel_metric_type="sum"}[$__rate_interval])) + sum(rate({otel_metric_name="postgresql.tup_returned", otel_metric_type="sum"}[$__rate_interval]))) * 100
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[1].definition.widgets[1].definition.requests[0]#outcome_flip
   source_path: widgets[1].definition.widgets[1].definition.requests[0]
@@ -75,9 +63,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[0].definition.requests[0]#add_scale
   source_path: widgets[2].definition.widgets[0].definition.requests[0]
   mutation: add_scale
@@ -89,9 +74,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[0].definition.requests[0]#sibling_metric
   source_path: widgets[2].definition.widgets[0].definition.requests[0]
   mutation: sibling_metric
@@ -102,9 +84,6 @@
     - sum({otel_metric_name="postgresql.backends", otel_metric_type="sum", state="dead"})
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[0].definition.requests[0]#outcome_flip
   source_path: widgets[2].definition.widgets[0].definition.requests[0]
@@ -125,8 +104,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[3].definition.requests[0]#drop_by_label
   source_path: widgets[2].definition.widgets[3].definition.requests[0]
   mutation: drop_by_label
@@ -137,8 +114,6 @@
     - avg (rate({otel_metric_name="postgresql.index.scans", otel_metric_type="sum"}[$__rate_interval]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[3].definition.requests[0]#rate_on_gauge
   source_path: widgets[2].definition.widgets[3].definition.requests[0]
@@ -151,8 +126,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[3].definition.requests[0]#add_scale
   source_path: widgets[2].definition.widgets[3].definition.requests[0]
   mutation: add_scale
@@ -164,8 +137,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[3].definition.requests[0]#range_change
   source_path: widgets[2].definition.widgets[3].definition.requests[0]
   mutation: range_change
@@ -176,8 +147,6 @@
     - avg by (postgresql_index_name) (rate({otel_metric_name="postgresql.index.scans", otel_metric_type="sum"}[5m]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[3].definition.requests[0]#outcome_flip
   source_path: widgets[2].definition.widgets[3].definition.requests[0]
@@ -198,8 +167,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[4].definition.requests[0]#drop_by_label
   source_path: widgets[2].definition.widgets[4].definition.requests[0]
   mutation: drop_by_label
@@ -210,8 +177,6 @@
     - avg (rate({otel_metric_name="postgresql.index.scans", otel_metric_type="sum"}[$__rate_interval]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[4].definition.requests[0]#rate_on_gauge
   source_path: widgets[2].definition.widgets[4].definition.requests[0]
@@ -224,8 +189,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[4].definition.requests[0]#add_scale
   source_path: widgets[2].definition.widgets[4].definition.requests[0]
   mutation: add_scale
@@ -237,8 +200,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[4].definition.requests[0]#range_change
   source_path: widgets[2].definition.widgets[4].definition.requests[0]
   mutation: range_change
@@ -249,8 +210,6 @@
     - avg by (postgresql_index_name) (rate({otel_metric_name="postgresql.index.scans", otel_metric_type="sum"}[5m]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[4].definition.requests[0]#outcome_flip
   source_path: widgets[2].definition.widgets[4].definition.requests[0]
@@ -271,8 +230,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[6].definition.requests[0]#drop_by_label
   source_path: widgets[2].definition.widgets[6].definition.requests[0]
   mutation: drop_by_label
@@ -283,8 +240,6 @@
     - avg (label_replace({otel_metric_name="postgresql.rows", otel_metric_type="sum", state="live"}, "postgresql_table_name", "$1", "postgresql_table_name", "[^.]*[.](.*)"))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[6].definition.requests[0]#add_scale
   source_path: widgets[2].definition.widgets[6].definition.requests[0]
@@ -297,8 +252,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[6].definition.requests[0]#sibling_metric
   source_path: widgets[2].definition.widgets[6].definition.requests[0]
   mutation: sibling_metric
@@ -309,8 +262,6 @@
     - avg by (postgresql_table_name) (label_replace({otel_metric_name="postgresql.backends", otel_metric_type="sum", state="live"}, "postgresql_table_name", "$1", "postgresql_table_name", "[^.]*[.](.*)"))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[2].definition.widgets[6].definition.requests[0]#outcome_flip
   source_path: widgets[2].definition.widgets[6].definition.requests[0]
@@ -331,8 +282,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[0].definition.requests[0]#drop_by_label
   source_path: widgets[4].definition.widgets[0].definition.requests[0]
   mutation: drop_by_label
@@ -343,8 +292,6 @@
     - avg (rate({otel_metric_name="postgresql.tup_inserted", otel_metric_type="sum"}[$__rate_interval]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[0].definition.requests[0]#rate_on_gauge
   source_path: widgets[4].definition.widgets[0].definition.requests[0]
@@ -357,8 +304,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[0].definition.requests[0]#add_scale
   source_path: widgets[4].definition.widgets[0].definition.requests[0]
   mutation: add_scale
@@ -369,8 +314,6 @@
     - 100 * (avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_inserted", otel_metric_type="sum"}[$__rate_interval])))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[0].definition.requests[0]#range_change
   source_path: widgets[4].definition.widgets[0].definition.requests[0]
@@ -383,8 +326,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[0].definition.requests[0]#sibling_metric
   source_path: widgets[4].definition.widgets[0].definition.requests[0]
   mutation: sibling_metric
@@ -395,8 +336,6 @@
     - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_returned", otel_metric_type="sum"}[$__rate_interval]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[0].definition.requests[0]#outcome_flip
   source_path: widgets[4].definition.widgets[0].definition.requests[0]
@@ -417,8 +356,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[1].definition.requests[0]#drop_by_label
   source_path: widgets[4].definition.widgets[1].definition.requests[0]
   mutation: drop_by_label
@@ -429,8 +366,6 @@
     - avg (rate({otel_metric_name="postgresql.tup_updated", otel_metric_type="sum"}[$__rate_interval]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[1].definition.requests[0]#rate_on_gauge
   source_path: widgets[4].definition.widgets[1].definition.requests[0]
@@ -443,8 +378,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[1].definition.requests[0]#add_scale
   source_path: widgets[4].definition.widgets[1].definition.requests[0]
   mutation: add_scale
@@ -455,8 +388,6 @@
     - 100 * (avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_updated", otel_metric_type="sum"}[$__rate_interval])))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[1].definition.requests[0]#range_change
   source_path: widgets[4].definition.widgets[1].definition.requests[0]
@@ -469,8 +400,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[1].definition.requests[0]#sibling_metric
   source_path: widgets[4].definition.widgets[1].definition.requests[0]
   mutation: sibling_metric
@@ -481,8 +410,6 @@
     - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.blks_hit", otel_metric_type="sum"}[$__rate_interval]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[1].definition.requests[0]#outcome_flip
   source_path: widgets[4].definition.widgets[1].definition.requests[0]
@@ -505,14 +432,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[2].definition.requests[0]#drop_by_label
   source_path: widgets[4].definition.widgets[2].definition.requests[0]
   mutation: drop_by_label
@@ -525,14 +444,6 @@
     - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_deleted", otel_metric_type="sum"}[$__rate_interval]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[2].definition.requests[0]#rate_on_gauge
   source_path: widgets[4].definition.widgets[2].definition.requests[0]
@@ -547,14 +458,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[2].definition.requests[0]#add_scale
   source_path: widgets[4].definition.widgets[2].definition.requests[0]
   mutation: add_scale
@@ -567,14 +470,6 @@
     - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_deleted", otel_metric_type="sum"}[$__rate_interval]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[2].definition.requests[0]#range_change
   source_path: widgets[4].definition.widgets[2].definition.requests[0]
@@ -589,14 +484,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[2].definition.requests[0]#sibling_metric
   source_path: widgets[4].definition.widgets[2].definition.requests[0]
   mutation: sibling_metric
@@ -609,14 +496,6 @@
     - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_deleted", otel_metric_type="sum"}[$__rate_interval]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[2].definition.requests[0]#outcome_flip
   source_path: widgets[4].definition.widgets[2].definition.requests[0]
@@ -637,8 +516,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[3].definition.requests[0]#drop_by_label
   source_path: widgets[4].definition.widgets[3].definition.requests[0]
   mutation: drop_by_label
@@ -649,8 +526,6 @@
     - avg (rate({otel_metric_name="postgresql.tup_deleted", otel_metric_type="sum"}[$__rate_interval]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[3].definition.requests[0]#rate_on_gauge
   source_path: widgets[4].definition.widgets[3].definition.requests[0]
@@ -663,8 +538,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[3].definition.requests[0]#add_scale
   source_path: widgets[4].definition.widgets[3].definition.requests[0]
   mutation: add_scale
@@ -675,8 +548,6 @@
     - 100 * (avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_deleted", otel_metric_type="sum"}[$__rate_interval])))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[3].definition.requests[0]#range_change
   source_path: widgets[4].definition.widgets[3].definition.requests[0]
@@ -689,8 +560,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[3].definition.requests[0]#sibling_metric
   source_path: widgets[4].definition.widgets[3].definition.requests[0]
   mutation: sibling_metric
@@ -701,8 +570,6 @@
     - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum"}[$__rate_interval]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[3].definition.requests[0]#outcome_flip
   source_path: widgets[4].definition.widgets[3].definition.requests[0]
@@ -723,8 +590,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[4].definition.requests[0]#drop_by_label
   source_path: widgets[4].definition.widgets[4].definition.requests[0]
   mutation: drop_by_label
@@ -735,8 +600,6 @@
     - avg (rate({otel_metric_name="postgresql.operations", otel_metric_type="sum", operation="hot_upd"}[$__rate_interval]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[4].definition.requests[0]#rate_on_gauge
   source_path: widgets[4].definition.widgets[4].definition.requests[0]
@@ -749,8 +612,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[4].definition.requests[0]#add_scale
   source_path: widgets[4].definition.widgets[4].definition.requests[0]
   mutation: add_scale
@@ -761,8 +622,6 @@
     - 100 * (avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.operations", otel_metric_type="sum", operation="hot_upd"}[$__rate_interval])))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[4].definition.requests[0]#range_change
   source_path: widgets[4].definition.widgets[4].definition.requests[0]
@@ -775,8 +634,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[4].definition.requests[0]#sibling_metric
   source_path: widgets[4].definition.widgets[4].definition.requests[0]
   mutation: sibling_metric
@@ -787,8 +644,6 @@
     - avg by (postgresql_database_name) (rate({otel_metric_name="postgresql.rollbacks", otel_metric_type="sum", operation="hot_upd"}[$__rate_interval]))
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[4].definition.widgets[4].definition.requests[0]#outcome_flip
   source_path: widgets[4].definition.widgets[4].definition.requests[0]
@@ -809,8 +664,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[5].definition.widgets[1].definition.requests[0]#drop_by_label
   source_path: widgets[5].definition.widgets[1].definition.requests[0]
   mutation: drop_by_label
@@ -821,8 +674,6 @@
     - max ({otel_metric_name="postgresql.backends", otel_metric_type="sum"})
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[5].definition.widgets[1].definition.requests[0]#add_scale
   source_path: widgets[5].definition.widgets[1].definition.requests[0]
@@ -835,8 +686,6 @@
     errors: []
     warnings:
     - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[5].definition.widgets[1].definition.requests[0]#sibling_metric
   source_path: widgets[5].definition.widgets[1].definition.requests[0]
   mutation: sibling_metric
@@ -847,8 +696,6 @@
     - max by (postgresql_database_name) ({otel_metric_name="postgresql.db_size", otel_metric_type="sum"})
     errors: []
     warnings:
-    - TEMPLATE_VARIABLE_DROPPED
-    - TEMPLATE_VARIABLE_DROPPED
     - TEMPLATE_VARIABLE_DROPPED
 - id: widgets[5].definition.widgets[1].definition.requests[0]#outcome_flip
   source_path: widgets[5].definition.widgets[1].definition.requests[0]
