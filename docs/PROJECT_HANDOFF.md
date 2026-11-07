@@ -45,7 +45,7 @@ Do not spend hackathon time comparing equivalent frameworks. Change the defaults
 | P1 | Query-value widget, more aggregators, simple layout fidelity | Added only after P0 works end to end |
 | P1 | Warning + critical thresholds, explicit label grouping, counters | Each feature has semantic tests and a verified target form |
 | P1 | Folder input and broader API discovery | Reuses the same compiler; no alternate conversion path |
-| P2 | YAML, formulas, template variables, extra vendors, UI | Defer unless all P0 and useful P1 work is complete |
+| P2 | YAML, formulas, template variables, extra vendors (as new source providers), UI | Defer unless all P0 and useful P1 work is complete |
 
 No general-purpose Datadog parser, automatic universal OTel metric mapping, notification routing migration, historical telemetry migration, or production monitoring cutover is promised.
 
@@ -79,40 +79,74 @@ The monitor uses a rolling lookback and one critical threshold. Import the first
 ## Architecture
 
 ```text
-Datadog API / JSON exports
-          |
-          v
-Source reader -> source validation -> bounded parser -> small internal model
-                                                          |
-                                            explicit mapping + compiler
-                                                          |
-                          +-------------------------------+------------------+
-                          v                               v                  v
-                 Perses dashboard JSON          Dash0 check-rule JSON   diagnostics
-                          +-------------------------------+------------------+
-                                                          |
-                                               validation + manifest
-                                                          |
-                                        explicit Dash0 import -> read-back
+            --source <id>  (selects one provider from a static table)
+                          |
+       +------------------+----------------------------------------------+
+       | Source provider (P0: datadog only; owns all source-specific     |
+       | logic): fetch by ID / load files -> source validation ->        |
+       | bounded parser -> provider model -> explicit mapping -> compile |
+       +------------------+----------------------------------------------+
+                          |  shared output contract
+          +---------------+-------------------+--------------------+
+          v                                   v                    v
+ Perses dashboard JSON            PromQL check condition    diagnostics + item outcomes
+          +---------------+-------------------+--------------------+
+                          |
+              validation + manifest + report           (shared)
+                          |
+   Dash0 check-rule body rendering, explicit import -> read-back   (shared)
 ```
 
-Keep the internal model limited to the supported subset. Do not build a general compiler framework or vendor registry. A source reader boundary is enough to allow another vendor later.
+### Source provider interface
+
+**Decision (2026-11-07, user):** translation does **not** need to be source-agnostic. There is no vendor-neutral intermediate model. Each source provider owns its source-specific parsing, model, mapping and translation from start to finish, so a common abstraction never limits source-specific semantics. The shared requirement is one interface for choosing a provider, plus the shared output contract it produces.
+
+```ts
+// src/source/provider.ts — illustrative; finalize the types during bootstrap
+interface SourceProvider {
+  readonly id: string; // value of --source, e.g. "datadog"
+  // Online read of explicitly selected assets; original JSON retained unchanged.
+  fetch(selection: SourceSelection, env: SourceEnv): Promise<SourceAsset[]>;
+  // Offline file ingestion; returns the same shape as fetch.
+  load(files: SourceFiles): SourceAsset[];
+  // Pure and deterministic: no network, clock, randomness, or model calls.
+  // The provider validates its own mapping format.
+  compile(assets: SourceAsset[], mapping: unknown): CompileResult;
+}
+
+// CompileResult = Perses dashboards + PromQL check conditions
+//               + per-item outcomes + diagnostics (shared types in src/target.ts)
+const providers: Record<string, SourceProvider> = { datadog: datadogProvider };
+```
+
+- `fetch` and `compile` require `--source <id>`. An unknown ID fails with exit `1` and lists the known IDs. The provider ID and compiler version are recorded in `report.json` and `manifest.json`. `import` reads the provider ID from the manifest only for reporting; it has no source logic.
+- `fetch` and `load` return the same asset shape, so API and file inputs go through the same `compile`.
+- Shared code (CLI, report, manifest, validation, destination) depends only on `SourceProvider` and the shared output types. Only `source/provider.ts` imports a provider's directory, and providers don't import each other.
+- Diagnostic codes and fields are shared; a provider may add codes, and `sourcePath` uses the provider's own JSON paths.
+- Adding a vendor means one new provider directory and one table entry. This is a static interface, not a plugin framework: no dynamic loading, discovery, or config-driven registration. Other vendors remain P2.
+
+Keep each provider's model limited to its supported subset. Do not build a general compiler framework.
 
 Suggested implementation tree, **not files currently implemented**:
 
 ```text
 src/
-  cli.ts                  # arguments, command wiring, exit status
-  source/datadog.ts        # read dashboard/monitor by ID; retain original JSON
-  source/files.ts          # load one exported asset per file
-  parser/query.ts          # tokenizer + bounded grammar; full input consumption
-  model.ts                # Query, Dashboard, Panel, Monitor, Diagnostic
-  mapping.ts              # validate/load explicit telemetry mapping JSON
-  compiler/query.ts       # typed query -> PromQL
-  compiler/dashboard.ts   # flat supported widgets -> Perses
-  compiler/monitor.ts     # narrow monitor subset -> condition + check payload
-  destination/dash0.ts    # import and read-back; no translation logic
-  validation.ts           # source/output/mapping boundaries
+  cli.ts                  # arguments, --source selection, command wiring, exit status
+  source/provider.ts      # SourceProvider interface + static providers table
+  source/datadog/         # the only P0 provider; all Datadog-specific translation
+    index.ts              # datadogProvider: implements SourceProvider
+    api.ts                # read dashboard/monitor by ID; retain original JSON
+    files.ts              # load one exported asset per file
+    parse-query.ts        # tokenizer + bounded grammar; full input consumption
+    model.ts              # parsed Datadog Query, Widget, Monitor
+    mapping.ts            # validate/load the Datadog telemetry mapping JSON
+    compile-query.ts      # typed query -> PromQL
+    dashboard.ts          # flat supported widgets -> Perses
+    monitor.ts            # narrow monitor subset -> PromQL check condition
+  target.ts               # shared output types: Perses dashboard, check condition, Diagnostic, outcomes
+  promql.ts               # shared PromQL label-value escaping and selector rendering
+  destination/dash0.ts    # check-rule body rendering, import and read-back; no translation logic
+  validation.ts           # output and manifest boundaries
   report.ts               # item accounting, summary, artifact manifest
 fixtures/
   datadog/                # synthetic dashboard and monitor; incompatibility cases
@@ -153,11 +187,12 @@ Implement the `max` happy path first. Allow metric/tag identifier characters fou
 
 ### Metric and label mapping
 
-Use a small versioned JSON mapping contract, validated by Zod:
+The Datadog provider owns its mapping format: a small versioned JSON contract, validated by Zod. The `source` field must match the selected `--source`; a mismatch blocks compilation. Another provider may define its own format.
 
 ```json
 {
   "version": 1,
+  "source": "datadog",
   "metrics": {
     "demo.temperature": {
       "target": "demo_temperature_celsius",
@@ -212,7 +247,7 @@ The official [check-rule import](https://www.dash0.com/docs/api-reference/operat
 npm run dev -- fetch --source datadog --dashboard-id DEMO_ID --monitor-id 123 --out private-input/demo
 
 # Offline deterministic compilation; no network calls or destination writes.
-npm run dev -- compile --dashboard private-input/demo/dashboard.json --monitor private-input/demo/monitor.json --mapping fixtures/mappings/demo.json --out artifacts/demo
+npm run dev -- compile --source datadog --dashboard private-input/demo/dashboard.json --monitor private-input/demo/monitor.json --mapping fixtures/mappings/demo.json --out artifacts/demo
 
 # Inspect outputs, then check the import plan without creating anything.
 npm run dev -- import --input artifacts/demo --dry-run
@@ -252,6 +287,7 @@ Print a short summary to the terminal and write full JSON detail. Exit `0` for c
 - [ ] Highest-priority invariant holds: no LLM participates in any conversion step, including optional paths, mapping inference, repairs, or fallbacks.
 - [ ] Identical source inputs, mappings, configuration, and compiler version produce identical target artifacts and diagnostics.
 - [ ] Source/API and file paths feed the same deterministic compiler.
+- [ ] The source provider is selected through the `SourceProvider` interface (`--source`); shared report, manifest, and import code contain no Datadog-specific logic.
 - [ ] One real Datadog dashboard and monitor are fetched, compiled, imported, and read back.
 - [ ] The target dashboard displays actual demo telemetry; the check condition is verified with controlled values.
 - [ ] The original query, emitted PromQL, mapping, and threshold/window behavior can be explained.
