@@ -2,7 +2,8 @@
 
 Last updated: 2026-11-08: general-input safeguards and mapping coverage implemented on
 `167-general-inputs` ([#167](https://github.com/XNotAGuestX/thinchackdash/issues/167)); the required
-check passes (993 passed, 621 skipped). Felix's review/merge of this follow-up is pending.
+check passes (993 passed, 621 skipped). Review found no blocking issues; Felix explicitly
+authorized merging [PR #168](https://github.com/XNotAGuestX/thinchackdash/pull/168).
 The prior alert/function extension PR #166 is merged. Earlier comparison failures remain
 tracked in #148 and #161. Open work: the orchestrator handoff [`handoff/README.md`](handoff/README.md).
 Work is tracked in [issues](https://github.com/XNotAGuestX/thinchackdash/issues) and on the
