@@ -51,11 +51,13 @@ REMARKS: dict[str, Remark] = {
     # "the default time range to use on the initial load of the dashboard", and a Panel has
     # display, plugin, queries and links (_PERSES_DASHBOARD); Dash0's panel settings are
     # "Name, Description, Group, Hide Header, Header Color" (_DASH0_PANELS).
+    # Felix extended this approved lost-window approximation to reducing panels in #158.
     "TIMEPIN": Remark(
         category="approximated",
         summary=(
             "Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no "
-            "per-panel time range, so it follows the dashboard time picker."
+            "per-panel time range, so it follows the dashboard time picker. Values reduced over "
+            "that range, including query values and rankings, can change."
         ),
         evidence=f"{_PERSES_DASHBOARD} {_DASH0_PANELS}",
         approved=_FELIX,

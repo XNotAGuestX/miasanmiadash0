@@ -4,6 +4,7 @@ import subprocess
 import sys
 import tomllib
 from pathlib import Path
+from typing import Any
 
 import pytest
 import yaml
@@ -266,3 +267,48 @@ def test_approximated_items_are_converted_and_eligible() -> None:
     }
     assert manifest_entry("p", "dashboard", "d.json", "x", "approximated")["eligible"] is True
     assert exit_code_for(items) == 2  # only an all-translated run exits 0
+
+
+@pytest.mark.parametrize("span", ["1m", "1h"])
+def test_pinned_query_value_is_eligible_with_visible_deterministic_remarks(
+    tmp_path: Path, span: str
+) -> None:
+    source = tmp_path / "source.json"
+    definition: dict[str, Any] = {
+        "type": "query_value",
+        "title": "Connections",
+        "requests": [{"q": "avg:postgresql.connections{*}", "aggregator": "avg"}],
+    }
+    dashboard = {"title": "Pinned value", "layout_type": "ordered", "widgets": [
+        {"definition": definition}
+    ]}
+    source.write_text(json.dumps(dashboard))
+    convert(tmp_path, [str(source)], name="baseline")
+    baseline = json.loads((tmp_path / "baseline/dashboards/pinned-value.json").read_text())
+    definition["time"] = {"live_span": span}
+    source.write_text(json.dumps(dashboard))
+    result = convert(tmp_path, [str(source)], name="pinned")
+    assert result.exit_code == 2
+    assert [(i["outcome"], i.get("remarks")) for i in result.report["items"]] == [
+        ("approximated", ["TIMEPIN"]), ("approximated", ["TIMEPIN"])
+    ]
+    [diagnostic] = [d for d in result.report["diagnostics"] if d["code"] == "APPROXIMATED"]
+    assert (diagnostic["remark"], diagnostic["sourcePath"]) == (
+        "TIMEPIN", "widgets[0].definition.time"
+    )
+    assert span in diagnostic["message"]
+    [artifact] = [e for e in result.manifest["entries"] if e["kind"] == "dashboard"]
+    assert (artifact["outcome"], artifact["eligible"], artifact["remarks"]) == (
+        "approximated", True, ["TIMEPIN"]
+    )
+    output = json.loads((tmp_path / "pinned" / artifact["path"]).read_text())
+    panel = output["spec"]["panels"]["widget-0"]["spec"]
+    baseline_panel = baseline["spec"]["panels"]["widget-0"]["spec"]
+    assert panel["queries"] == baseline_panel["queries"]
+    assert panel["plugin"] == baseline_panel["plugin"]
+    assert "[TIMEPIN]" in panel["display"]["description"]
+    assert "query values and rankings, can change" in panel["display"]["description"]
+    assert "Migration remarks: TIMEPIN" in output["spec"]["display"]["description"]
+    assert (tmp_path / "pinned/source/source.json").read_bytes() == source.read_bytes()
+    convert(tmp_path, [str(source)], name="again")
+    assert tree(tmp_path / "pinned") == tree(tmp_path / "again")

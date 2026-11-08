@@ -13,6 +13,10 @@
 4. a read-only Dash0 smoke check;
 5. last, an advisory Agent0 opinion.
 
+## Widget time-window follow-up
+
+[#158](https://github.com/XNotAGuestX/thinchackdash/issues/158), branch `158-timepin-panels`: shared widget-option handling accepts empty `time: {}` as a no-op and supported pinned `live_span` windows as approved `TIMEPIN` approximations for every supported widget type, including future types and a pin matching the initial `1h` duration. Values reduced over the dashboard range can change. Unknown time shapes and independent query/mapping blockers remain blocked. See [REMARKS.md](../REMARKS.md). No live verification is claimed by this offline compiler change.
+
 ## Waves
 
 Every issue is self-contained: summary, context, files, acceptance criteria, verify commands, stop conditions and the shared Definition of Done. Start a wave-2 issue once its "Depends on" issues are merged.

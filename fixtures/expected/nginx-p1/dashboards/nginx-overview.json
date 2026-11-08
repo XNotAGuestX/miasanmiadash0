@@ -350,7 +350,7 @@
         "kind": "Panel",
         "spec": {
           "display": {
-            "description": "[TIMEPIN] Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.",
+            "description": "[TIMEPIN] Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker. Values reduced over that range, including query values and rankings, can change.",
             "name": "Requests: reading, writing, waiting"
           },
           "plugin": {
@@ -414,7 +414,7 @@
         "kind": "Panel",
         "spec": {
           "display": {
-            "description": "[TIMEPIN] Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.",
+            "description": "[TIMEPIN] Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker. Values reduced over that range, including query values and rankings, can change.",
             "name": "Active connections per second"
           },
           "plugin": {

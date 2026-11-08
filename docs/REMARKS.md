@@ -19,7 +19,7 @@ The registry is [`src/migrator/source/datadog/remarks.py`](../src/migrator/sourc
 - **Exit code:** `convert` still exits `2` unless every item is `translated`.
 
 **Approximated vs assumed.** The two categories answer different questions:
-- `approximated`: the data is right, but a behaviour around it differs, such as the time frame or alert timing.
+- `approximated`: a target limitation changes an approved behaviour, such as the time frame or alert timing. Losing a pinned time frame can also change a value calculated over that frame; the remark makes this explicit.
 - `assumed`: the data itself is reconstructed, because no OTel metric carries the Datadog value as such.
 
 ## Manual approval
@@ -46,11 +46,13 @@ Every tag needs manual approval before it converts anything.
 
 | Tag | When | Why it's only approximate | Approved |
 |---|---|---|---|
-| `TIMEPIN` | A `timeseries` widget has `time: {"live_span": X}` | Neither Perses nor Dash0 has a per-panel time range. Perses has only the dashboard `duration` ([Perses API](https://perses.dev/docs/perses/latest/api/dashboard/)). Dash0's panel settings are name, description, group, hide header and header color. The panel follows the dashboard time picker. When X equals the dashboard default (`1h`), the default view is identical. Widgets that reduce over the frame (query value, toplist) would show another value, so they block unless X is `1h`, where the pin is ignored. | Yes, Felix 2026-11-08 |
+| `TIMEPIN` | Any supported widget has `time: {"live_span": X}` with a supported preset | The panel follows the dashboard time picker instead of its original pinned window. This can change query values and rankings calculated over that window. Even a `1h` pin matching the initial dashboard duration needs the remark, because changing the time picker changes the converted panel. Time handling is shared across widget types, including future supported types. The documented regular metric-panel schema has no per-panel time range ([Perses API](https://perses.dev/docs/perses/latest/api/dashboard/)). | Yes, Felix 2026-11-08; general widget rule approved in [#158](https://github.com/XNotAGuestX/thinchackdash/issues/158) |
 | `FULLWINDOW` | Monitor `require_full_window: true` | Dash0 evaluates partial windows, so a new series can alert early. | Yes, Felix under A3 |
 | `NEWHOST` | Monitor `new_host_delay > 0` | Dash0 has no new-host grace period. | Yes, Felix under A3 |
 
 `FULLWINDOW` and `NEWHOST` were approximated with a warning under decision A3 before tags existed. They moved into this category unchanged, and their approval cites A3.
+
+An empty `time: {}` specifies no override and is accepted with `OPTION_IGNORED`, without a `TIMEPIN` remark. Supported pinned presets are `1m`, `5m`, `10m`, `15m`, `30m`, `1h`, `4h`, `1d`, `2d`, `1w`, `1mo`, `3mo`, `6mo`, `week_to_date`, `month_to_date` and `1y`. Unknown values, the context-dependent `alert` span and other time object shapes remain blocked. A time remark never bypasses an unsupported query, missing mapping or unsupported widget type. A toplist also retains its `TOPN` remark and the stronger `assumed` outcome.
 
 ### Assumed
 
