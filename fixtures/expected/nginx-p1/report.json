@@ -326,13 +326,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.as_count()' or its arguments are not supported. weighted() requires explicit sum and no arguments; as_rate() takes no arguments.",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'nginx.net.conn_dropped_per_s'.",
       "severity": "error",
       "sourceId": "dashboards/NGINX-Overview_dashboard.json",
       "sourcePath": "widgets[1].definition.widgets[0].definition.requests[0].q",
       "sourceText": "sum:nginx.net.conn_dropped_per_s{*}.as_count()",
-      "suggestedAction": "Use a documented supported form or migrate this query manually."
+      "suggestedAction": "Add a reviewed entry for 'nginx.net.conn_dropped_per_s' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -3052,13 +3052,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.as_count()' or its arguments are not supported. weighted() requires explicit sum and no arguments; as_rate() takes no arguments.",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'nginx.ssl.handshakes_count'.",
       "severity": "error",
       "sourceId": "dashboards/plus_overview.json",
       "sourcePath": "widgets[7].definition.widgets[1].definition.requests[0].queries[0].query",
       "sourceText": "sum:nginx.ssl.handshakes_count{$host} by {host}.as_count()",
-      "suggestedAction": "Use a documented supported form or migrate this query manually."
+      "suggestedAction": "Add a reviewed entry for 'nginx.ssl.handshakes_count' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",

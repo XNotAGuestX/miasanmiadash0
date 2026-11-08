@@ -44,6 +44,8 @@ from migrator.source.datadog.remarks import approved
 from migrator.target import Diagnostic, DiagnosticCode, Severity
 
 RATE_INTERVAL = "$__rate_interval"
+# Perses panel step; `.as_count()` counts per step (ASCOUNT, #181).
+INTERVAL = "$__interval"
 DEFAULT_AGGREGATOR: SpaceAggregator = "avg"  # Datadog's space aggregation without `agg:`
 DEFAULT_AGGREGATOR_DOC = "https://docs.datadoghq.com/dashboards/querying/#aggregation-method"
 ROLLUP_DOC = "https://docs.datadoghq.com/dashboards/functions/rollup/"
@@ -142,7 +144,7 @@ _ROLLUP_AGGREGATORS = {"avg", "sum", "min", "max", "count"}
 
 @dataclass(frozen=True)
 class _FunctionPlan:
-    kind: Literal["weighted", "rollup", "as_rate"]
+    kind: Literal["weighted", "rollup", "as_rate", "as_count"]
     aggregation: str = "avg"
     window: str = RATE_INTERVAL
 
@@ -170,6 +172,8 @@ def _function_plan(q: MetricQuery, d: _Diags) -> _FunctionPlan | CompiledError |
         return _FunctionPlan("weighted")
     if fn.name == "as_rate" and not fn.args:
         return _FunctionPlan("as_rate")
+    if fn.name == "as_count" and not fn.args:
+        return _FunctionPlan("as_count", window=INTERVAL)
     if fn.name == "rollup":
         if len(fn.args) == 1:
             if fn.args[0] in _ROLLUP_AGGREGATORS:
@@ -185,7 +189,8 @@ def _function_plan(q: MetricQuery, d: _Diags) -> _FunctionPlan | CompiledError |
         fn.name,
         (
             f"Query function '.{fn.name}()' or its arguments are not supported. "
-            "weighted() requires explicit sum and no arguments; as_rate() takes no arguments.",
+            "weighted() requires explicit sum and no arguments; as_rate() and as_count() "
+            "take no arguments.",
             "Use a documented supported form or migrate this query manually.",
         ),
     )
@@ -195,20 +200,19 @@ def _function_plan(q: MetricQuery, d: _Diags) -> _FunctionPlan | CompiledError |
 def _approve_function(
     plan: _FunctionPlan, entry: GaugeMapping | RateMapping | ExpressionMapping, d: _Diags
 ) -> CompiledError | None:
-    valid = (
-        isinstance(entry, GaugeMapping)
-        if plan.kind != "as_rate"
-        else isinstance(entry, RateMapping)
-    )
+    counter = plan.kind in ("as_rate", "as_count")
+    valid = isinstance(entry, RateMapping) if counter else isinstance(entry, GaugeMapping)
     if not valid:
-        expected = "rate" if plan.kind == "as_rate" else "gauge"
+        expected = "rate" if counter else "gauge"
         return d.block(
             "UNSUPPORTED_QUERY_FUNCTION",
             f"'.{plan.kind}()' requires a '{expected}' metric mapping; expressions and "
             "other metric kinds lack the raw series semantics required by this implementation.",
             "Use a reviewed mapping of the documented metric kind or migrate manually.",
         )
-    tag = {"weighted": "WEIGHTED", "rollup": "ROLLUP", "as_rate": "ASRATE"}[plan.kind]
+    tag = {"weighted": "WEIGHTED", "rollup": "ROLLUP", "as_rate": "ASRATE", "as_count": "ASCOUNT"}[
+        plan.kind
+    ]
     remark = approved(tag)
     if remark is None:
         return d.block(
@@ -221,6 +225,8 @@ def _approve_function(
         if plan.kind == "weighted"
         else f" Window={plan.window}; reducer={plan.aggregation}."
         if plan.kind == "rollup"
+        else f" Window={plan.window}."
+        if plan.kind == "as_count"
         else ""
     )
     d.add(
@@ -421,7 +427,9 @@ def _render_metric(
     fixed = [Matcher(label, value) for label, value in sorted(entry.matchers.items())]
     inner = render_selector(MetricRef(entry.target.name, entry.target.type), matchers + fixed)
     offset = f" offset {format_offset(offset_seconds)}" if offset_seconds else ""
-    if isinstance(entry, RateMapping):
+    if isinstance(entry, RateMapping) and plan is not None and plan.kind == "as_count":
+        inner = f"increase({inner}[{plan.window}]{offset})"
+    elif isinstance(entry, RateMapping):
         inner = f"rate({inner}[{entry.rateWindow or RATE_INTERVAL}]{offset})"
     elif plan is not None and plan.kind == "weighted":
         samples = f"{inner}[{plan.window}]{offset}"
