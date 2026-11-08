@@ -53,11 +53,6 @@
       <div class="wrap run-wrap">
         <div class="run-head">
           <div class="run-head-l">
-            <ol class="progress" id="progress" aria-label="Migration progress">
-              <li><span class="num">01</span><span class="lbl">Read</span></li>
-              <li><span class="num">02</span><span class="lbl">Translate</span></li>
-              <li><span class="num">03</span><span class="lbl">Check</span></li>
-            </ol>
             <h2 id="results-title" class="display display-sm" tabindex="-1">Conversion results<span class="dot">.</span></h2>
           </div>
         </div>
@@ -89,9 +84,19 @@
             </p>
             </div>
             <!-- What the migration is doing: one box per step, in while the step runs, out when it ends. -->
+            <!-- Right column: the run's three phases above the box that says what is happening now. -->
+            <div class="stage-side">
+            <ol class="progress" id="progress" aria-label="Migration progress">
+              <li><span class="num">01</span><span class="lbl">Read</span></li>
+              <li><span class="num">02</span><span class="lbl">Translate</span></li>
+              <li><span class="num">03</span><span class="lbl">Check</span></li>
+            </ol>
             <div class="stage-r" id="steps">
               <div class="publish" id="publish" hidden>
-                <p class="mono faint">Migration ready</p>
+                <div class="step-box">
+                  <p class="step-num mono">04 / 04</p>
+                  <h3 class="step-title">Migration ready</h3>
+                </div>
                 <button id="publish-btn" class="go pub" type="button">
                   <span class="go-label"><span class="pub-txt">Publish final migration</span></span>
                   <span class="go-arrow" aria-hidden="true">
@@ -100,6 +105,7 @@
                   </span>
                 </button>
               </div>
+            </div>
             </div>
           </div>
         </div>

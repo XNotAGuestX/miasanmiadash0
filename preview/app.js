@@ -199,7 +199,8 @@
     board.classList.add("is-hidden");
     $("#stage-wrap").classList.remove("is-closed", "is-hidden");
     dialEl.classList.remove("is-working", "is-read", "is-done");
-    $$(".step-box", stepsEl).forEach((b) => b.remove());
+    $$(":scope > .step-box", stepsEl).forEach((b) => b.remove());
+    $(".run-wrap").classList.toggle("is-running", !real);   // the centred dial layout is for the animated demo only
     stepEl = null; stepN = -1; subN = -1; publishResolve = null;
     publishEl.hidden = true;
     publishEl.classList.remove("is-out", "is-done");
@@ -304,8 +305,10 @@
     if (id !== runId) return;
 
     // The stage folds away and the results sort into the table.
+    progress.classList.add("is-gone");
     $("#stage-wrap").classList.add("is-closed");
     await wait(440);
+    $(".run-wrap").classList.remove("is-running");
     $("#stage-wrap").classList.add("is-hidden");
     if (id !== runId) return;
     await sortIntoBoard(id);
