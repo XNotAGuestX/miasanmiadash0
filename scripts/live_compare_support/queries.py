@@ -17,6 +17,7 @@ from migrator.destination.dash0 import Dash0Config
 from migrator.http import HttpRequest, HttpSend
 from migrator.source.datadog.model import MetricQuery, TagFilter, VariableFilter
 from migrator.source.datadog.monitor import parse_monitor_query
+from migrator.source.datadog.monitor_expression import monitor_source_queries
 from migrator.source.datadog.parse_query import parse_metric_query
 
 
@@ -151,8 +152,9 @@ def pair(case: Case, source: Any, target: Any, rate_interval: str, run_id: str) 
         if not parsed.ok:
             raise DataError(f"unsupported monitor: {parsed.code}")
         monitor = parsed.monitor
-        # The full monitor parser has already validated the prefix and suffix.
-        inner = body["query"].split(":", 1)[1].rsplit(" ", 2)[0]
+        # The parser owns complete arithmetic and metric-leaf syntax. Bind every
+        # leaf separately and let the source API evaluate its original formula.
+        leaves, formula = monitor_source_queries(monitor.query)
         expr = prom.parse(target["expression"].replace("$__threshold", "0"))
         if not isinstance(expr, prom.BinaryExpr) or str(expr.op) != monitor.comparator:
             raise DataError("monitor comparator differs from generated check")
@@ -170,11 +172,12 @@ def pair(case: Case, source: Any, target: Any, rate_interval: str, run_id: str) 
             [
                 {
                     "data_source": "metrics",
-                    "name": "a",
-                    "query": source_query(inner, variables, {}, run_id),
+                    "name": f"q{index}",
+                    "query": source_query(leaf, variables, {}, run_id),
                 }
+                for index, leaf in enumerate(leaves)
             ],
-            "a",
+            formula,
             target_query(str(expr.lhs), variables, rate_interval, run_id),
             seconds,
             monitor.time_aggregator,
