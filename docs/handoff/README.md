@@ -104,8 +104,10 @@ assets and checks read-back and numeric parity, with independently defined workl
 and a default 3% per-series mean tolerance. See [LIVE_COMPARE.md](../LIVE_COMPARE.md).
 Offline tests and a local-only startup/metric smoke are verified. The authorized `.env` PAT
 and Dash0 token passed live query authentication on 2026-11-08; the supplied `DD_API_KEY`
-also passed ingestion-key validation. The script loads `.env` automatically; see `STATUS.md`
-for the actual numeric outcome.
+also passed ingestion-key validation. The real run passed 4/6 cases at 3%; connection gauge
+and monitor values differed by 3.2787% and failed. Follow-up: [#148](https://github.com/XNotAGuestX/thinchackdash/issues/148).
+The script loads `.env` automatically; see [STATUS.md](../STATUS.md#live-shared-sample-comparison-2026-11-08)
+for the numeric outcome and recorded import IDs.
 Compiler semantics, mappings and review status are unchanged.
 
 ## Open decisions and blockers

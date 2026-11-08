@@ -42,8 +42,9 @@ The script loads the repository `.env` automatically. Configure `DD_API_KEY` for
 `DATADOG_PAT` (or `DD_BEARER_TOKEN`) for queries and `DASH0_AUTH_TOKEN`, then remove `--dry-run`.
 Dash0 endpoints default to the project's EU West region and can be overridden.
 See [LIVE_COMPARE.md](docs/LIVE_COMPARE.md) for configuration, evidence, resumption and cleanup.
-Offline tests and a local-only full-demo smoke run are verified; two-vendor live parity still
-requires the Datadog ingestion API key. Imported checks remain disabled.
+The real two-vendor run passed 4/6 cases at 3%; two Postgres connection cases differed by
+3.28% and remain failed. See [recorded evidence](docs/STATUS.md#live-shared-sample-comparison-2026-11-08).
+Imported checks remain disabled.
 
 ## Convert (offline)
 

@@ -1,6 +1,6 @@
 # Shared project status
 
-Last updated: 2026-11-08: on-demand comparison harness implemented on branch `146-live-comparison`; review and live two-vendor evidence pending. Open work: the orchestrator handoff [`handoff/README.md`](handoff/README.md) (epic #104, live-Datadog horizon #122 and implementation #146). Work is tracked in [issues](https://github.com/XNotAGuestX/thinchackdash/issues) and on the [project board](https://github.com/users/XNotAGuestX/projects/3).
+Last updated: 2026-11-08: on-demand comparison harness implemented on branch `146-live-comparison`; real two-vendor evidence recorded (4/6 cases within 3%). Review is pending; the two connection-value failures are tracked in #148. Open work: the orchestrator handoff [`handoff/README.md`](handoff/README.md) (epic #104, live-Datadog horizon #122 and implementation #146). Work is tracked in [issues](https://github.com/XNotAGuestX/thinchackdash/issues) and on the [project board](https://github.com/users/XNotAGuestX/projects/3).
 
 2026-11-08 update ([#146](https://github.com/XNotAGuestX/thinchackdash/issues/146), branch
 `146-live-comparison`): on-demand comparison harness implemented with independent workload
@@ -12,8 +12,8 @@ network and local volumes were removed. Collector 0.160.0 configuration validate
 networking disabled. The script now loads the private `.env` literally and supports
 `DATADOG_PAT`/`DD_BEARER_TOKEN` query authentication. Actual Datadog/Dash0 query calls returned
 HTTP 200, and the supplied Datadog ingestion key validated successfully. The authorized full
-shared-sample run against the existing demo dataset `default` is in progress; numeric parity
-is not yet established. See [LIVE_COMPARE.md](LIVE_COMPARE.md).
+shared-sample run against the existing demo dataset `default` completed; detailed results below.
+See [LIVE_COMPARE.md](LIVE_COMPARE.md).
 
 Verification on an isolated uv-managed CPython 3.13.18 environment, synced from `uv.lock`:
 `uv run migrator check` → **781 passed, 621 skipped**, ruff and mypy strict passed.
@@ -31,9 +31,50 @@ Highest-priority requirement: deterministic conversion before all other objectiv
 | Mappings | `postgres`, `kafka`, `docker`, `redis`, `nginx`; every entry `reviewed: null` | `mappings/datadog/`; Redis/nginx notes in `REVIEW-redis-nginx.md` |
 | Oracle cases | 9 integrations-core dashboards, 207 requests; Agent0 proposals plus the deterministic rules in `scripts/build_expected.py`; none human-reviewed, so they skip by default | `fixtures/expected/*/*/expected.yaml`; `uv run pytest --include-unreviewed` |
 | Dash0 | Import contract checked live; Postgres dashboards and the disabled check rule published and read back | Sections below; sanitized responses in `fixtures/dash0/live-2026-11-07/` |
-| Telemetry | Not durable: `default` has receiver data only 2026-11-07 ~14:05–15:21 UTC (one `docker-desktop` host) | [`DASH0_INVENTORY.md`](DASH0_INVENTORY.md) |
+| Live comparison | Real shared-sample run completed: 4/6 numeric cases pass at 3%; connection values differ by 3.2787%; both imported assets read back | Results below; follow-up #148 |
+| Telemetry | On-demand run recorded 2026-11-08 02:32–02:42 UTC in `default`; its stack is stopped. Older demo inventory is historical | [`DASH0_INVENTORY.md`](DASH0_INVENTORY.md); live evidence below |
 | Automated checks | Green on branch `146-live-comparison`: `uv run migrator check` (ruff, mypy --strict, pytest) | 781 passed, 621 skipped (unreviewed oracle cases); uv-managed Python and locked dependencies |
 | Submission | Not started | #2; steps in `handoff/README.md`, "Human-only items" (only on the user's request) |
+
+## Live shared-sample comparison (2026-11-08)
+
+Felix explicitly authorized the credentials, synthetic ingestion and demo publication.
+The script loaded the private `.env`, used a PAT for Datadog queries and an API key for
+ingestion, and exported the same collected OTel samples to both vendors. Dataset: `default`.
+Measurement: **02:32:00–02:42:00 UTC**, end exclusive, 60-second grid. Every case had 10/10
+finite samples on both sides.
+
+Datadog ingested OTel names such as `postgresql.backends`, rather than materializing classic
+aliases. Native-mode source queries returned no data and the harness correctly exited 2.
+An explicit Combined-mode re-evaluation reused the same window, compiler artifacts and
+publication receipts. It also exited **2**, with these numeric results:
+
+| Case | Relative mean difference | Result at 3% |
+|---|---:|---|
+| Postgres fetched-row rate | 0.25285% | passed |
+| Redis used memory | 0.08970% | passed |
+| nginx connections | 0.21459% | passed |
+| Redis memory formula | 0.03672% | passed |
+| Postgres connections | 3.27869% | failed |
+| Connection monitor value | 3.27869% | failed |
+
+For both failed cases, the Datadog mean was **3.0499999** and Dash0's was **2.95**.
+The monitor's degraded/failed threshold decisions agreed at every point, but its numeric
+value still failed tolerance. The threshold remains 3%; no cases or samples were dropped.
+The cause is not established; investigation is [#148](https://github.com/XNotAGuestX/thinchackdash/issues/148).
+
+Actual destination assets, both read back successfully:
+
+- Dashboard: `7f5f3850-b2d0-4e99-850d-973169f3586e`.
+- Check rule: `22cecb88-a883-4c77-bf02-44805efcecc9`, **disabled**.
+
+Re-evaluation retained the same two IDs and two imported receipts. The isolated Compose
+project was stopped; a subsequent project `ps -a` returned no containers. The assets remain
+in Dash0. This is functional live evidence for the passing cases, not a claim of full parity.
+
+Private, gitignored evidence: `out/live/credentials-run-20261108/comparison.json` and `.md`;
+the Native baseline is preserved as `comparison-native.json` and `.md`. No credentials,
+raw API responses or run artifacts are committed.
 
 ## Recorded decisions
 
