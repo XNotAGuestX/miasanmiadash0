@@ -47,11 +47,13 @@ agreement does not verify alert scheduling, no-data handling, notifications, int
 across arbitrary gaps or weighted ephemeral-series churn. Steady shared telemetry can
 support an empirical approximation result without proving those broader semantics.
 The two monitor fixtures do not configure `evaluation_delay`; delayed evaluation is not
-covered by this suite.
+covered by this suite. The harness explicitly rejects a nonzero `evaluation_delay` so it
+cannot compare an unshifted source window with a delayed target expression.
 
-Six focused tests cover category/tolerance declaration, complete arithmetic leaf binding,
+Seven focused tests cover category/tolerance declaration, complete arithmetic leaf binding,
 Combined mode on every leaf, trailing-syntax rejection, source threshold checks and
-conflicting-host rejection. The broader harness retains its strict data/coverage checks.
+conflicting-host rejection, plus explicit rejection of delayed source windows. The broader
+harness retains its strict data/coverage checks.
 
 Live source preflight observed one series with ten finite buckets for each of weighted
 Redis memory, average/max rollup Redis memory and PostgreSQL explicit rate. This establishes

@@ -21,10 +21,12 @@ def _monitor_case() -> Any:
     )
 
 
-def _pair_monitor(query: str | None = None) -> Any:
+def _pair_monitor(query: str | None = None, evaluation_delay: int = 0) -> Any:
     source = json.loads((ROOT / "scripts/live/assets/extensions-monitor.json").read_text())
     if query is not None:
         source["query"] = query
+    if evaluation_delay:
+        source["options"]["evaluation_delay"] = evaluation_delay
     # A synthetic known-body check isolates pairing from compiler generation.
     # Compiler integration and schema/readback are exercised by the live suite.
     target = {
@@ -86,3 +88,8 @@ def test_arithmetic_monitor_binding_refuses_conflicting_host_in_any_leaf():
         _pair_monitor(
             "avg(last_5m):avg:redis.mem.used{*} / avg:redis.mem.rss{host:production} > 0.9"
         )
+
+
+def test_delayed_monitor_is_rejected_instead_of_using_unshifted_source_history():
+    with pytest.raises(queries.DataError, match="evaluation_delay"):
+        _pair_monitor(evaluation_delay=60)

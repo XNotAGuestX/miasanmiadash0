@@ -148,6 +148,8 @@ def pair(case: Case, source: Any, target: Any, rate_interval: str, run_id: str) 
     variables = {k: run_id if v == "$run" else v for k, v in case.variables.items()}
     if case.kind == "monitor":
         body = source.get("definition", source)
+        if body.get("options", {}).get("evaluation_delay") not in (None, 0):
+            raise DataError("monitor evaluation_delay is outside the live comparison subset")
         parsed = parse_monitor_query(body["query"])
         if not parsed.ok:
             raise DataError(f"unsupported monitor: {parsed.code}")
