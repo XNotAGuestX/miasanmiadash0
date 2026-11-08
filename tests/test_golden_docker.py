@@ -4,9 +4,10 @@ Regenerate by hand with `uv run migrator convert` (arguments as in `convert` bel
 the diff before committing. The frozen copy fixtures/mappings/docker.json keeps edits to
 mappings/datadog/docker.json from churning the golden.
 
-No docker query reaches the mapping today: toplist, heatmap, event and image widgets block on
-their type, timeseries and query_value widgets on their `time` (live_span) option. Only the
-notes translate. Request-level PromQL is checked by the oracle suite (tests/unit/requests,
+Toplist, heatmap, event and image widgets block on their type. Widgets pinned to their own
+`time` (live_span) convert as approximated with the TIMEPIN remark (docs/REMARKS.md) when their
+query converts; the rest block on `.fill()`, arithmetic or a metric missing from the frozen
+mapping. Request-level PromQL is checked by the oracle suite (tests/unit/requests,
 docker cases with --include-unreviewed).
 """
 
@@ -25,6 +26,7 @@ EXPECTED = Path("fixtures/expected/docker-p1")
 DASHBOARD = "dashboards/docker_dashboard.json"
 NOTES = [13, 16, 17, 19, 22]
 TYPE_BLOCKED = [1, 2, 3, 6, 9, 10, 15, 25, 26, 27]  # toplist, heatmap, event_*, image
+TIME_PINNED = [14, 20, 21, 23, 24]
 
 
 def convert(out: Path) -> int:
@@ -67,23 +69,20 @@ def test_conversion_is_deterministic(run: tuple[int, Path], tmp_path: Path) -> N
     assert tree(tmp_path / "again") == tree(first)
 
 
-def test_query_widgets_block_before_the_mapping(run: tuple[int, Path]) -> None:
+def test_time_pinned_widgets_are_approximated(run: tuple[int, Path]) -> None:
     rep = report(run[1])
-    outcomes = {
-        i["sourcePath"]: i["outcome"]
-        for i in rep["items"]
-        if i["sourceId"] == DASHBOARD and i["kind"] == "widget"
-    }
-    translated = sorted(int(p[8:-1]) for p, o in outcomes.items() if o == "translated")
-    assert translated == NOTES
-    errors = [
-        (d["sourcePath"], d["code"])
+    widgets = [i for i in rep["items"] if i["sourceId"] == DASHBOARD and i["kind"] == "widget"]
+    by_outcome: dict[str, list[int]] = {}
+    for i in widgets:
+        by_outcome.setdefault(i["outcome"], []).append(int(i["sourcePath"][8:-1]))
+    assert by_outcome["translated"] == NOTES
+    assert by_outcome["approximated"] == TIME_PINNED
+    assert all(i.get("remarks") == ["TIMEPIN"] for i in widgets if i["outcome"] == "approximated")
+    type_errors = sorted(
+        int(d["sourcePath"][8:].split("]")[0])
         for d in rep["diagnostics"]
-        if d["sourceId"] == DASHBOARD and d["severity"] == "error"
-    ]
-    # One error per blocked widget, none from the mapping (no MISSING_METRIC_MAPPING).
-    assert sorted(errors) == sorted(
-        (f"widgets[{n}].definition.{'type' if n in TYPE_BLOCKED else 'time'}", "UNSUPPORTED_WIDGET")
-        for n in range(len(outcomes))
-        if n not in NOTES
+        if d["sourceId"] == DASHBOARD
+        and d["severity"] == "error"
+        and d["sourcePath"].endswith(".definition.type")
     )
+    assert type_errors == TYPE_BLOCKED

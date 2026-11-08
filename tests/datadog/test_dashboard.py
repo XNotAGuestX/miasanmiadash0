@@ -120,25 +120,26 @@ def test_blocks_unsupported_widgets_with_exact_codes() -> None:
     assert errors_by_widget(c) == {
         "widgets[0]": ["UNSUPPORTED_WIDGET"],
         "widgets[1]": ["UNSUPPORTED_DATA_SOURCE"],
-        "widgets[3]": ["UNSUPPORTED_WIDGET"],
         "widgets[4]": ["UNSUPPORTED_QUERY_FUNCTION"],
     }
     # Plan 05 Task 5 deliberately changed widget 2 (`query1 * 100`) from blocked to translated.
+    # Widget 3 (`time: {"live_span": "1h"}`) converts since TIMEPIN was approved (docs/REMARKS.md).
     assert [i.outcome for i in c.items] == [
         "partial",
         "blocked",
         "blocked",
         "translated",
-        "blocked",
+        "approximated",
         "blocked",
     ]
     assert queries_of(c, "widget-2") == [{"query": f"({CONN}) * 100"}]
 
 
-def test_blocks_unknown_widget_options() -> None:
+def test_widget_time_pin_is_approximated_with_its_remark() -> None:
     c = compile_file("unsupported.json")
-    msg = [d.message for d in c.diagnostics if d.source_path == "widgets[3].definition.time"]
-    assert msg == ["Widget option 'time' is not supported."]
+    [d] = [d for d in c.diagnostics if d.source_path == "widgets[3].definition.time"]
+    assert (d.code, d.severity, d.remark) == ("APPROXIMATED", "warning", "TIMEPIN")
+    assert d.message.startswith("TIMEPIN: Datadog showed the last 1h (the dashboard default). ")
 
 
 def test_blocks_unconvertible_formulas_never_emitting_a_partial_series() -> None:
@@ -173,15 +174,15 @@ def test_abs_formula_translates_and_query_abs_stays_blocked() -> None:
     assert (d.code, d.message) == ("UNSUPPORTED_QUERY_FUNCTION", "Function 'abs' is not supported.")
 
 
-def test_empty_widget_time_is_ignored_and_live_span_blocks() -> None:
+def test_empty_widget_time_is_ignored_and_live_span_is_approximated() -> None:
     c = compile_body(body(ts(new_req("avg:postgresql.connections{*}"), time={})))
     assert c.items[1].outcome == "translated"
     [d] = [d for d in c.diagnostics if d.source_path.endswith(".time")]
     assert (d.code, d.severity) == ("OPTION_IGNORED", "info")
     c = compile_body(body(ts(new_req("avg:postgresql.connections{*}"), time={"live_span": "1w"})))
-    assert c.items[1].outcome == "blocked"
-    [d] = [d for d in c.diagnostics if d.severity == "error"]
-    assert (d.code, d.message) == ("UNSUPPORTED_WIDGET", "Widget option 'time' is not supported.")
+    assert (c.items[1].outcome, c.items[1].remarks) == ("approximated", ("TIMEPIN",))
+    [d] = [d for d in c.diagnostics if d.source_path.endswith(".time")]
+    assert d.message.startswith("TIMEPIN: Datadog showed the last 1w. ")
 
 
 def test_formula_uses_only_referenced_queries() -> None:
@@ -628,8 +629,13 @@ def _approve(monkeypatch: pytest.MonkeyPatch, tag: str) -> None:
     monkeypatch.setitem(remarks.REMARKS, tag, approved)
 
 
-def test_time_pin_blocks_until_the_remark_is_approved() -> None:
-    assert remarks.REMARKS["TIMEPIN"].approved is None
+def _unapprove(monkeypatch: pytest.MonkeyPatch, tag: str) -> None:
+    entry = dataclasses.replace(remarks.REMARKS[tag], approved=None)
+    monkeypatch.setitem(remarks.REMARKS, tag, entry)
+
+
+def test_time_pin_blocks_until_the_remark_is_approved(monkeypatch: pytest.MonkeyPatch) -> None:
+    _unapprove(monkeypatch, "TIMEPIN")
     c = compile_body(body(ts(new_req("avg:postgresql.connections{*}"), time={"live_span": "1h"})))
     assert [i.outcome for i in c.items] == ["blocked", "blocked"]
     [d] = [d for d in c.diagnostics if d.severity == "error"]

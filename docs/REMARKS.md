@@ -46,9 +46,9 @@ Every tag needs manual approval before it converts anything.
 
 | Tag | When | Why it's only approximate | Approved |
 |---|---|---|---|
-| `TIMEPIN` | A widget has `time: {"live_span": X}` | Neither Perses nor Dash0 has a per-panel time range. Perses has only the dashboard `duration` ([Perses API](https://perses.dev/docs/perses/latest/api/dashboard/)). Dash0's panel settings are name, description, group, hide header and header color. The panel follows the dashboard time picker. When X equals the dashboard default (`1h`), the default view is identical. | No |
-| `FULLWINDOW` | Monitor `require_full_window: true` | Dash0 evaluates partial windows, so a new series can alert early. | Yes, under A3 |
-| `NEWHOST` | Monitor `new_host_delay > 0` | Dash0 has no new-host grace period. | Yes, under A3 |
+| `TIMEPIN` | A widget has `time: {"live_span": X}` | Neither Perses nor Dash0 has a per-panel time range. Perses has only the dashboard `duration` ([Perses API](https://perses.dev/docs/perses/latest/api/dashboard/)). Dash0's panel settings are name, description, group, hide header and header color. The panel follows the dashboard time picker. When X equals the dashboard default (`1h`), the default view is identical. | Yes, Felix 2026-11-08 |
+| `FULLWINDOW` | Monitor `require_full_window: true` | Dash0 evaluates partial windows, so a new series can alert early. | Yes, Felix under A3 |
+| `NEWHOST` | Monitor `new_host_delay > 0` | Dash0 has no new-host grace period. | Yes, Felix under A3 |
 
 `FULLWINDOW` and `NEWHOST` were approximated with a warning under decision A3 before tags existed. They moved into this category unchanged, and their approval cites A3.
 
@@ -56,14 +56,12 @@ Every tag needs manual approval before it converts anything.
 
 A mapping entry names one of these in its `assumption` field. Its `ref` must spell out the assumption and its evidence.
 
-| Tag | When |
-|---|---|
-| `AGG` | The value is rebuilt by aggregating OTel series over an attribute, for example summing memory states. |
-| `DERIVED` | The value is computed from other OTel metrics by an expression. |
-| `ATTRVAL` | The value is one slice of an OTel metric, selected by an attribute value that the OTel definition doesn't enumerate. |
-| `SEMANTIC` | The Datadog and OTel metrics measure the same thing (often paired in Datadog's vendor table), but their documented definitions differ in scope. |
-
-None of the assumed tags is approved yet.
+| Tag | When | Approved |
+|---|---|---|
+| `AGG` | The value is rebuilt by aggregating OTel series over an attribute, for example summing memory states. | No (no entry uses it yet) |
+| `DERIVED` | The value is computed from other OTel metrics by an expression. | Yes, Felix 2026-11-08 |
+| `ATTRVAL` | The value is one slice of an OTel metric, selected by an attribute value that the OTel definition doesn't enumerate. | No (no entry uses it yet) |
+| `SEMANTIC` | The Datadog and OTel metrics measure the same thing (often paired in Datadog's vendor table), but their documented definitions differ in scope. | Yes, Felix 2026-11-08 |
 
 ## Gaps
 

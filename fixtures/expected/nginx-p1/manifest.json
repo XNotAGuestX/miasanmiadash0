@@ -14,7 +14,10 @@
       "kind": "dashboard",
       "outcome": "partial",
       "path": "dashboards/nginx-overview.json",
-      "sha256": "258ec0043aa2f3d681aeb83eb11076a63ec9cb3b654efafd8c6665dfcda44c00",
+      "remarks": [
+        "TIMEPIN"
+      ],
+      "sha256": "a7eacb19cecfcf86f8e2eb67bc17a47d1f8bcb7413a035cb2c07c017683ab01d",
       "sourceId": "dashboards/NGINX-Overview_dashboard.json"
     },
     {

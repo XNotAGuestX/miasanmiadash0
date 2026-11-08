@@ -6,7 +6,10 @@
       "kind": "dashboard",
       "outcome": "partial",
       "path": "dashboards/docker-overview.json",
-      "sha256": "d721b6cf14c3882247e578ce97b9bd2ac7ce733afbed094b2f79aad461d59c60",
+      "remarks": [
+        "TIMEPIN"
+      ],
+      "sha256": "05b20acf36a2755735e8b8734723a2cafbf840a60bbd32ed89d7cb456ec14c7d",
       "sourceId": "dashboards/docker_dashboard.json"
     },
     {

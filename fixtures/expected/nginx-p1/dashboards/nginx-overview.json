@@ -6,7 +6,7 @@
   },
   "spec": {
     "display": {
-      "description": "This dashboard provides a high-level overview of your NGINX infrastructure, so you can see aggregated throughput and activity metrics from all your servers and spot issues quickly. Further reading on NGINX monitoring:\n\n- [Datadog's guide to key NGINX metrics](https://www.datadoghq.com/blog/how-to-monitor-nginx/)\n\n- [How to collect NGINX metrics using built-in tools](https://www.datadoghq.com/blog/how-to-collect-nginx-metrics/)\n\n- [How to monitor NGINX with Datadog](https://www.datadoghq.com/blog/how-to-monitor-nginx-with-datadog/)\n\n- [Datadog's NGINX integration docs](https://docs.datadoghq.com/integrations/nginx/)\n\nClone this template dashboard to make changes and add your own graph widgets.",
+      "description": "This dashboard provides a high-level overview of your NGINX infrastructure, so you can see aggregated throughput and activity metrics from all your servers and spot issues quickly. Further reading on NGINX monitoring:\n\n- [Datadog's guide to key NGINX metrics](https://www.datadoghq.com/blog/how-to-monitor-nginx/)\n\n- [How to collect NGINX metrics using built-in tools](https://www.datadoghq.com/blog/how-to-collect-nginx-metrics/)\n\n- [How to monitor NGINX with Datadog](https://www.datadoghq.com/blog/how-to-monitor-nginx-with-datadog/)\n\n- [Datadog's NGINX integration docs](https://docs.datadoghq.com/integrations/nginx/)\n\nClone this template dashboard to make changes and add your own graph widgets.\n\nMigration remarks: TIMEPIN (see panel descriptions).",
       "name": "NGINX - Overview"
     },
     "duration": "1h",
@@ -141,6 +141,15 @@
             },
             {
               "content": {
+                "$ref": "#/spec/panels/widget-4-4"
+              },
+              "height": 6,
+              "width": 8,
+              "x": 4,
+              "y": 6
+            },
+            {
+              "content": {
                 "$ref": "#/spec/panels/widget-4-6"
               },
               "height": 6,
@@ -158,6 +167,15 @@
             "title": "Connections "
           },
           "items": [
+            {
+              "content": {
+                "$ref": "#/spec/panels/widget-5-1"
+              },
+              "height": 6,
+              "width": 6,
+              "x": 6,
+              "y": 0
+            },
             {
               "content": {
                 "$ref": "#/spec/panels/widget-5-2"
@@ -328,6 +346,54 @@
           "queries": []
         }
       },
+      "widget-4-4": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "description": "[TIMEPIN] Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.",
+            "name": "Requests: reading, writing, waiting"
+          },
+          "plugin": {
+            "kind": "TimeSeriesChart",
+            "spec": {}
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "sum (max by (host_name) ({otel_metric_name=\"nginx.connections_current\", otel_metric_type=\"sum\", host_name=~\"^($Host)$\", state=\"reading\"}))"
+                  }
+                }
+              }
+            },
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "sum (max by (host_name) ({otel_metric_name=\"nginx.connections_current\", otel_metric_type=\"sum\", host_name=~\"^($Host)$\", state=\"writing\"}))"
+                  }
+                }
+              }
+            },
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "sum (max by (host_name) ({otel_metric_name=\"nginx.connections_current\", otel_metric_type=\"sum\", host_name=~\"^($Host)$\", state=\"waiting\"}))"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
       "widget-4-6": {
         "kind": "Panel",
         "spec": {
@@ -342,6 +408,32 @@
             }
           },
           "queries": []
+        }
+      },
+      "widget-5-1": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "description": "[TIMEPIN] Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.",
+            "name": "Active connections per second"
+          },
+          "plugin": {
+            "kind": "TimeSeriesChart",
+            "spec": {}
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "sum (max by (host_name) ({otel_metric_name=\"nginx.connections_current\", otel_metric_type=\"sum\", host_name=~\"^($Host)$\", state=\"active\"}))"
+                  }
+                }
+              }
+            }
+          ]
         }
       },
       "widget-5-2": {

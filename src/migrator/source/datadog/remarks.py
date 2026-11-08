@@ -41,7 +41,8 @@ _DASH0_PANELS = "https://www.dash0.com/docs/dash0/dashboards/configure-panels"
 _DD_MONITOR_OPTIONS = "https://docs.datadoghq.com/monitors/configuration/"
 # Decision A3 (docs/handoff/00-context.md §3): approximate and warn on a reviewed allowlist.
 # These monitor options were approximated under A3 before remark tags existed (plan 06).
-_A3 = Approval("A3 allowlist (docs/handoff/00-context.md §3), moved by Felix", "2026-11-08")
+_A3 = Approval("Felix (A3 allowlist, docs/handoff/00-context.md §3)", "2026-11-08")
+_FELIX = Approval("Felix", "2026-11-08")
 
 REMARKS: dict[str, Remark] = {
     # --- approximated -------------------------------------------------------------------
@@ -57,7 +58,7 @@ REMARKS: dict[str, Remark] = {
             "per-panel time range, so it follows the dashboard time picker."
         ),
         evidence=f"{_PERSES_DASHBOARD} {_DASH0_PANELS}",
-        approved=None,
+        approved=_FELIX,
     ),
     "FULLWINDOW": Remark(
         category="approximated",
@@ -94,7 +95,7 @@ REMARKS: dict[str, Remark] = {
             "metrics with an expression."
         ),
         evidence="see the mapping entry's ref",
-        approved=None,
+        approved=_FELIX,
     ),
     "ATTRVAL": Remark(
         category="assumed",
@@ -112,7 +113,7 @@ REMARKS: dict[str, Remark] = {
             "definitions differ in scope; the value is close, not identical."
         ),
         evidence="see the mapping entry's ref",
-        approved=None,
+        approved=_FELIX,
     ),
 }
 

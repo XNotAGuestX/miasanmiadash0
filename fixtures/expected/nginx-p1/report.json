@@ -326,6 +326,15 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
+      "code": "UNSUPPORTED_QUERY_FUNCTION",
+      "message": "Query function '.as_count()' is not supported.",
+      "severity": "error",
+      "sourceId": "dashboards/NGINX-Overview_dashboard.json",
+      "sourcePath": "widgets[1].definition.widgets[0].definition.requests[0].q",
+      "sourceText": "sum:nginx.net.conn_dropped_per_s{*}.as_count()",
+      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+    },
+    {
       "code": "OPTION_IGNORED",
       "message": "Widget option 'text_align' is ignored.",
       "severity": "info",
@@ -334,12 +343,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_WIDGET",
-      "message": "Widget option 'time' is not supported.",
-      "severity": "error",
+      "code": "APPROXIMATED",
+      "message": "TIMEPIN: Datadog showed the last 15m. Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.",
+      "remark": "TIMEPIN",
+      "severity": "warning",
       "sourceId": "dashboards/NGINX-Overview_dashboard.json",
       "sourcePath": "widgets[1].definition.widgets[0].definition.time",
-      "suggestedAction": "Remark TIMEPIN (Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.) awaits manual approval in src/migrator/source/datadog/remarks.py; until then, migrate this widget manually."
+      "suggestedAction": "Check the panel; set the dashboard time range if the pinned frame matters."
     },
     {
       "code": "OPTION_IGNORED",
@@ -919,6 +929,15 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'nginx.net.reading' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/NGINX-Overview_dashboard.json",
+      "sourcePath": "widgets[4].definition.widgets[4].definition.requests[0].queries[0].query",
+      "sourceText": "sum:nginx.net.reading{$Host}",
+      "suggestedAction": "Review the 'nginx.net.reading' entry against its ref and set 'reviewed'."
+    },
+    {
       "code": "OPTION_IGNORED",
       "message": "Request option 'style' is ignored.",
       "severity": "info",
@@ -941,6 +960,15 @@
       "sourceId": "dashboards/NGINX-Overview_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[4].definition.requests[1].formulas[0].alias",
       "suggestedAction": "No action needed unless the option matters for this panel."
+    },
+    {
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'nginx.net.writing' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/NGINX-Overview_dashboard.json",
+      "sourcePath": "widgets[4].definition.widgets[4].definition.requests[1].queries[0].query",
+      "sourceText": "sum:nginx.net.writing{$Host}",
+      "suggestedAction": "Review the 'nginx.net.writing' entry against its ref and set 'reviewed'."
     },
     {
       "code": "OPTION_IGNORED",
@@ -967,6 +995,15 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'nginx.net.waiting' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/NGINX-Overview_dashboard.json",
+      "sourcePath": "widgets[4].definition.widgets[4].definition.requests[2].queries[0].query",
+      "sourceText": "sum:nginx.net.waiting{$Host}",
+      "suggestedAction": "Review the 'nginx.net.waiting' entry against its ref and set 'reviewed'."
+    },
+    {
       "code": "OPTION_IGNORED",
       "message": "Request option 'style' is ignored.",
       "severity": "info",
@@ -983,12 +1020,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_WIDGET",
-      "message": "Widget option 'time' is not supported.",
-      "severity": "error",
+      "code": "APPROXIMATED",
+      "message": "TIMEPIN: Datadog showed the last 1h (the dashboard default). Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.",
+      "remark": "TIMEPIN",
+      "severity": "warning",
       "sourceId": "dashboards/NGINX-Overview_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[4].definition.time",
-      "suggestedAction": "Remark TIMEPIN (Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.) awaits manual approval in src/migrator/source/datadog/remarks.py; until then, migrate this widget manually."
+      "suggestedAction": "Check the panel; set the dashboard time range if the pinned frame matters."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1151,6 +1189,15 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'nginx.net.conn_dropped_per_s'.",
+      "severity": "error",
+      "sourceId": "dashboards/NGINX-Overview_dashboard.json",
+      "sourcePath": "widgets[5].definition.widgets[0].definition.requests[0].queries[0].query",
+      "sourceText": "sum:nginx.net.conn_dropped_per_s{$Host}",
+      "suggestedAction": "Add a reviewed entry for 'nginx.net.conn_dropped_per_s' to the mapping file."
+    },
+    {
       "code": "OPTION_IGNORED",
       "message": "Request option 'style' is ignored.",
       "severity": "info",
@@ -1167,12 +1214,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_WIDGET",
-      "message": "Widget option 'time' is not supported.",
-      "severity": "error",
+      "code": "APPROXIMATED",
+      "message": "TIMEPIN: Datadog showed the last 1h (the dashboard default). Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.",
+      "remark": "TIMEPIN",
+      "severity": "warning",
       "sourceId": "dashboards/NGINX-Overview_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[0].definition.time",
-      "suggestedAction": "Remark TIMEPIN (Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.) awaits manual approval in src/migrator/source/datadog/remarks.py; until then, migrate this widget manually."
+      "suggestedAction": "Check the panel; set the dashboard time range if the pinned frame matters."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1247,6 +1295,15 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'nginx.net.connections' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/NGINX-Overview_dashboard.json",
+      "sourcePath": "widgets[5].definition.widgets[1].definition.requests[0].queries[0].query",
+      "sourceText": "sum:nginx.net.connections{$Host}",
+      "suggestedAction": "Review the 'nginx.net.connections' entry against its ref and set 'reviewed'."
+    },
+    {
       "code": "OPTION_IGNORED",
       "message": "Request option 'style' is ignored.",
       "severity": "info",
@@ -1263,12 +1320,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_WIDGET",
-      "message": "Widget option 'time' is not supported.",
-      "severity": "error",
+      "code": "APPROXIMATED",
+      "message": "TIMEPIN: Datadog showed the last 1h (the dashboard default). Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.",
+      "remark": "TIMEPIN",
+      "severity": "warning",
       "sourceId": "dashboards/NGINX-Overview_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[1].definition.time",
-      "suggestedAction": "Remark TIMEPIN (Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.) awaits manual approval in src/migrator/source/datadog/remarks.py; until then, migrate this widget manually."
+      "suggestedAction": "Check the panel; set the dashboard time range if the pinned frame matters."
     },
     {
       "code": "OPTION_IGNORED",
@@ -3123,6 +3181,9 @@
     {
       "kind": "dashboard",
       "outcome": "partial",
+      "remarks": [
+        "TIMEPIN"
+      ],
       "sourceId": "dashboards/NGINX-Overview_dashboard.json",
       "sourcePath": "",
       "title": "NGINX - Overview"
@@ -3234,7 +3295,10 @@
     },
     {
       "kind": "widget",
-      "outcome": "blocked",
+      "outcome": "approximated",
+      "remarks": [
+        "TIMEPIN"
+      ],
       "sourceId": "dashboards/NGINX-Overview_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[4]",
       "title": "Requests: reading, writing, waiting"
@@ -3262,7 +3326,10 @@
     },
     {
       "kind": "widget",
-      "outcome": "blocked",
+      "outcome": "approximated",
+      "remarks": [
+        "TIMEPIN"
+      ],
       "sourceId": "dashboards/NGINX-Overview_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[1]",
       "title": "Active connections per second"
@@ -3475,9 +3542,9 @@
     },
     "skippedFiles": 0,
     "widgets": {
-      "approximated": 0,
+      "approximated": 2,
       "assumed": 0,
-      "blocked": 29,
+      "blocked": 27,
       "partial": 0,
       "translated": 21
     }
