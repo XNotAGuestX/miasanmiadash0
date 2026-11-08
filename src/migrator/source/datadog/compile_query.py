@@ -26,6 +26,7 @@ from migrator.promql import (
     Matcher,
     MetricRef,
     format_number,
+    format_offset,
     render_aggregation,
     render_matchers,
     render_selector,
@@ -86,6 +87,8 @@ class QueryContext:
     variables: list[TemplateVariable]
     # Template variables promoted to a Perses ListVariable: name -> target label.
     promoted: dict[str, str] = field(default_factory=dict)
+    # Timeshift in seconds (formula.py); every selector gets ` offset <duration>`.
+    offset_seconds: int = 0
 
 
 @dataclass(frozen=True)
@@ -271,11 +274,18 @@ def compile_metric_query(
         group_labels.append(label)
 
     if isinstance(entry, ExpressionMapping):
+        if ctx.offset_seconds:
+            return d.block(
+                "UNSUPPORTED_FORMULA",
+                f"Timeshift of '{q.metric}' is not supported: its mapping is a PromQL "
+                "expression, and the compiler only shifts the selectors it renders itself.",
+                "Migrate this widget manually or remove the timeshift function.",
+            )
         filters = ", " + render_matchers(matchers) if matchers else ""
         body = entry.expression.replace("$filters", filters)
         expr = render_aggregation(aggregator, group_labels, body)
     else:
-        expr = _render_metric(entry, aggregator, group_labels, matchers)
+        expr = _render_metric(entry, aggregator, group_labels, matchers, ctx.offset_seconds)
 
     if entry.scale != 1:
         expr = f"({expr}) * {format_number(entry.scale)}"
@@ -287,11 +297,15 @@ def _render_metric(
     aggregator: str,
     group_labels: list[str],
     matchers: list[Matcher],
+    offset_seconds: int = 0,
 ) -> str:
     fixed = [Matcher(label, value) for label, value in sorted(entry.matchers.items())]
     inner = render_selector(MetricRef(entry.target.name, entry.target.type), matchers + fixed)
+    offset = f" offset {format_offset(offset_seconds)}" if offset_seconds else ""
     if isinstance(entry, RateMapping):
-        inner = f"rate({inner}[{entry.rateWindow or RATE_INTERVAL}])"
+        inner = f"rate({inner}[{entry.rateWindow or RATE_INTERVAL}]{offset})"
+    else:
+        inner += offset
     if entry.grain is not None:
         grain_by = group_labels + [lbl for lbl in entry.grain.labels if lbl not in group_labels]
         inner = render_aggregation(entry.grain.aggregation, grain_by, inner)

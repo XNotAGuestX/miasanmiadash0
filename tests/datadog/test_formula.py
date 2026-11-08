@@ -9,6 +9,7 @@ from migrator.source.datadog.formula import (
     RenderOk,
     parse_formula,
     render_formula,
+    shifted,
 )
 
 
@@ -63,4 +64,53 @@ def test_abs_renders_promql_abs_exactly() -> None:
 
 def test_abs_blocks_unsupported_argument_forms() -> None:
     for text in ["abs()", "abs(query1, 2)", "abs(5)", "abs (query1)", "abs(query1", "ABS(query1)"]:
+        assert not parse_formula(text).ok, text
+
+
+def test_timeshift_functions_shift_the_referenced_query() -> None:
+    # docs.datadoghq.com/dashboards/functions/timeshift/: an hour, a day, a week (7 days),
+    # a month (28 days / 4 weeks), or <TIME_IN_SECOND> before the current timestamp.
+    cases = {
+        "hour_before(query1)": 3600,
+        "day_before(query1)": 86400,
+        "week_before(query1)": 604800,
+        "month_before(query1)": 2419200,
+        "timeshift(query1, -1209600)": 1209600,
+        "timeshift( query1 ,-60 )": 60,
+    }
+    for text, seconds in cases.items():
+        assert parse(text).formula == Ref("query1", seconds), text
+
+
+def test_timeshift_renders_the_shifted_compile() -> None:
+    compiled = {"query1": RenderedQuery("A", ["l"])}
+    sq = {("query1", 604800): RenderedQuery("A1w", ["l"])}
+    f = parse("query1 - week_before(query1)").formula
+    assert shifted(f) == [("query1", 604800)]
+    assert render_formula(f, compiled, sq) == RenderOk("(A) - (A1w)", ["l"])
+    assert render_formula(parse("week_before(query1)").formula, compiled, sq) == RenderOk(
+        "A1w", ["l"]
+    )
+    assert render_formula(parse("abs(week_before(query1))").formula, compiled, sq) == RenderOk(
+        "abs(A1w)", ["l"]
+    )
+    assert render_formula(f, compiled) == RenderError("unknown query 'query1'")
+
+
+def test_timeshift_blocks_unsupported_argument_forms() -> None:
+    for text in [
+        "week_before()",
+        "week_before(5)",
+        "week_before(query1 + query2)",
+        "week_before(day_before(query1))",
+        "week_before (query1)",
+        "week_before(query1",
+        "timeshift(query1)",
+        "timeshift(query1, 60)",
+        "timeshift(query1, -0)",
+        "timeshift(query1, -1.5)",
+        "timeshift(query1, - 60)",
+        "timeshift(query1, -60, 1)",
+        "week_before(query1, 1)",
+    ]:
         assert not parse_formula(text).ok, text

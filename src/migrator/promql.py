@@ -51,3 +51,14 @@ def format_number(value: float) -> str:
     if float(value).is_integer() and abs(value) < 1e15:
         return str(int(value))
     return repr(float(value))
+
+
+_OFFSET_UNITS = (("w", 7 * 86400), ("d", 86400), ("h", 3600), ("m", 60), ("s", 1))
+
+
+def format_offset(seconds: int) -> str:
+    """A positive number of seconds as a PromQL duration in the largest exact unit (4w, 90m)."""
+    if seconds <= 0:
+        raise ValueError(f"offset must be positive: {seconds}")
+    unit, size = next((u, n) for u, n in _OFFSET_UNITS if seconds % n == 0)
+    return f"{seconds // size}{unit}"
