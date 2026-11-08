@@ -1,5 +1,16 @@
 # Shared project status
 
+2026-11-08 local UI update ([#177](https://github.com/XNotAGuestX/thinchackdash/issues/177),
+stacked on frontend PR #174): `backend/` serves the frontend and runs the unchanged
+offline converter on uploaded JSON or the pinned Postgres demo. Real rows show exact
+outcome categories; translated warnings are hidden and other warnings show short names
+only. Full diagnostics and target artifacts remain in the downloadable results.
+Dashboard failures remain hidden at Felix's request. No vendor calls, publishing,
+numeric comparison or streamed progress; [mismatch list](../backend/README.md#frontendbackend-mismatches).
+Checks: `uv run migrator check` passed (ruff, strict mypy: 89 files;
+**1013 passed / 621 skipped**). Explicit backend strict typing/lint and 5 frontend
+adapter tests also passed. Converter, mappings, dependencies and goldens are unchanged.
+
 Last updated: 2026-11-08: general-input safeguards and mapping coverage implemented on
 `167-general-inputs` ([#167](https://github.com/XNotAGuestX/thinchackdash/issues/167)); the required
 check passes (993 passed, 621 skipped). Review found no blocking issues; Felix explicitly

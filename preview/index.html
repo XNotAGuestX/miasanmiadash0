@@ -19,7 +19,7 @@
     <div class="wrap top-in">
       <span class="brand"><span class="mark" aria-hidden="true"></span>Migrate</span>
       <div class="top-right">
-        <span class="mono faint hide-sm">Demo · Sample data</span>
+        <span class="mono faint hide-sm" id="data-mode">Local converter</span>
         <button id="theme-btn" class="theme-btn" type="button" aria-label="Switch to light mode">
           <span class="theme-icon" aria-hidden="true"></span><span class="theme-txt">Light</span>
         </button>
@@ -33,11 +33,16 @@
       <div class="wrap start-wrap">
         <h1 id="start-title" class="display start-title">Datadog to Dash0<span class="dot">.</span></h1>
         <div class="start-row">
-          <p class="lead">Move dashboards and alerts in one run.</p>
+          <p class="lead">Convert Datadog dashboards and monitors to Perses and Dash0 files.</p>
           <button id="start-btn" class="go" type="button">
-            <span class="go-label">Start migration</span>
+            <span class="go-label">Convert</span>
             <span class="go-arrow" aria-hidden="true"><span class="a1">→</span><span class="a2">→</span></span>
           </button>
+        </div>
+        <div class="upload" id="upload">
+          <label for="source-files">Datadog JSON files</label>
+          <input id="source-files" type="file" accept=".json,application/json" multiple>
+          <p class="why">No files selected? Convert the pinned Postgres demo. Uses mappings/datadog.</p>
         </div>
         <p class="start-error mono" id="start-error" role="alert"></p>
       </div>
@@ -53,10 +58,12 @@
               <li><span class="num">02</span><span class="lbl">Translate</span></li>
               <li><span class="num">03</span><span class="lbl">Check</span></li>
             </ol>
-            <h2 id="results-title" class="display display-sm" tabindex="-1">Migration complete<span class="dot">.</span></h2>
+            <h2 id="results-title" class="display display-sm" tabindex="-1">Conversion results<span class="dot">.</span></h2>
           </div>
         </div>
         <p class="visually-hidden" id="live" aria-live="polite"></p>
+        <p class="why" id="run-note"></p>
+        <div class="category-summary" id="category-summary" aria-label="Outcomes"></div>
 
         <!-- A dial: one tick per item (or per group of items when there are many). A tick lights in
              its status colour when the (simulated) backend finishes it; the orange arc keeps turning while it works. -->
@@ -98,20 +105,22 @@
 
         <div class="board is-hidden" id="board">
           <section class="col" data-status="converted" aria-labelledby="h-converted">
-            <h3 class="col-head" id="h-converted">Converted</h3>
+            <h3 class="col-head" id="h-converted">Translated</h3>
             <ul class="items"></ul>
           </section>
           <section class="col" data-status="review" aria-labelledby="h-review">
-            <h3 class="col-head" id="h-review">Needs review</h3>
+            <h3 class="col-head" id="h-review">Converted with remarks · Review</h3>
             <ul class="items"></ul>
           </section>
           <section class="col" data-status="unsupported" aria-labelledby="h-unsupported">
-            <h3 class="col-head" id="h-unsupported">Not supported</h3>
+            <h3 class="col-head" id="h-unsupported">Blocked</h3>
             <ul class="items"></ul>
           </section>
         </div>
 
         <div class="foot">
+          <a id="download-results" class="btn btn-primary" hidden>Download results (.json)</a>
+          <p class="why" id="limitations">Publishing and numeric comparison are unavailable here. Nothing has been sent to Dash0.</p>
           <div class="callout" id="callout">
             <span class="badge s-unsupported" aria-hidden="true"><svg viewBox="0 0 22 22"><path d="M8 8l6 6"/><path d="M14 8l-6 6"/></svg></span>
             <p id="callout-txt">1 item has no Dash0 equivalent.</p>
@@ -132,8 +141,8 @@
         <div class="options">
           <article class="option" id="opt-consult">
             <p class="opt-num mono">01</p>
-            <h3 class="opt-title">Consult us</h3>
-            <p class="opt-txt">An engineer migrates it with you.</p>
+            <h3 class="opt-title">Manual follow-up</h3>
+            <p class="opt-txt">Use the reported diagnostic and suggested action. Consultation booking is unavailable.</p>
             <div class="opt-act">
               <button class="btn btn-primary btn-big accept-btn consult-btn" type="button" id="consult-btn">
                 <svg class="tick" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.2 6.3l2.4 2.4L9.8 3.4"/></svg>

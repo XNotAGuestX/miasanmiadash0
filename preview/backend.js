@@ -1,26 +1,18 @@
-// The one place the UI talks to the backend. app.js calls only these two functions:
-//
-//   await MigrateBackend.load()       -> array of UI items (see INTEGRATION.md for the shape)
-//   await MigrateBackend.process(it)  -> resolves when that item is finished; it.status must be set by then
-//
-// Two sources:
-//   - mock (default): window.MIGRATION_ITEMS from data.js, with a simulated delay per item.
-//   - report: open the page with ?report=<url> to show a real `migrator convert` report.json.
-//     The URL must be same-origin (for example reports/report.json, or a local API route).
-//
-// No conversion happens here. The UI only displays what the deterministic converter decided.
+// The UI displays the existing deterministic compiler's results. No translation happens here.
+// Default: local backend. ?report=<url>: saved report. ?mock=1: explicit UI demo only.
 (() => {
   "use strict";
 
   const params = new URLSearchParams(location.search);
   const reportUrl = params.get("report");
+  const mode = reportUrl ? "report" : params.get("mock") === "1" ? "mock" : "api";
 
-  // report.json outcome -> UI column. Kept in step with migrator.report.CONVERTED.
+  // Review is a UI grouping, not a change to the compiler's publish eligibility.
   const STATUS = {
     translated: "converted",
-    approximated: "converted",
-    assumed: "converted",
-    best_effort: "converted",
+    approximated: "review",
+    assumed: "review",
+    best_effort: "review",
     partial: "review",
     blocked: "unsupported",
   };
@@ -39,8 +31,8 @@
     return report.items
       .filter((i) => i.kind === "widget" || i.kind === "monitor")
       .map((i, n) => {
+        if (!Object.hasOwn(STATUS, i.outcome)) throw new Error(`unknown outcome "${i.outcome}" in report.json`);
         const status = STATUS[i.outcome];
-        if (!status) throw new Error(`unknown outcome "${i.outcome}" in report.json`);
         const mine = diags
           .filter((d) => d.sourceId === i.sourceId && within(d.sourcePath || "", i.sourcePath || ""))
           .sort((a, b) => (SEVERITY_RANK[a.severity] ?? 3) - (SEVERITY_RANK[b.severity] ?? 3));
@@ -55,6 +47,13 @@
           name: i.title || i.sourcePath || i.sourceId,
           status,
           outcome: i.outcome,
+          remarks: i.remarks || [],
+          diagnostics: mine,
+          warningNames: i.outcome === "translated" ? [] : [...new Set([
+            ...(i.remarks || []),
+            ...mine.filter((d) => d.severity === "warning").map((d) => d.remark || d.code),
+          ])],
+          parent: dashTitle.get(i.sourceId) || "Monitor",
           why,
           action: top && top.suggestedAction ? top.suggestedAction : "",
           from: top && top.sourceText ? top.sourceText : `${i.sourceId} ${i.sourcePath}`.trim(),
@@ -68,19 +67,41 @@
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   window.MigrateBackend = {
-    mode: reportUrl ? "report" : "mock",
+    mode,
+    result: null,
 
-    async load() {
-      if (!reportUrl) return window.MIGRATION_ITEMS;
-      const res = await fetch(reportUrl, { cache: "no-store" });
-      if (!res.ok) throw new Error(`Could not load ${reportUrl} (HTTP ${res.status})`);
-      return fromReport(await res.json());
+    async load(files = []) {
+      if (mode === "mock") return window.MIGRATION_ITEMS;
+      let res;
+      try {
+        if (mode === "report") {
+          const url = new URL(reportUrl, location.href);
+          if (url.origin !== location.origin) throw new Error("Use a same-origin report URL.");
+          res = await fetch(url.href, { cache: "no-store" });
+        } else {
+          const uploaded = await Promise.all(Array.from(files, async (file) => ({ name: file.name, text: await file.text() })));
+          res = await fetch("/api/convert", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ files: uploaded }),
+          });
+        }
+      } catch (err) {
+        throw new Error(`Could not load conversion results: ${err.message}. Start the local backend with uv run python -m backend.server.`);
+      }
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.error || `Could not load results (HTTP ${res.status}). Start uv run python -m backend.server.`);
+      }
+      const result = await res.json();
+      const report = mode === "report" ? result : result.report;
+      const items = fromReport(report);
+      this.result = mode === "report" ? { report } : result;
+      return items;
     },
 
-    // Mock: pretend each item takes a moment. Report: the result is already known, so just
-    // pace the dial. A live backend would await the item's real result here.
+    // Real results are already complete: never simulate per-item compiler progress.
     async process(it) {
-      await sleep(reportUrl ? 60 + Math.random() * 120 : 700 + Math.random() * 1000);
+      if (mode === "mock") await sleep(700 + Math.random() * 1000);
       return it;
     },
 

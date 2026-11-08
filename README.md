@@ -59,6 +59,12 @@ stream once; subsequent suites reuse its real history without another collection
 
 ## Convert (offline)
 
+For the local upload-and-convert UI, run `uv run python -m backend.server` and open
+<http://localhost:3001/>. Upload Datadog JSON or use the pinned demo. This runs the same
+offline converter; results show exact outcome categories and can be downloaded.
+Publishing and numeric comparison are unavailable in this UI.
+See [backend/README.md](backend/README.md) for setup and frontend/backend mismatches.
+
 ```bash
 uv run migrator convert --source datadog \
   --input fixtures/datadog/integrations-core/postgres \

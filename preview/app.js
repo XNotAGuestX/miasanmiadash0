@@ -1,5 +1,4 @@
-// UI-only demo. No network requests, no AI: all data and "suggestions" come from data.js,
-// and the "backend" below is a local timer that reports one result at a time.
+// Local conversion UI. Simulated stages and actions are confined to explicit ?mock=1.
 (() => {
   "use strict";
 
@@ -17,6 +16,16 @@
   const title = $("#results-title");
   let items = [];
   let runId = 0;
+  const real = window.MigrateBackend.mode !== "mock";
+  const OUTCOME = { translated: "Translated", approximated: "Approximated", assumed: "Assumed", best_effort: "Best effort", partial: "Partial", blocked: "Blocked" };
+  let downloadUrl;
+  $("#data-mode").textContent = window.MigrateBackend.mode === "api" ? "Local converter · Real results" : real ? "Saved report" : "Mock demo · Simulated";
+  $("#upload").hidden = window.MigrateBackend.mode !== "api";
+  if (real) {
+    $("#consult-btn").disabled = true;
+    $("#consult-btn .txt").textContent = "Booking unavailable";
+    $("#opt-ai").hidden = true;
+  }
 
   /* ---------- Theme ---------- */
   const themeBtn = $("#theme-btn");
@@ -76,6 +85,7 @@
           <svg viewBox="0 0 22 22" aria-hidden="true">${ICON[it.status]}</svg>
         </span>
         <span class="name">${esc(it.name)}</span>
+        ${it.outcome ? `<span class="outcome o-${it.outcome}">${esc(OUTCOME[it.outcome])}</span>` : ""}
         <span class="plus" aria-hidden="true"></span>
       </button>
       <div class="drawer" id="drawer-${it.id}"><div><div class="drawer-body" data-body="${it.id}"></div></div></div>`;
@@ -207,19 +217,45 @@
   }
 
   async function runMigration() {
+    const startBtn = $("#start-btn");
+    if (startBtn.disabled) return;
     const id = ++runId;
+    startBtn.disabled = true;
+    startBtn.setAttribute("aria-busy", "true");
+    $(".go-label", startBtn).textContent = real ? "Converting…" : "Loading…";
     let list;
     try {
-      list = await window.MigrateBackend.load();
+      list = await window.MigrateBackend.load($("#source-files").files);
     } catch (err) {
       $("#start-error").textContent = String(err.message || err);
       return;
+    } finally {
+      startBtn.disabled = false;
+      startBtn.removeAttribute("aria-busy");
+      $(".go-label", startBtn).textContent = "Convert";
     }
     if (id !== runId) return;
     $("#start-error").textContent = "";
     reset(list);
     await show("run");
     window.scrollTo(0, 0);
+
+    if (real) {
+      // POST returns a completed conversion. There are no streamed stages or live checks.
+      $("#stage-wrap").classList.add("is-hidden");
+      const result = window.MigrateBackend.result;
+      const validation = result.report.validation || {};
+      $("#run-note").textContent = `Offline conversion. Syntax: ${validation.syntax || "not_run"}; schema: ${validation.schema || "not_run"}; API: ${validation.api || "not_run"}; semantics: ${validation.semantics || "not_run"}. Skipped files: ${result.report.summary?.skippedFiles || 0}.`;
+      if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+      downloadUrl = URL.createObjectURL(new Blob([JSON.stringify(result, null, 2)], { type: "application/json" }));
+      const download = $("#download-results");
+      download.href = downloadUrl;
+      download.download = "conversion-results.json";
+      download.hidden = false;
+      await sortIntoBoard(id);
+      finish(id);
+      return;
+    }
 
     // 01 Read: the ticks sweep in around the dial.
     setStep(0);
@@ -303,7 +339,7 @@
     });
     const vis = els.filter((e) => !e.classList.contains("is-extra"));
     board.classList.remove("is-hidden");
-    if (still()) { els.forEach((e) => e.classList.add("is-final")); placeAll(els); return; }
+    if (real || still()) { els.forEach((e) => e.classList.add("is-final")); placeAll(els); return; }
 
     board.classList.add("is-entering");
     vis.forEach((e, i) => e.animate(
@@ -348,7 +384,9 @@
     progress.classList.add("is-gone");
     const nu = items.filter((it) => it.status === "unsupported").length;
     $("#callout").classList.toggle("is-hidden", nu === 0);
-    $("#callout-txt").textContent = `${nu} item${nu === 1 ? " has" : "s have"} no Dash0 equivalent.`;
+    $("#callout-txt").textContent = `${nu} item${nu === 1 ? " is" : "s are"} blocked. See diagnostics for the reason.`;
+    $("#category-summary").innerHTML = Object.entries(OUTCOME).map(([outcome, label]) =>
+      `<span class="outcome o-${outcome}">${label}: ${items.filter((it) => it.outcome === outcome).length}</span>`).join("");
     const extra = $$(".item.is-extra", board).length;
     if (extra) listFor("converted").insertAdjacentHTML("afterend",
       `<button class="link-btn more-btn" type="button" data-more="${extra}" aria-expanded="false">Show all ${extra + SHOW_FIRST} <span class="arrow" aria-hidden="true">↓</span></button>`);
@@ -357,13 +395,22 @@
     $(".foot").classList.add("is-in");
     title.focus({ preventScroll: true });
     const n = (s) => items.filter((it) => it.status === s).length;
-    $("#live").textContent = `Migration complete. ${n("converted")} converted, ${n("review")} need review, ${n("unsupported")} not supported.`;
+    $("#live").textContent = `Conversion complete. ${n("converted")} translated, ${n("review")} converted with remarks, ${n("unsupported")} blocked.`;
   }
 
   /* ---------- Item drawer ---------- */
   const STAR = '<svg class="star" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0c.5 4.2 1.8 6.6 8 8-6.2 1.4-7.5 3.8-8 8-.5-4.2-1.8-6.6-8-8 6.2-1.4 7.5-3.8 8-8z"/></svg>';
 
   function bodyHTML(it) {
+    if (real) {
+      if (it.outcome === "translated") return '<p class="why">Translated.</p>';
+      const diagnostics = it.diagnostics.filter((d) => d.severity === "error").map((d) => `<li><strong>${esc(d.code)}</strong><p>${esc(d.message)}</p><p>${esc(d.suggestedAction || "")}</p></li>`).join("");
+      return `<p class="why">${esc(it.parent)} · ${esc(it.source.kind)}</p>
+        <code>${esc(it.source.id)} ${esc(it.source.path)}</code>
+        ${it.warningNames.length ? `<div class="category-summary" aria-label="Warnings">${it.warningNames.map((name) => `<span class="outcome">${esc(name)}</span>`).join("")}</div>` : ""}
+        ${diagnostics ? `<ul class="diagnostics">${diagnostics}</ul>` : ""}
+        ${it.status === "review" ? '<p class="why">Numeric comparison unavailable: this offline run has no Datadog or Dash0 measurements.</p>' : ""}`;
+    }
     const out = [`<p class="why">${esc(it.why)}</p>`];
     if (it.action) out.push(`<p class="why">${esc(it.action)}</p>`);
     if (it.status === "converted") return out.join("");
