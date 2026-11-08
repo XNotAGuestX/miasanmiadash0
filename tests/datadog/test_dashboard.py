@@ -13,6 +13,7 @@ from migrator.source.datadog.dashboard import (
     read_template_variables,
 )
 from migrator.source.datadog.mapping import DatadogMapping
+from migrator.source.datadog.parse_query import UNDOCUMENTED_FUNCTIONS
 from migrator.validation import validate_dashboard
 from tests.datadog.helpers import entry, mapping
 
@@ -592,12 +593,27 @@ def test_top_blocks_in_queries_and_formulas_with_its_reason(args: str) -> None:
         )
 
 
-def test_other_wrapping_functions_keep_the_generic_message() -> None:
+def test_undocumented_functions_block_with_their_documented_reason() -> None:
     c = compile_body(body(ts({"q": "per_second(avg:postgresql.connections{*})"})))
     [d] = [d for d in c.diagnostics if d.severity == "error"]
     assert (d.code, d.message) == (
         "UNSUPPORTED_QUERY_FUNCTION",
-        "Function 'per_second' is not supported.",
+        UNDOCUMENTED_FUNCTIONS["per_second"],
+    )
+    for name in UNDOCUMENTED_FUNCTIONS:
+        for formula in [f"{name}(query1)", f"query1 * {name}(query1)"]:
+            c = compile_body(body(ts(new_req("avg:postgresql.connections{*}", formulas=[formula]))))
+            [d] = [d for d in c.diagnostics if d.severity == "error"]
+            assert (d.code, d.message) == ("UNSUPPORTED_FORMULA", UNDOCUMENTED_FUNCTIONS[name])
+            assert "https://docs.datadoghq.com/" in d.message
+
+
+def test_other_wrapping_functions_keep_the_generic_message() -> None:
+    c = compile_body(body(ts({"q": "cumsum(avg:postgresql.connections{*})"})))
+    [d] = [d for d in c.diagnostics if d.severity == "error"]
+    assert (d.code, d.message) == (
+        "UNSUPPORTED_QUERY_FUNCTION",
+        "Function 'cumsum' is not supported.",
     )
     c = compile_body(
         body(ts(new_req("avg:postgresql.connections{*}", formulas=["cumsum(query1)"])))

@@ -1511,12 +1511,12 @@
     },
     {
       "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 10.",
+      "message": "Function 'per_minute' is not supported: Datadog documents it only as 'Graph the rate at which the metric is changing per minute' (https://docs.datadoghq.com/dashboards/functions/rate/); without a formula, neither a PromQL derivative nor a constant factor is known to match.",
       "severity": "error",
       "sourceId": "dashboards/overview.json",
       "sourcePath": "widgets[3].definition.widgets[2].definition.requests[0].formulas[0].formula",
       "sourceText": "per_minute(query2)",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
+      "suggestedAction": "Migrate this widget or monitor manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -2212,12 +2212,12 @@
     },
     {
       "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 4.",
+      "message": "Function 'diff' is not supported: Datadog takes the difference per interval after time aggregation (https://docs.datadoghq.com/dashboards/functions/rate/); the interval depends on the graph, so no fixed PromQL range reproduces it.",
       "severity": "error",
       "sourceId": "dashboards/overview.json",
       "sourcePath": "widgets[4].definition.widgets[4].definition.requests[0].formulas[0].formula",
       "sourceText": "diff(query1)",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
+      "suggestedAction": "Migrate this widget or monitor manually."
     },
     {
       "code": "OPTION_IGNORED",

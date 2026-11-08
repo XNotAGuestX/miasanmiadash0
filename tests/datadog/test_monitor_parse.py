@@ -10,7 +10,7 @@ from migrator.source.datadog.model import (
     MonitorWindow,
     ParseError,
 )
-from migrator.source.datadog.monitor import parse_monitor_query
+from migrator.source.datadog.monitor import ARITHMETIC, parse_monitor_query
 from migrator.source.datadog.parse_query import parse_metric_query
 
 PINNED = Path("fixtures/datadog/integrations-core/postgres/monitors")
@@ -39,7 +39,8 @@ def test_blocks_anomalies() -> None:
     r = parse_monitor_query(pinned_query("replication_delay.json"))
     assert isinstance(r, ParseError)
     assert r.code == "UNSUPPORTED_QUERY_FUNCTION"
-    assert r.message == "Function 'anomalies' is not supported."
+    assert r.message.startswith("Function 'anomalies' is not supported: ")
+    assert "docs.datadoghq.com/monitors/types/anomaly/" in r.message
 
 
 def test_blocks_arithmetic() -> None:
@@ -47,7 +48,13 @@ def test_blocks_arithmetic() -> None:
         "avg(last_5m):100 * avg:redis.mem.used{*} / avg:redis.mem.maxmemory{*} > 90"
     )
     assert isinstance(r, ParseError)
-    assert r.code == "UNSUPPORTED_QUERY_SYNTAX"
+    assert (r.code, r.offset, r.message) == ("UNSUPPORTED_QUERY_SYNTAX", 13, ARITHMETIC)
+    for inner in ["avg:a{*} - avg:b{*}", "(avg:a{*}) + 1", "-avg:a{*}", "avg:a{*} * 2"]:
+        r = parse_monitor_query(f"avg(last_5m):{inner} > 1")
+        assert isinstance(r, ParseError) and r.message == ARITHMETIC, inner
+    # Tag values with '-' or '/' are not arithmetic.
+    r = parse_monitor_query("avg(last_5m):avg:a{env:prod-1,path:/x} by {host}junk > 1")
+    assert isinstance(r, ParseError) and r.message != ARITHMETIC
 
 
 def test_blocks_unknown_window_unit() -> None:
