@@ -209,7 +209,7 @@ def test_cli_entry_point_exit_codes(tmp_path: Path) -> None:
         str(tmp_path / "ok"),
     )
     assert r.returncode == 0, r.stderr
-    assert r.stdout.startswith("TRANSLATED synthetic-supported 2/2 widgets")
+    assert r.stdout.startswith("Dashboards\n  TRANSLATED  synthetic-supported  2/2 widgets\n")
 
 
 PG = "fixtures/datadog/integrations-core/postgres"
