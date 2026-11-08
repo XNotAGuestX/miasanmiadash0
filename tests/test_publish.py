@@ -96,11 +96,18 @@ def test_dry_run_makes_no_requests(run_dir: Path) -> None:
     assert send.requests == []
     dry = [line for line in r.lines if line.startswith("DRY-RUN POST ")]
     assert len(dry) == 3
+    # Groups in order: translated, approximated, assumed, partial. The check rule is
+    # approximated (A3 options); both dashboards are partial, one carrying the DERIVED tag of a
+    # converted widget. Each line names its category and tags.
     assert dry[0].startswith(
         "DRY-RUN POST https://api.example.dash0.com/api/import/check-rule?dataset=default  "
         "[Postgres] Number of connections"
     )
-    assert all(line.endswith("(publish)") for line in dry)
+    assert dry[0].endswith("(publish)  [approximated: NEWHOST FULLWINDOW]")
+    assert sorted(line.rsplit("  ", 1)[1] for line in dry[1:]) == [
+        "[partial: DERIVED]",
+        "[partial: TOPN SEMANTIC]",
+    ]
     assert not (run_dir / RECEIPTS_FILE).exists()
 
 

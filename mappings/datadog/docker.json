@@ -1,9 +1,35 @@
 {
+  "gaps": {
+    "docker.containers.stopped": {
+      "reason": "Datadog counts every listed non-running container (created, exited, paused, dead, ...) as stopped (datadog-agent@7.85.2 pkg/collector/corechecks/containers/docker/check.go runDockerCustom (lines 205-298): each listed container counts as running if State == running, else stopped; docker.containers.running/stopped are gauges per image-tag group; metadata.csv gauge, 'The number of containers stopped on this host tagged by image'). OTel fixtures/otel/collector-contrib/receiver/dockerstatsreceiver/metadata.yaml (collector-contrib v0.165.0) container.state.status enumerates exited/created/etc., but collector-contrib@f56f9a3 internal/docker/docker.go LoadContainerList (lines 131-137) lists containers with filter status=running; receiver/dockerstatsreceiver/receiver.go counts containerStatus[container.State.Status]++ per scraped container (line 214) and records container.state.status per status 'without the default resource attributes' (lines 118-119, 164-165, 221-225), so non-running states never get a data point.",
+      "tag": "NOEQUIV"
+    },
+    "docker.mem.swap": {
+      "reason": "Datadog: integrations-core@a9b9e42 docker_daemon/metadata.csv docker.mem.swap: gauge, byte, 'The amount of swap currently used by the container'. No OTel metric carries swap usage: fixtures/otel/collector-contrib/receiver/dockerstatsreceiver/metadata.yaml (collector-contrib v0.165.0) has only container.memory.hierarchical_memsw_limit (RAM + swap limit, cgroup v1), and fixtures/otel/catalog.yaml has no other swap metric for containers.",
+      "tag": "NOOTEL"
+    }
+  },
   "labels": {
     "container_name": "container_name",
     "docker_image": "container_image_name"
   },
   "metrics": {
+    "docker.containers.running": {
+      "kind": "gauge",
+      "labels": {},
+      "matchers": {
+        "container_state_status": "running"
+      },
+      "ref": "vendor deviation: fixtures/datadog/otel-mapping.yaml has no docker.* row and no container-count row. Datadog: integrations-core@a9b9e42 docker_daemon/metadata.csv docker.containers.running: gauge, no unit, 'The number of containers running on this host tagged by image'. Check: datadog-agent@7.85.2 pkg/collector/corechecks/containers/docker/check.go runDockerCustom (lines 205-298): each listed container counts as running if State == running, else stopped; docker.containers.running/stopped are gauges per image-tag group, so a sum over all groups is the host's running-container count. OTel: fixtures/otel/collector-contrib/receiver/dockerstatsreceiver/metadata.yaml (collector-contrib v0.165.0) container.state.status: non-monotonic cumulative sum, unit {status}, 'Number of containers in a given state', attribute container.state.status with documented enum value running; enabled: false by default (the collector must enable it). Source: collector-contrib@f56f9a3 internal/docker/docker.go LoadContainerList (lines 131-137) lists containers with filter status=running; receiver/dockerstatsreceiver/receiver.go counts containerStatus[container.State.Status]++ per scraped container (line 214) and records container.state.status per status 'without the default resource attributes' (lines 118-119, 164-165, 221-225); so the value with container_state_status=running is the number of running containers the receiver scrapes. Labels: the series carries no container.* resource attributes, so docker_image and container_name are deliberately unmapped (the entry's empty labels replace the file default); widgets grouping by docker_image block. Caveats: Datadog counts containers excluded by container_exclude, OTel drops excluded_images; equal with neither configured. Units: none vs {status}, scale 1. dash0: not checked (no access in this run).",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "",
+      "target": {
+        "name": "container.state.status",
+        "type": "sum"
+      },
+      "targetUnit": "{status}"
+    },
     "docker.cpu.system": {
       "kind": "rate",
       "ref": "Datadog: integrations-core@a9b9e42 docker_daemon/metadata.csv docker.cpu.system: gauge, percent, no per-unit, 'percent of time ... of this container, unnormalized'. Check: datadog-agent@7.85.2 (c7e9b19) pkg/collector/corechecks/containers/generic/processor.go:177 submits container.cpu.system (cgroup system CPU time, ns) with sender.Rate; docker/adapter.go:19,54 renames it docker.cpu.system and divides by 1e7 (generic/adapters_utils.go:10 ConvertNanosecondsToHz), so 100 = one full core. OTel: collector-contrib@v0.165.0 receiver/dockerstatsreceiver/metadata.yaml container.cpu.usage.kernelmode: monotonic cumulative sum, ns. Units: percent vs ns; rate() gives ns/s; scale 1e-07 = the Agent's / 1e7. type deviation: metadata.csv says gauge, but the Agent submits a Rate of a cumulative counter (processor.go:177), stored in-app as gauge. vendor deviation: the table has no docker.* row; adapter.go:19 renames Datadog container.cpu.system to docker.cpu.system. The table maps container.cpu.system to container.cpu.usage.system, but the receiver documents that metric as 'the usage for the system, not the container'. The Agent value is the container's kernel-mode time (pkg/util/containers/metrics/docker/collector_linux.go:37 UsageInKernelmode; cgroup v2 cpu.stat system_usec), i.e. container.cpu.usage.kernelmode ('time spent by tasks of the cgroup in kernel mode'). Dash0: fixtures/oracle/dash0_default_metrics.yaml lists container.cpu.usage.kernelmode (sum); Dash0 live 2026-11-08, dataset default, read-only: count by (container_name, container_image_name) (last_over_time({otel_metric_name=\"container.cpu.usage.kernelmode\"}[24h])) = 23 series. Labels: the Agent tagger (comp/core/tagger/collectors/workloadmeta_extract.go:233,244) sets container_name = container name and docker_image = <image>:<tag>; Dash0 container_name and container_image_name have the same form (e.g. postgres:18.6). Untagged images: the Agent appends :latest (comp/core/workloadmeta/def/types.go:337); all 23 Dash0 images are tagged. Churn: container_id changes per recreate (Dash0 24h: 320 container_id, 23 container_name); the Agent tags container_id too (generic/processor.go:103, high cardinality). Dash0 also splits 20 container_id when enriched resource attributes change (e.g. os_description); avg then briefly counts both series.",

@@ -130,7 +130,8 @@ def test_overview_is_partial_with_reviewed_counts(run: tuple[int, Path]) -> None
     (dashboard,) = [i for i in items if i["kind"] == "dashboard"]
     assert dashboard["outcome"] == "partial"
     counts = Counter(i["outcome"] for i in items if i["kind"] == "widget")
-    assert counts == {"translated": 10, "blocked": 20}
+    # Three toplists convert to bar charts under the TOPN remark (docs/REMARKS.md).
+    assert counts == {"translated": 10, "assumed": 3, "blocked": 17}
     assert (run[1] / "dashboards/postgres-overview.json").exists()
 
 

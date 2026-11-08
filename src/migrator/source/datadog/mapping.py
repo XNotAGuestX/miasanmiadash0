@@ -3,12 +3,19 @@
 Every metric and label pair the compiler uses comes from the mapping files. Only a human may
 set ``reviewed``; coding assistants leave it ``null``. A file may set top-level ``labels``:
 an entry without its own ``labels`` inherits them; an entry's own ``labels`` replace them whole.
+
+An entry may name an ``assumption`` tag (remarks.py, category ``assumed``): the Datadog metric
+has no exact OTel counterpart and the entry rebuilds it under that stated assumption. Items
+using it convert as ``assumed`` once the tag is approved, and block until then.
+
+A file may list ``gaps``: Datadog metrics checked and found unmappable, each with a short tag
+and the reason, so the knowledge stays in the repo and the block message can cite it.
 """
 
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Annotated, Any, Literal
 
 from pydantic import (
@@ -20,11 +27,21 @@ from pydantic import (
     field_validator,
 )
 
+from migrator.source.datadog.remarks import REMARKS
+
 Label = Annotated[str, StringConstraints(pattern=r"^[a-zA-Z_][a-zA-Z0-9_]*$")]
 NonEmpty = Annotated[str, StringConstraints(min_length=1)]
 Scale = Annotated[float, Field(gt=0, allow_inf_nan=False)]
 # A fixed PromQL range such as "5m". Used by RateMapping.rateWindow (issue #90).
 RangeDuration = Annotated[str, StringConstraints(pattern=r"^[1-9][0-9]*[smh]$")]
+Tag = Annotated[str, StringConstraints(pattern=r"^[A-Z][A-Z0-9]*$")]
+
+
+def _assumed_tag(value: str | None) -> str | None:
+    if value is not None and (value not in REMARKS or REMARKS[value].category != "assumed"):
+        known = ", ".join(sorted(t for t, r in REMARKS.items() if r.category == "assumed"))
+        raise ValueError(f"assumption must be an 'assumed' tag in remarks.py: {known}")
+    return value
 
 
 class _Strict(BaseModel):
@@ -63,6 +80,9 @@ class GaugeMapping(_Strict):
     grain: Grain | None = None
     ref: NonEmpty
     reviewed: Reviewed | None
+    assumption: Tag | None = None
+
+    _assumption = field_validator("assumption")(_assumed_tag)
 
 
 class RateMapping(_Strict):
@@ -81,6 +101,9 @@ class RateMapping(_Strict):
     rateWindow: RangeDuration | None = None
     ref: NonEmpty
     reviewed: Reviewed | None
+    assumption: Tag | None = None
+
+    _assumption = field_validator("assumption")(_assumed_tag)
 
 
 class ExpressionMapping(_Strict):
@@ -93,6 +116,9 @@ class ExpressionMapping(_Strict):
     scale: Scale
     ref: NonEmpty
     reviewed: Reviewed | None
+    assumption: Tag | None = None
+
+    _assumption = field_validator("assumption")(_assumed_tag)
 
     @field_validator("expression")
     @classmethod
@@ -111,12 +137,18 @@ _KINDS: dict[str, type[GaugeMapping] | type[RateMapping] | type[ExpressionMappin
 }
 
 
+class Gap(_Strict):
+    tag: Tag  # short reason, e.g. NOOTEL (no OTel metric), NODATA (no Dash0 data)
+    reason: NonEmpty
+
+
 class _Envelope(_Strict):
     version: Literal[1]
     source: Literal["datadog"]
     # File-level default for entries without their own `labels`.
     labels: dict[str, Label] | None = None
     metrics: dict[str, dict[str, Any]]
+    gaps: dict[str, Gap] = Field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -124,6 +156,7 @@ class DatadogMapping:
     version: int
     source: str
     metrics: dict[str, MetricMapping]
+    gaps: dict[str, Gap] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -167,10 +200,16 @@ def parse_mapping(raw: Any) -> MappingOk | MappingInvalid:
             metrics[name] = model.model_validate(entry)
         except ValidationError as err:
             errors.extend(_format(["metrics", name], err))
+    errors += [f"gaps.{n}: also mapped in metrics" for n in sorted(envelope.gaps) if n in metrics]
     if errors:
         return MappingInvalid(errors=errors)
     return MappingOk(
-        mapping=DatadogMapping(version=envelope.version, source=envelope.source, metrics=metrics)
+        mapping=DatadogMapping(
+            version=envelope.version,
+            source=envelope.source,
+            metrics=metrics,
+            gaps=dict(envelope.gaps),
+        )
     )
 
 
@@ -184,19 +223,32 @@ def parse_mappings(files: Sequence[tuple[str, Any]]) -> MappingOk | MappingInval
     errors: list[str] = []
     owner: dict[str, str] = {}
     metrics: dict[str, MetricMapping] = {}
+    gaps: dict[str, Gap] = {}
     for source_id, raw in files:
         parsed = parse_mapping(raw)
         if not parsed.ok:
             errors.extend(f"{source_id}: {e}" for e in parsed.errors)
             continue
-        for name, entry in parsed.mapping.metrics.items():
+        named: list[tuple[str, str, MetricMapping | Gap]] = [
+            ("metrics", n, e) for n, e in parsed.mapping.metrics.items()
+        ]
+        named += [("gaps", n, g) for n, g in parsed.mapping.gaps.items()]
+        for section, name, item in named:
             if name in owner:
-                errors.append(f"metrics.{name}: defined in both {owner[name]} and {source_id}")
+                errors.append(f"{section}.{name}: defined in both {owner[name]} and {source_id}")
                 continue
             owner[name] = source_id
-            metrics[name] = entry
+            if isinstance(item, Gap):
+                gaps[name] = item
+            else:
+                metrics[name] = item
     if errors:
         return MappingInvalid(errors=errors)
     return MappingOk(
-        mapping=DatadogMapping(version=1, source="datadog", metrics=dict(sorted(metrics.items())))
+        mapping=DatadogMapping(
+            version=1,
+            source="datadog",
+            metrics=dict(sorted(metrics.items())),
+            gaps=dict(sorted(gaps.items())),
+        )
     )

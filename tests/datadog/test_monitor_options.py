@@ -33,7 +33,10 @@ def test_golden_options_pass_with_approximations() -> None:
     assert isinstance(r, OptionsOk)
     assert r.thresholds == MonitorThresholds(critical=0.9, warning=0.8)
     warnings = [d for d in r.diagnostics if d.severity == "warning"]
-    assert [d.code for d in warnings] == ["MONITOR_OPTION_APPROXIMATED"] * 2
+    assert [(d.code, d.remark) for d in warnings] == [
+        ("APPROXIMATED", "NEWHOST"),
+        ("APPROXIMATED", "FULLWINDOW"),
+    ]
     assert [d.source_path for d in warnings] == [
         "options.new_host_delay",
         "options.require_full_window",

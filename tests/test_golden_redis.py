@@ -86,12 +86,13 @@ def test_blocked_widgets_and_their_errors(run: tuple[int, Path]) -> None:
         "No mapping for metric 'redis.mem.maxmemory'.",
         "No mapping for metric 'redis.replication.delay'.",
         "No mapping for metric 'redis.replication.master_link_down_since_seconds'.",
+        "No mapping for metric 'redis.slowlog.micros.count'.",
     ]
     # Two widgets with an empty `time: {}` now reach their (unmapped) queries.
     assert Counter(d["code"] for d in errors) == {
-        "UNSUPPORTED_WIDGET": 4,
+        "UNSUPPORTED_WIDGET": 3,
         "UNSUPPORTED_FORMULA": 3,
-        "MISSING_METRIC_MAPPING": 4,
+        "MISSING_METRIC_MAPPING": 5,
     }
 
 

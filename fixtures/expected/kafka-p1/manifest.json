@@ -4,9 +4,13 @@
     {
       "eligible": true,
       "kind": "check-rule",
-      "outcome": "translated",
+      "outcome": "approximated",
       "path": "check-rules/kafka-offline-partition-on-host-name.json",
-      "sha256": "a4dcc0cd35ba28fe75571395e4a97b2580462ae3ed681d671660aad9c5f0348e",
+      "remarks": [
+        "NEWHOST",
+        "FULLWINDOW"
+      ],
+      "sha256": "ebb02be437c1832a56408f9e8504acc2e77a469e3eb4ece3ec985bcb1b784489",
       "sourceId": "monitors/kafka_offline_partition.json"
     },
     {
@@ -28,9 +32,13 @@
     {
       "eligible": true,
       "kind": "prometheus-rule",
-      "outcome": "translated",
+      "outcome": "approximated",
       "path": "rules/kafka-offline-partition-on-host-name.prometheus.json",
-      "sha256": "bbfac37f6e6a6907dc87d5c48e11a5e57313c7f505d56c5d4d15d1318f957da1",
+      "remarks": [
+        "NEWHOST",
+        "FULLWINDOW"
+      ],
+      "sha256": "83f4c87d0bd43dc661448f3472f4d403c49248b0d87dfeb0c6a460ad06e65018",
       "sourceId": "monitors/kafka_offline_partition.json"
     },
     {

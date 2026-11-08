@@ -14,7 +14,10 @@
       "kind": "dashboard",
       "outcome": "partial",
       "path": "dashboards/postgres-overview.json",
-      "sha256": "9756c2593ffab68cd554a3883f3ab8d884bebe8c3ddb7a08018a711694f79103",
+      "remarks": [
+        "TOPN"
+      ],
+      "sha256": "c034d2df022c316237eefc6c6ef29f657f201dfcea02dca8eec14076e109fc38",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json"
     },
     {

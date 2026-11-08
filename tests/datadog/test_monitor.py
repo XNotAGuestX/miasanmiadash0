@@ -62,19 +62,24 @@ def test_golden_monitor_renders_both_artifacts() -> None:
     body = golden_body()
     assert slugify(body["name"]) == SLUG
     r = run(body)
-    assert r.item.outcome == "translated"
+    # require_full_window and new_host_delay are A3 approximations with remark tags.
+    assert (r.item.outcome, r.item.remarks) == ("approximated", ("NEWHOST", "FULLWINDOW"))
     assert r.rule is not None
     check = r.rule.check_rule
     assert check["expression"] == f"{CONDITION} > $__threshold"
     assert check["thresholds"] == {"degraded": 0.8, "failed": 0.9}
     assert check["enabled"] is False
-    assert (check["interval"], check["for"], check["labels"]) == ("1m", "0s", {})
+    assert (check["interval"], check["for"]) == ("1m", "0s")
+    assert check["labels"] == {"migration_remarks": "NEWHOST,FULLWINDOW"}
     assert "id" not in check
 
     (group,) = r.rule.prometheus_rule_group["groups"]
     assert (group["name"], group["interval"]) == (SLUG, "1m")
     assert [rule["expr"] for rule in group["rules"]] == [f"{CONDITION} > 0.8", f"{CONDITION} > 0.9"]
     assert [rule["labels"]["severity"] for rule in group["rules"]] == ["warning", "critical"]
+    assert {rule["labels"]["migration_remarks"] for rule in group["rules"]} == {
+        "NEWHOST,FULLWINDOW"
+    }
     assert all(rule["alert"] == SLUG for rule in group["rules"])
     assert all(rule["annotations"] == check["annotations"] for rule in group["rules"])
     assert codes(r) == []

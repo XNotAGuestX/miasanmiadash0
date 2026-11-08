@@ -49,6 +49,7 @@ from migrator.http import HttpSend, urllib_send
 from migrator.input import InputError
 from migrator.publish import PublishOptions, run_publish
 from migrator.receipts import load_receipts
+from migrator.report import CONVERTED
 
 EnvironmentFactory = Callable[..., Environment]
 
@@ -73,7 +74,8 @@ def artifact(root: Path, case: Case) -> tuple[str, Any, Any]:
     ]
     if len(sources) != 1:
         raise InputError(f"case {case.id}: sourceId is missing or ambiguous")
-    if len(entries) != 1 or entries[0]["outcome"] != "translated":
+    # Converted with remarks still compares: the data comparison is what checks the remark.
+    if len(entries) != 1 or entries[0]["outcome"] not in CONVERTED:
         raise DataError(
             f"case {case.id}: conversion is blocked or partial; inspect compiled/report.json"
         )

@@ -35,6 +35,7 @@ Read existing code before changing it. The handoff describes planned behavior; s
 - Keep network I/O out of the parser/compiler. Offline compilation must work without credentials.
 - Parse the documented query subset completely. Never translate a recognized prefix and ignore trailing syntax. Regex may tokenize a bounded grammar; chained string replacements are not a semantic parser.
 - Unknown metric types, units, label mappings, options, or functions require a diagnostic. Do not infer telemetry equivalence from similar names or replace dots with underscores as a migration strategy.
+- Anything that converts without being an exact translation goes through an approved remark tag (`approximated` or `assumed`, [docs/REMARKS.md](docs/REMARKS.md)). Each new reason is a new tag in `src/migrator/source/datadog/remarks.py` and needs manual approval; only a human sets `approved`. Unmappable metrics are recorded under `gaps` in their mapping file with a tag and reason.
 - Preserve original source assets and source locations. Report each omitted widget, query, and behavior. An alert with unsupported semantics is blocked from import.
 - Separate syntax/schema validation, API acceptance, and observed semantic validation in the report. None proves the others.
 - Keep output deterministic, with stable asset ordering and repeatable names. Isolate timestamps and API responses from compilation snapshots.

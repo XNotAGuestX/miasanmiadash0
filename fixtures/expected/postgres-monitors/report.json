@@ -10,20 +10,22 @@
       "suggestedAction": "No action needed; notification titles are not migrated."
     },
     {
-      "code": "MONITOR_OPTION_APPROXIMATED",
-      "message": "No new-host grace period in Dash0.",
+      "code": "APPROXIMATED",
+      "message": "NEWHOST: new_host_delay is 300 s. Datadog skips new hosts for a grace period (new_host_delay); Dash0 has none, so a new host can alert right after it starts reporting.",
+      "remark": "NEWHOST",
       "severity": "warning",
       "sourceId": "monitors/percent_usage_connections.json",
       "sourcePath": "options.new_host_delay",
-      "suggestedAction": "Expect alerts from new hosts right after they start reporting."
+      "suggestedAction": "Check that this difference is acceptable for the alert."
     },
     {
-      "code": "MONITOR_OPTION_APPROXIMATED",
-      "message": "Dash0 evaluates partial windows.",
+      "code": "APPROXIMATED",
+      "message": "FULLWINDOW: require_full_window is true. Datadog waits for a full evaluation window (require_full_window); Dash0 evaluates partial windows, so a new series can alert early.",
+      "remark": "FULLWINDOW",
       "severity": "warning",
       "sourceId": "monitors/percent_usage_connections.json",
       "sourcePath": "options.require_full_window",
-      "suggestedAction": "Check that early evaluations of a new series are acceptable."
+      "suggestedAction": "Check that this difference is acceptable for the alert."
     },
     {
       "code": "UNREVIEWED_MAPPING",
@@ -56,7 +58,11 @@
   "items": [
     {
       "kind": "monitor",
-      "outcome": "translated",
+      "outcome": "approximated",
+      "remarks": [
+        "NEWHOST",
+        "FULLWINDOW"
+      ],
       "sourceId": "monitors/percent_usage_connections.json",
       "sourcePath": "",
       "title": "[Postgres] Number of connections is approaching connection limit on {{host.name}}"
@@ -79,17 +85,23 @@
   "reportVersion": 1,
   "summary": {
     "dashboards": {
+      "approximated": 0,
+      "assumed": 0,
       "blocked": 0,
       "partial": 0,
       "translated": 0
     },
     "monitors": {
+      "approximated": 1,
+      "assumed": 0,
       "blocked": 1,
       "partial": 0,
-      "translated": 1
+      "translated": 0
     },
     "skippedFiles": 0,
     "widgets": {
+      "approximated": 0,
+      "assumed": 0,
       "blocked": 0,
       "partial": 0,
       "translated": 0

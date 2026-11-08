@@ -1,4 +1,10 @@
 {
+  "gaps": {
+    "system.cpu.guest": {
+      "reason": "No pinned OTel metric or state carries guest CPU time: the cpuscraper state enum (fixtures/otel/collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/metadata.yaml) is idle, interrupt, nice, softirq, steal, system, user, wait, and the scraper folds guest into user (https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/f56f9a38c9864e892af542f1dbd28f475d6779dc/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/ucal/cpu_utilization_calculator.go: 'user column already includes guest time'); no file under fixtures/otel/ mentions guest. The vendor table has no row for it.",
+      "tag": "NOOTEL"
+    }
+  },
   "labels": {
     "host": "host_name"
   },
@@ -113,6 +119,23 @@
       },
       "targetUnit": "1"
     },
+    "system.io.util": {
+      "assumption": "DERIVED",
+      "kind": "rate",
+      "matchers": {
+        "otel_scope_name": "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
+      },
+      "rateWindow": "5m",
+      "ref": "vendor: fixtures/datadog/otel-mapping.yaml has no row for system.io.util. DERIVED: rebuilt as 100 x rate(system.disk.io_time); both read the same kernel busy-time counter. datadog: Agent core check io, https://github.com/DataDog/datadog-agent/blob/6c2b9607c8acba411a489492edeaa14bd5e98106/pkg/collector/corechecks/system/disk/io/iostats_nix.go: gopsutil disk.IOCounters per device (tags device, device_name), util = delta(IoTime ms) / (delta ms / 10) * 100, submitted as Gauge system.io.util = util/10.0, i.e. percent of wall time the device was busy (sysstat %util); https://docs.datadoghq.com/integrations/system/#metrics: gauge, unit percent. otel: fixtures/otel/collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper/metadata.yaml system.disk.io_time 'Time disk spent activated', sum monotonic cumulative, unit s, attribute device; https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/f56f9a38c9864e892af542f1dbd28f475d6779dc/receiver/hostmetricsreceiver/internal/scraper/diskscraper/disk_scraper_others.go records precision.Scale(ioCounter.IoTime, time.Millisecond), the same gopsutil field in seconds. rate() gives busy seconds per second (0-1); scale 100 gives percent. type deviation: Datadog stores a percent gauge without a per-second unit, but it is computed from the IoTime counter delta, so kind rate. Device set: Datadog excludes devices only via device_exclude_re (iostats.go, no default); the disk scraper includes every device unless configured; the fixture averages over all devices. Differences: Datadog rounds and uses its check interval, rate() uses the window. rateWindow 5m: hostmetrics series arrive every 60 s, as measured for system.net.bytes_rcvd in this file (not re-measured for system.disk.io_time). otel_scope_name matcher as in the other host entries. No device label mapping: the fixtures only filter by $scope. dash0: not checked (no access in this run).",
+      "reviewed": null,
+      "scale": 100,
+      "sourceUnit": "percent",
+      "target": {
+        "name": "system.disk.io_time",
+        "type": "sum"
+      },
+      "targetUnit": "s"
+    },
     "system.load.1": {
       "kind": "gauge",
       "ref": "vendor: fixtures/datadog/otel-mapping.yaml row system.load.1 -> system.cpu.load_average.1m. datadog: Agent core check load (datadog-agent, not integrations-core), https://docs.datadoghq.com/integrations/system/#metrics: gauge, average system load over 1 min, no unit, not divided by CPUs. otel: fixtures/otel/collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper/metadata.yaml system.cpu.load_average.1m, gauge, unit {thread}, not divided by CPUs unless cpu_average is set. dash0 (default, 2026-11-08): count by (otel_scope_name, host_name) (last_over_time({otel_metric_name=\"system.cpu.load_average.1m\", otel_metric_type=\"gauge\"}[24h])) returned only the hostmetrics loadscraper.",
@@ -148,6 +171,36 @@
         "type": "gauge"
       },
       "targetUnit": "{thread}"
+    },
+    "system.mem.total": {
+      "kind": "gauge",
+      "matchers": {
+        "otel_scope_name": "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
+      },
+      "ref": "vendor deviation: fixtures/datadog/otel-mapping.yaml row system.mem.total -> system.memory.usage; summing system.memory.usage states does not give the total under the pinned collector, so the entry targets system.memory.limit, which records the same gopsutil field. datadog: Agent core check memory, https://github.com/DataDog/datadog-agent/blob/6c2b9607c8acba411a489492edeaa14bd5e98106/pkg/collector/corechecks/system/memory/memory_nix.go Run: Gauge system.mem.total = gopsutil VirtualMemory().Total / mbSize (1024*1024), i.e. MemTotal in MiB, whole host; https://docs.datadoghq.com/integrations/system/#metrics: gauge, unit mebibyte. otel: fixtures/otel/collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/metadata.yaml system.memory.limit 'Total bytes of memory available.', sum (non-monotonic, cumulative), unit By, no attributes; https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/f56f9a38c9864e892af542f1dbd28f475d6779dc/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/memory_scraper.go recordMemoryLimitMetric records memInfo.Total (gopsutil v4.26.10 per the receiver go.mod). Why not the vendor row (sum of system.memory.usage over state): on Linux the scraper records used, free, buffered, cached, slab_reclaimable, slab_unreclaimable (memory_scraper_linux.go); gopsutil adds SReclaimable into Cached (https://github.com/shirou/gopsutil/blob/v4.26.10/mem/mem_linux.go 'ret.Cached += ret.Sreclaimable'), so slab_reclaimable is counted twice and slab_unreclaimable is already inside used; and the feature gate receiver.hostmetricsreceiver.UseLinuxMemAvailable (fixtures/otel/collector-contrib/receiver/hostmetricsreceiver/metadata.yaml, stage beta = on by default since v0.137.0) sets used = Total - MemAvailable, so even used+free+buffered+cached != Total. inactive is only emitted on non-Linux (memory_scraper_others.go: used, free, inactive). scale 9.5367431640625e-07 = 1/1048576: Datadog MiB vs OTel bytes. CAVEAT: system.memory.limit is enabled: false in fixtures/otel/collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/metadata.yaml; the collector must enable it, otherwise the panel is empty (not wrong). dash0: not checked (no access in this run).",
+      "reviewed": null,
+      "scale": 9.5367431640625e-07,
+      "sourceUnit": "mebibyte",
+      "target": {
+        "name": "system.memory.limit",
+        "type": "sum"
+      },
+      "targetUnit": "By"
+    },
+    "system.mem.usable": {
+      "kind": "gauge",
+      "matchers": {
+        "otel_scope_name": "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
+      },
+      "ref": "vendor deviation: fixtures/datadog/otel-mapping.yaml row system.mem.usable -> system.memory.usage; no system.memory.usage state or state sum equals Datadog's value, so the entry targets system.linux.memory.available, which records the same gopsutil field. datadog: Agent core check memory, https://github.com/DataDog/datadog-agent/blob/6c2b9607c8acba411a489492edeaa14bd5e98106/pkg/collector/corechecks/system/memory/memory_nix.go Run: Gauge system.mem.usable = gopsutil VirtualMemory().Available / mbSize (1024*1024), whole host; on Linux gopsutil Available is /proc/meminfo MemAvailable (kernel 3.14+; older kernels: gopsutil's own estimate) (https://github.com/shirou/gopsutil/blob/v4.26.10/mem/mem_linux.go case \"MemAvailable\"), not free+buffers+cached; https://docs.datadoghq.com/integrations/system/#metrics: gauge, unit mebibyte. otel: fixtures/otel/collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/metadata.yaml system.linux.memory.available 'An estimate of how much memory is available for starting new applications, without swapping. (Linux only)', sum (non-monotonic, cumulative), unit By, no attributes; https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/f56f9a38c9864e892af542f1dbd28f475d6779dc/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/memory_scraper_linux.go recordLinuxMemoryAvailableMetric records memInfo.Available. Why not system.memory.usage: its states are used, free, buffered, cached, slab_* (Linux); free+buffered+cached is the older approximation, not MemAvailable, and with receiver.hostmetricsreceiver.UseLinuxMemAvailable (beta, on by default) usable would only follow as system.memory.limit - usage{state=used}, two metrics. Scope: Linux only on the OTel side; other OSes yield no series (empty panel, not a wrong value). scale 9.5367431640625e-07 = 1/1048576: Datadog MiB vs OTel bytes. CAVEAT: system.linux.memory.available is enabled: false in fixtures/otel/collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/metadata.yaml; the collector must enable it. dash0: not checked (no access in this run).",
+      "reviewed": null,
+      "scale": 9.5367431640625e-07,
+      "sourceUnit": "mebibyte",
+      "target": {
+        "name": "system.linux.memory.available",
+        "type": "sum"
+      },
+      "targetUnit": "By"
     },
     "system.net.bytes_rcvd": {
       "kind": "rate",

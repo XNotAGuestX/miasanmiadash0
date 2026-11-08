@@ -94,25 +94,28 @@ def run_convert(opts: ConvertOptions) -> ConvertResult:
         entries.append(manifest_entry(rel, "source", f.source_id, _write(out, rel, f.text), None))
 
     outcomes = {(i.source_id, i.kind): i.outcome for i in result.items if i.source_path == ""}
+    remarks = {(i.source_id, i.kind): i.remarks for i in result.items if i.source_path == ""}
     ext = "yaml" if opts.format == "yaml" else "json"
     for art in result.dashboards:
         text = to_yaml(art.dashboard) if ext == "yaml" else stable_stringify(art.dashboard)
         rel = f"dashboards/{art.slug}.{ext}"
         outcome = outcomes.get((art.source_id, "dashboard"))
-        entries.append(
-            manifest_entry(rel, "dashboard", art.source_id, _write(out, rel, text), outcome)
-        )
+        tags = remarks.get((art.source_id, "dashboard"), ())
+        digest = _write(out, rel, text)
+        entries.append(manifest_entry(rel, "dashboard", art.source_id, digest, outcome, tags))
     for rule in result.rules:
         outcome = outcomes.get((rule.source_id, "monitor"))
+        tags = remarks.get((rule.source_id, "monitor"), ())
         group = rule.prometheus_rule_group
         text = to_yaml(group) if ext == "yaml" else stable_stringify(group)
         rel = f"rules/{rule.slug}.prometheus.{ext}"
+        digest = _write(out, rel, text)
         entries.append(
-            manifest_entry(rel, "prometheus-rule", rule.source_id, _write(out, rel, text), outcome)
+            manifest_entry(rel, "prometheus-rule", rule.source_id, digest, outcome, tags)
         )
         rel = f"check-rules/{rule.slug}.json"
         digest = _write(out, rel, stable_stringify(rule.check_rule))
-        entries.append(manifest_entry(rel, "check-rule", rule.source_id, digest, outcome))
+        entries.append(manifest_entry(rel, "check-rule", rule.source_id, digest, outcome, tags))
 
     emitted = bool(result.dashboards or result.rules)
     validation = ValidationLevels(

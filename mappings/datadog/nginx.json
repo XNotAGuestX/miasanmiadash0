@@ -1,4 +1,50 @@
 {
+  "gaps": {
+    "nginx.cache.bypass.bytes": {
+      "reason": "NGINX Plus API /caches (Datadog https://github.com/DataDog/integrations-core/blob/a9b9e42b7e484861ecbd1f5919da7c52a694b74d/nginx/datadog_checks/nginx/nginx.py parse_json/_flatten_json; integrations-core@a9b9e42 nginx/metadata.csv: gauge, byte, 'The total number of bytes read from the proxied server'). No OTel metric carries it: fixtures/otel/collector-contrib/receiver/nginxreceiver/metadata.yaml (collector-contrib v0.165.0, fixtures/otel/NOTICE.md) defines only nginx.connections_accepted, nginx.connections_current{state}, nginx.connections_handled and nginx.requests (stub_status fields; scraper.go@f56f9a3 lines 56-62), and fixtures/otel/catalog.yaml has no other nginx.* metric; stub_status exposes no caches data.",
+      "tag": "NOOTEL"
+    },
+    "nginx.cache.bypass.bytes_written": {
+      "reason": "NGINX Plus API /caches (Datadog https://github.com/DataDog/integrations-core/blob/a9b9e42b7e484861ecbd1f5919da7c52a694b74d/nginx/datadog_checks/nginx/nginx.py parse_json/_flatten_json; integrations-core@a9b9e42 nginx/metadata.csv: gauge, byte, 'The total number of bytes written to the cache'). No OTel metric carries it: fixtures/otel/collector-contrib/receiver/nginxreceiver/metadata.yaml (collector-contrib v0.165.0, fixtures/otel/NOTICE.md) defines only nginx.connections_accepted, nginx.connections_current{state}, nginx.connections_handled and nginx.requests (stub_status fields; scraper.go@f56f9a3 lines 56-62), and fixtures/otel/catalog.yaml has no other nginx.* metric; stub_status exposes no caches data.",
+      "tag": "NOOTEL"
+    },
+    "nginx.cache.cold": {
+      "reason": "NGINX Plus API /caches (Datadog https://github.com/DataDog/integrations-core/blob/a9b9e42b7e484861ecbd1f5919da7c52a694b74d/nginx/datadog_checks/nginx/nginx.py parse_json/_flatten_json; integrations-core@a9b9e42 nginx/metadata.csv: gauge, response, 'A boolean value indicating whether the cache loader process is still loading data from disk into the cache'). No OTel metric carries it: fixtures/otel/collector-contrib/receiver/nginxreceiver/metadata.yaml (collector-contrib v0.165.0, fixtures/otel/NOTICE.md) defines only nginx.connections_accepted, nginx.connections_current{state}, nginx.connections_handled and nginx.requests (stub_status fields; scraper.go@f56f9a3 lines 56-62), and fixtures/otel/catalog.yaml has no other nginx.* metric; stub_status exposes no caches data.",
+      "tag": "NOOTEL"
+    },
+    "nginx.cache.hit.bytes": {
+      "reason": "NGINX Plus API /caches (Datadog https://github.com/DataDog/integrations-core/blob/a9b9e42b7e484861ecbd1f5919da7c52a694b74d/nginx/datadog_checks/nginx/nginx.py parse_json/_flatten_json; integrations-core@a9b9e42 nginx/metadata.csv: gauge, byte, 'The total number of bytes read from the cache'). No OTel metric carries it: fixtures/otel/collector-contrib/receiver/nginxreceiver/metadata.yaml (collector-contrib v0.165.0, fixtures/otel/NOTICE.md) defines only nginx.connections_accepted, nginx.connections_current{state}, nginx.connections_handled and nginx.requests (stub_status fields; scraper.go@f56f9a3 lines 56-62), and fixtures/otel/catalog.yaml has no other nginx.* metric; stub_status exposes no caches data.",
+      "tag": "NOOTEL"
+    },
+    "nginx.cache.max_size": {
+      "reason": "NGINX Plus API /caches (Datadog https://github.com/DataDog/integrations-core/blob/a9b9e42b7e484861ecbd1f5919da7c52a694b74d/nginx/datadog_checks/nginx/nginx.py parse_json/_flatten_json; integrations-core@a9b9e42 nginx/metadata.csv: gauge, byte, 'The limit on the maximum size of the cache specified in the configuration'). No OTel metric carries it: fixtures/otel/collector-contrib/receiver/nginxreceiver/metadata.yaml (collector-contrib v0.165.0, fixtures/otel/NOTICE.md) defines only nginx.connections_accepted, nginx.connections_current{state}, nginx.connections_handled and nginx.requests (stub_status fields; scraper.go@f56f9a3 lines 56-62), and fixtures/otel/catalog.yaml has no other nginx.* metric; stub_status exposes no caches data.",
+      "tag": "NOOTEL"
+    },
+    "nginx.cache.miss.bytes": {
+      "reason": "NGINX Plus API /caches (Datadog https://github.com/DataDog/integrations-core/blob/a9b9e42b7e484861ecbd1f5919da7c52a694b74d/nginx/datadog_checks/nginx/nginx.py parse_json/_flatten_json; integrations-core@a9b9e42 nginx/metadata.csv: gauge, byte, 'The total number of bytes read from the proxied server'). No OTel metric carries it: fixtures/otel/collector-contrib/receiver/nginxreceiver/metadata.yaml (collector-contrib v0.165.0, fixtures/otel/NOTICE.md) defines only nginx.connections_accepted, nginx.connections_current{state}, nginx.connections_handled and nginx.requests (stub_status fields; scraper.go@f56f9a3 lines 56-62), and fixtures/otel/catalog.yaml has no other nginx.* metric; stub_status exposes no caches data.",
+      "tag": "NOOTEL"
+    },
+    "nginx.cache.miss.bytes_written": {
+      "reason": "NGINX Plus API /caches (Datadog https://github.com/DataDog/integrations-core/blob/a9b9e42b7e484861ecbd1f5919da7c52a694b74d/nginx/datadog_checks/nginx/nginx.py parse_json/_flatten_json; integrations-core@a9b9e42 nginx/metadata.csv: gauge, byte, 'The total number of bytes written to the cache'). No OTel metric carries it: fixtures/otel/collector-contrib/receiver/nginxreceiver/metadata.yaml (collector-contrib v0.165.0, fixtures/otel/NOTICE.md) defines only nginx.connections_accepted, nginx.connections_current{state}, nginx.connections_handled and nginx.requests (stub_status fields; scraper.go@f56f9a3 lines 56-62), and fixtures/otel/catalog.yaml has no other nginx.* metric; stub_status exposes no caches data.",
+      "tag": "NOOTEL"
+    },
+    "nginx.cache.size": {
+      "reason": "NGINX Plus API /caches (Datadog https://github.com/DataDog/integrations-core/blob/a9b9e42b7e484861ecbd1f5919da7c52a694b74d/nginx/datadog_checks/nginx/nginx.py parse_json/_flatten_json; integrations-core@a9b9e42 nginx/metadata.csv: gauge, response, 'The current size of the cache'). No OTel metric carries it: fixtures/otel/collector-contrib/receiver/nginxreceiver/metadata.yaml (collector-contrib v0.165.0, fixtures/otel/NOTICE.md) defines only nginx.connections_accepted, nginx.connections_current{state}, nginx.connections_handled and nginx.requests (stub_status fields; scraper.go@f56f9a3 lines 56-62), and fixtures/otel/catalog.yaml has no other nginx.* metric; stub_status exposes no caches data.",
+      "tag": "NOOTEL"
+    },
+    "nginx.connections.active": {
+      "reason": "NGINX Plus API /connections field active (Datadog https://github.com/DataDog/integrations-core/blob/a9b9e42b7e484861ecbd1f5919da7c52a694b74d/nginx/datadog_checks/nginx/nginx.py parse_json; integrations-core@a9b9e42 nginx/metadata.csv: gauge, connection, 'The current number of active client connections.'); the Plus API lists active and idle as separate fields (https://nginx.org/en/docs/http/ngx_http_api_module.html). OTel nginx.connections_current{state=active} is stub_status 'Active connections', documented as 'including Waiting connections' (https://nginx.org/en/docs/http/ngx_http_stub_status_module.html; fixtures/otel/collector-contrib/receiver/nginxreceiver/metadata.yaml (collector-contrib v0.165.0, fixtures/otel/NOTICE.md), scraper.go@f56f9a3 line 59), so the scopes differ; rebuilding it as active - waiting or reading + writing relies on an undocumented relation between the Plus and stub_status counters, and no vendor row pairs them.",
+      "tag": "NOEQUIV"
+    },
+    "nginx.server_zone.responses.4xx": {
+      "reason": "NGINX Plus API /server_zones (Datadog https://github.com/DataDog/integrations-core/blob/a9b9e42b7e484861ecbd1f5919da7c52a694b74d/nginx/datadog_checks/nginx/nginx.py parse_json/_flatten_json; integrations-core@a9b9e42 nginx/metadata.csv: gauge, response, 'The number of responses with 4xx status code.'). No OTel metric carries it: fixtures/otel/collector-contrib/receiver/nginxreceiver/metadata.yaml (collector-contrib v0.165.0, fixtures/otel/NOTICE.md) defines only nginx.connections_accepted, nginx.connections_current{state}, nginx.connections_handled and nginx.requests (stub_status fields; scraper.go@f56f9a3 lines 56-62), and fixtures/otel/catalog.yaml has no other nginx.* metric; stub_status exposes no server_zones data.",
+      "tag": "NOOTEL"
+    },
+    "nginx.server_zone.responses.5xx": {
+      "reason": "NGINX Plus API /server_zones (Datadog https://github.com/DataDog/integrations-core/blob/a9b9e42b7e484861ecbd1f5919da7c52a694b74d/nginx/datadog_checks/nginx/nginx.py parse_json/_flatten_json; integrations-core@a9b9e42 nginx/metadata.csv: gauge, response, 'The number of responses with 5xx status code.'). No OTel metric carries it: fixtures/otel/collector-contrib/receiver/nginxreceiver/metadata.yaml (collector-contrib v0.165.0, fixtures/otel/NOTICE.md) defines only nginx.connections_accepted, nginx.connections_current{state}, nginx.connections_handled and nginx.requests (stub_status fields; scraper.go@f56f9a3 lines 56-62), and fixtures/otel/catalog.yaml has no other nginx.* metric; stub_status exposes no server_zones data.",
+      "tag": "NOOTEL"
+    }
+  },
   "labels": {
     "host": "host_name"
   },
@@ -41,6 +87,22 @@
         "type": "sum"
       },
       "targetUnit": "{connections}"
+    },
+    "nginx.net.conn_dropped_per_s": {
+      "assumption": "DERIVED",
+      "expression": "max by (host_name) (rate({otel_metric_name=\"nginx.connections_accepted\", otel_metric_type=\"sum\"$filters}[$__rate_interval])) - on (host_name) max by (host_name) (rate({otel_metric_name=\"nginx.connections_handled\", otel_metric_type=\"sum\"$filters}[$__rate_interval]))",
+      "kind": "expression",
+      "labels": {
+        "host": "host_name"
+      },
+      "outputLabels": [
+        "host_name"
+      ],
+      "ref": "DERIVED: vendor deviation: fixtures/datadog/otel-mapping.yaml has no row for nginx.net.conn_dropped_per_s (nor for accepts-handled). Datadog: https://github.com/DataDog/integrations-core/blob/a9b9e42b7e484861ecbd1f5919da7c52a694b74d/nginx/datadog_checks/nginx/nginx.py parse_text (lines 317-327): stub_status line 'server accepts handled requests', submitted as ('nginx.net.conn_dropped_per_s', conn - handled, 'rate') with conn = accepts, i.e. the per-second rate of (accepts - handled) between check runs; the Plus/VTS path (_translate_from_vts, lines 195-201) uses the same accepted - handled. integrations-core@a9b9e42 nginx/metadata.csv: rate, unit connection per second, 'Rate of connections dropped (Included with open source NGINX).' OTel: fixtures/otel/collector-contrib/receiver/nginxreceiver/metadata.yaml (collector-contrib v0.165.0, fixtures/otel/NOTICE.md): nginx.connections_accepted (stub_status accepts) and nginx.connections_handled (stub_status handled; description: 'Generally, the parameter value is the same as nginx.connections_accepted unless some resource limits have been reached'), both monotonic cumulative sums, unit {connections}; scraper.go@f56f9a3 lines 57-58 record stats.Connections.Accepted/Handled from the same scrape. Assumption: rate(accepted) - rate(handled) = rate(accepts - handled) (rate is linear; both counters come from one stub_status read, so they reset together). nginx.org stub_status docs: handled is 'the same as accepts unless some resource limits have been reached'. Grain: max by (host_name) on each side, as the other nginx entries (collector-restart duplicates); assumes one nginx per host. Units: connection/second vs {connections}/s, scale 1. dash0: not checked (no access in this run).",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "connection/second",
+      "targetUnit": "{connections}/s"
     },
     "nginx.net.connections": {
       "grain": {

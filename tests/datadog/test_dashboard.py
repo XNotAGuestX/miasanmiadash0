@@ -1,3 +1,4 @@
+import dataclasses
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -6,13 +7,14 @@ from typing import Any
 import pytest
 
 from migrator.source.asset import CompileOptions, SourceAsset
+from migrator.source.datadog import remarks
 from migrator.source.datadog.compile_query import TemplateVariable
 from migrator.source.datadog.dashboard import (
     DashboardCompilation,
     compile_dashboard,
     read_template_variables,
 )
-from migrator.source.datadog.mapping import DatadogMapping
+from migrator.source.datadog.mapping import DatadogMapping, parse_mapping
 from migrator.source.datadog.parse_query import UNDOCUMENTED_FUNCTIONS
 from migrator.validation import validate_dashboard
 from tests.datadog.helpers import entry, mapping
@@ -116,28 +118,30 @@ def test_translates_supported_widgets() -> None:
 
 def test_blocks_unsupported_widgets_with_exact_codes() -> None:
     c = compile_file("unsupported.json")
+    # Widget 0 is a toplist wrapped in top(): it reaches its query, where top() blocks.
     assert errors_by_widget(c) == {
-        "widgets[0]": ["UNSUPPORTED_WIDGET"],
+        "widgets[0]": ["UNSUPPORTED_QUERY_FUNCTION"],
         "widgets[1]": ["UNSUPPORTED_DATA_SOURCE"],
-        "widgets[3]": ["UNSUPPORTED_WIDGET"],
         "widgets[4]": ["UNSUPPORTED_QUERY_FUNCTION"],
     }
     # Plan 05 Task 5 deliberately changed widget 2 (`query1 * 100`) from blocked to translated.
+    # Widget 3 (`time: {"live_span": "1h"}`) converts since TIMEPIN was approved (docs/REMARKS.md).
     assert [i.outcome for i in c.items] == [
         "partial",
         "blocked",
         "blocked",
         "translated",
-        "blocked",
+        "approximated",
         "blocked",
     ]
     assert queries_of(c, "widget-2") == [{"query": f"({CONN}) * 100"}]
 
 
-def test_blocks_unknown_widget_options() -> None:
+def test_widget_time_pin_is_approximated_with_its_remark() -> None:
     c = compile_file("unsupported.json")
-    msg = [d.message for d in c.diagnostics if d.source_path == "widgets[3].definition.time"]
-    assert msg == ["Widget option 'time' is not supported."]
+    [d] = [d for d in c.diagnostics if d.source_path == "widgets[3].definition.time"]
+    assert (d.code, d.severity, d.remark) == ("APPROXIMATED", "warning", "TIMEPIN")
+    assert d.message.startswith("TIMEPIN: Datadog showed the last 1h (the dashboard default). ")
 
 
 def test_blocks_unconvertible_formulas_never_emitting_a_partial_series() -> None:
@@ -185,15 +189,15 @@ def test_week_before_formula_translates_to_offset() -> None:
     assert [d.code for d in c.diagnostics].count("DEFAULT_AGGREGATOR_APPLIED") == 0
 
 
-def test_empty_widget_time_is_ignored_and_live_span_blocks() -> None:
+def test_empty_widget_time_is_ignored_and_live_span_is_approximated() -> None:
     c = compile_body(body(ts(new_req("avg:postgresql.connections{*}"), time={})))
     assert c.items[1].outcome == "translated"
     [d] = [d for d in c.diagnostics if d.source_path.endswith(".time")]
     assert (d.code, d.severity) == ("OPTION_IGNORED", "info")
     c = compile_body(body(ts(new_req("avg:postgresql.connections{*}"), time={"live_span": "1w"})))
-    assert c.items[1].outcome == "blocked"
-    [d] = [d for d in c.diagnostics if d.severity == "error"]
-    assert (d.code, d.message) == ("UNSUPPORTED_WIDGET", "Widget option 'time' is not supported.")
+    assert (c.items[1].outcome, c.items[1].remarks) == ("approximated", ("TIMEPIN",))
+    [d] = [d for d in c.diagnostics if d.source_path.endswith(".time")]
+    assert d.message.startswith("TIMEPIN: Datadog showed the last 1w. ")
 
 
 def test_formula_uses_only_referenced_queries() -> None:
@@ -258,7 +262,7 @@ def test_overview_golden_charts_are_readable_and_do_not_overlap() -> None:
                 charts += 1
                 assert item["height"] >= 4, key
             assert not any(_overlap(item, other) for other in items[i + 1 :]), key
-    assert charts == 7
+    assert charts == 10
 
 
 def _laid_out(x: int, width: int, layout_type: str) -> dict[str, Any]:
@@ -647,3 +651,180 @@ def test_other_wrapping_functions_keep_the_generic_message() -> None:
         "UNSUPPORTED_FORMULA",
         "Formula syntax is not supported at offset 6.",
     )
+
+
+def _approve(monkeypatch: pytest.MonkeyPatch, tag: str) -> None:
+    entry = remarks.REMARKS[tag]
+    approved = dataclasses.replace(entry, approved=remarks.Approval("test", "2026-11-08"))
+    monkeypatch.setitem(remarks.REMARKS, tag, approved)
+
+
+def _unapprove(monkeypatch: pytest.MonkeyPatch, tag: str) -> None:
+    entry = dataclasses.replace(remarks.REMARKS[tag], approved=None)
+    monkeypatch.setitem(remarks.REMARKS, tag, entry)
+
+
+def test_time_pin_blocks_until_the_remark_is_approved(monkeypatch: pytest.MonkeyPatch) -> None:
+    _unapprove(monkeypatch, "TIMEPIN")
+    c = compile_body(body(ts(new_req("avg:postgresql.connections{*}"), time={"live_span": "1h"})))
+    assert [i.outcome for i in c.items] == ["blocked", "blocked"]
+    [d] = [d for d in c.diagnostics if d.severity == "error"]
+    assert (d.code, d.message) == ("UNSUPPORTED_WIDGET", "Widget option 'time' is not supported.")
+    assert "TIMEPIN" in d.suggested_action
+    assert "awaits manual approval" in d.suggested_action
+
+
+def test_approved_time_pin_converts_with_tags_in_report_and_artifact(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _approve(monkeypatch, "TIMEPIN")
+    pinned = ts(new_req("avg:postgresql.connections{*}"), time={"live_span": "1w"})
+    c = compile_body(body(pinned, ts(new_req("avg:postgresql.connections{*}"))))
+    assert [(i.outcome, i.remarks) for i in c.items] == [
+        ("approximated", ("TIMEPIN",)),
+        ("approximated", ("TIMEPIN",)),
+        ("translated", ()),
+    ]
+    assert c.dashboard is not None and validate_dashboard(c.dashboard) == []
+    [d] = [d for d in c.diagnostics if d.code == "APPROXIMATED"]
+    assert (d.severity, d.remark, d.source_path) == (
+        "warning",
+        "TIMEPIN",
+        "widgets[0].definition.time",
+    )
+    assert "last 1w" in d.message
+    panels = c.dashboard["spec"]["panels"]
+    assert panels["widget-0"]["spec"]["display"]["description"].startswith("[TIMEPIN] ")
+    assert panels["widget-1"]["spec"]["display"]["description"] == ""
+    assert c.dashboard["spec"]["display"]["description"].endswith(
+        "Migration remarks: TIMEPIN (see panel descriptions)."
+    )
+
+
+def test_other_time_shapes_still_block(monkeypatch: pytest.MonkeyPatch) -> None:
+    _approve(monkeypatch, "TIMEPIN")
+    for time in [{"live_span": "1h", "type": "fixed"}, {"from": 1, "to": 2}]:
+        c = compile_body(body(ts(new_req("avg:postgresql.connections{*}"), time=time)))
+        assert c.items[1].outcome == "blocked", time
+
+
+def test_time_pin_on_a_reducing_widget_blocks_unless_it_is_the_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # A query_value reduces over its time frame: a 1w pin shown over 1h is another number.
+    _approve(monkeypatch, "TIMEPIN")
+
+    def qv(span: str) -> dict[str, Any]:
+        req = {"q": "avg:postgresql.connections{*}", "aggregator": "avg"}
+        return {
+            "definition": {
+                "type": "query_value",
+                "title": "V",
+                "requests": [req],
+                "time": {"live_span": span},
+            }
+        }
+
+    c = compile_body(body(qv("1w")))
+    assert c.items[1].outcome == "blocked"
+    [d] = [d for d in c.diagnostics if d.severity == "error"]
+    assert d.code == "UNSUPPORTED_WIDGET" and "last 1w" in d.message
+    c = compile_body(body(qv("1h")))
+    assert [(i.outcome, i.remarks) for i in c.items[1:]] == [("translated", ())]
+
+
+def test_partial_dashboard_with_an_approximated_widget_stays_partial(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _approve(monkeypatch, "TIMEPIN")
+    pinned = ts(new_req("avg:postgresql.connections{*}"), time={"live_span": "1h"})
+    c = compile_body(body(pinned, ts(new_req("avg:unmapped.metric{*}"))))
+    assert [i.outcome for i in c.items] == ["partial", "approximated", "blocked"]
+    assert c.items[0].remarks == ("TIMEPIN",)
+
+
+def test_assumed_mapping_blocks_until_approved_then_wins_over_approximated(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    m = mapping(postgresql__connections=entry(assumption="AGG"))
+    q = new_req("avg:postgresql.connections{*}")
+    c = compile_body(body(ts(q)), m)
+    [d] = [d for d in c.diagnostics if d.severity == "error"]
+    assert d.code == "MISSING_METRIC_MAPPING" and "assumption AGG" in d.message
+    _approve(monkeypatch, "AGG")
+    _approve(monkeypatch, "TIMEPIN")
+    c = compile_body(body(ts(q, time={"live_span": "1h"})), m)
+    assert [(i.outcome, i.remarks) for i in c.items] == [
+        ("assumed", ("TIMEPIN", "AGG")),
+        ("assumed", ("TIMEPIN", "AGG")),
+    ]
+
+
+def test_gap_reason_is_cited_in_the_block() -> None:
+    raw = {"version": 1, "source": "datadog", "metrics": {}}
+    raw["gaps"] = {"unmapped.metric": {"tag": "NOOTEL", "reason": "No OTel receiver emits it."}}
+    parsed = parse_mapping(raw)
+    assert parsed.ok
+    c = compile_body(body(ts(new_req("avg:unmapped.metric{*}"))), parsed.mapping)
+    [d] = [d for d in c.diagnostics if d.severity == "error"]
+    assert d.message == (
+        "No mapping for metric 'unmapped.metric' (gap NOOTEL: No OTel receiver emits it.)"
+    )
+
+
+def _toplist(limit: dict[str, Any] | None = None, **req: Any) -> dict[str, Any]:
+    formula: dict[str, Any] = {"formula": "query1"}
+    if limit is not None:
+        formula["limit"] = limit
+    request = {
+        "queries": [
+            {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "avg:postgresql.connections{*} by {db}",
+                "aggregator": "max",
+            }
+        ],
+        "formulas": [formula],
+        "response_format": "scalar",
+        **req,
+    }
+    return {"definition": {"type": "toplist", "title": "Top", "requests": [request]}}
+
+
+def test_toplist_converts_to_a_sorted_bar_chart_under_topn() -> None:
+    c = compile_body(body(_toplist({"count": 5, "order": "asc"})))
+    assert (c.items[1].outcome, c.items[1].remarks) == ("assumed", ("TOPN",))
+    assert c.dashboard is not None and validate_dashboard(c.dashboard) == []
+    panel = c.dashboard["spec"]["panels"]["widget-0"]["spec"]
+    assert panel["plugin"] == {"kind": "BarChart", "spec": {"calculation": "max", "sort": "asc"}}
+    assert panel["display"]["description"].startswith("[TOPN] ")
+    [d] = [d for d in c.diagnostics if d.code == "ASSUMED"]
+    assert d.message.startswith("TOPN: Datadog showed the bottom 5. ")
+
+
+def test_toplist_reads_the_request_level_sort() -> None:
+    sort = {"count": 10, "order_by": [{"type": "formula", "index": 0, "order": "desc"}]}
+    c = compile_body(body(_toplist(sort=sort)))
+    assert c.dashboard is not None
+    plugin = c.dashboard["spec"]["panels"]["widget-0"]["spec"]["plugin"]
+    assert plugin["spec"]["sort"] == "desc"
+
+
+@pytest.mark.parametrize(
+    "limit", [None, {"count": 5}, {"count": 0, "order": "desc"}, {"count": 5, "order": "up"}]
+)
+def test_toplist_without_one_valid_limit_blocks(limit: dict[str, Any] | None) -> None:
+    c = compile_body(body(_toplist(limit)))
+    assert c.items[1].outcome == "blocked"
+    [d] = [d for d in c.diagnostics if d.severity == "error"]
+    assert d.message == "Toplist needs exactly one limit with a count and an order (asc or desc)."
+
+
+def test_toplist_blocks_until_topn_is_approved(monkeypatch: pytest.MonkeyPatch) -> None:
+    _unapprove(monkeypatch, "TOPN")
+    c = compile_body(body(_toplist({"count": 5, "order": "desc"})))
+    assert c.items[1].outcome == "blocked"
+    [d] = [d for d in c.diagnostics if d.severity == "error"]
+    assert d.message == "Widget type 'toplist' is not supported."
+    assert "TOPN" in d.suggested_action and "awaits manual approval" in d.suggested_action

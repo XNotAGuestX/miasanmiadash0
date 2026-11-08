@@ -29,6 +29,7 @@ from migrator.source.datadog.formula import (
 from migrator.source.datadog.mapping import DatadogMapping
 from migrator.source.datadog.model import ParseOk, VariableFilter
 from migrator.source.datadog.parse_query import function_block, parse_metric_query
+from migrator.source.datadog.remarks import REMARKS, approved, describe
 from migrator.target import (
     Diagnostic,
     DiagnosticCode,
@@ -40,10 +41,12 @@ from migrator.target import (
     PersesPanel,
     PersesQuery,
     Severity,
+    remark_outcome,
 )
 from migrator.validation import check_promql_syntax, validate_dashboard
 
 AUTO_WIDTH = 12
+DASHBOARD_DURATION = "1h"  # spec.duration of every emitted dashboard
 AUTO_HEIGHT = 8
 _INDEX = re.compile(r"\[(\d+)\]")
 
@@ -60,6 +63,10 @@ _DEF_KEYS: dict[str, tuple[set[str], set[str]]] = {
         {"type", "title", "requests"},
         _COMMON_DEF_IGNORED
         | {"autoscale", "precision", "custom_unit", "text_align", "timeseries_background"},
+    ),
+    "toplist": (
+        {"type", "title", "requests"},
+        _COMMON_DEF_IGNORED | {"style"},
     ),
     "note": (
         {"type", "content"},
@@ -88,15 +95,24 @@ _REQ_KEYS: dict[str, tuple[set[str], set[str]]] = {
         {"queries", "formulas", "q", "response_format", "aggregator"},
         {"conditional_formats", "style", "display_type", "metadata"},
     ),
+    "toplist": (
+        {"queries", "formulas", "q", "response_format", "sort"},
+        {"conditional_formats", "style", "metadata"},
+    ),
 }
 _QUERY_KEYS: dict[str, tuple[set[str], set[str]]] = {
     "timeseries": ({"data_source", "name", "query"}, {"semantic_mode"}),
     "query_value": ({"data_source", "name", "query", "aggregator"}, {"semantic_mode"}),
+    "toplist": ({"data_source", "name", "query", "aggregator"}, {"semantic_mode"}),
 }
-# Formula display options are cosmetic; `limit` (top-N) changes the data and is blocked.
-_FORMULA_KEYS = ({"formula"}, {"alias", "style", "number_format", "cell_display_mode"})
+# Formula display options are cosmetic. `limit` (top-N) changes the data: it blocks, except on a
+# toplist, where it becomes the BarChart sort under the TOPN remark.
+_FORMULA_IGNORED = {"alias", "style", "number_format", "cell_display_mode"}
+_FORMULA_KEYS = ({"formula"}, _FORMULA_IGNORED)
+_TOPLIST_FORMULA_KEYS = ({"formula", "limit"}, _FORMULA_IGNORED)
 
-# Datadog query_value aggregator -> Perses StatChart calculation.
+# Datadog query_value / toplist aggregator -> Perses StatChart / BarChart calculation (both use
+# Perses common.#calculation, perses/plugins@57910ac barchart/schemas/bar.cue).
 _CALCULATIONS = {"avg": "mean", "last": "last-number", "max": "max", "min": "min", "sum": "sum"}
 
 
@@ -128,9 +144,10 @@ class _Collector:
         message: str,
         action: str,
         source_text: str | None = None,
+        remark: str | None = None,
     ) -> None:
         self.items.append(
-            Diagnostic(code, severity, self.source_id, path, message, action, source_text)
+            Diagnostic(code, severity, self.source_id, path, message, action, source_text, remark)
         )
 
     def error(
@@ -264,6 +281,36 @@ def _check_keys(
                 "No action needed.",
             )
             continue
+        value = obj[key]
+        if (
+            key == "time"
+            and what == "Widget"
+            and isinstance(value, dict)
+            and list(value) == ["live_span"]
+            and isinstance(value["live_span"], str)
+        ):
+            span = value["live_span"]
+            if obj.get("type") == "timeseries":
+                _time_pin(f"{path}.{key}", span, c)
+            elif span == DASHBOARD_DURATION:
+                c.add(
+                    "OPTION_IGNORED",
+                    "info",
+                    f"{path}.{key}",
+                    f"Widget option 'time' pins the dashboard default ({span}) and is ignored.",
+                    "No action needed.",
+                )
+            else:
+                # Single values and toplists reduce over the time frame, so another frame
+                # changes the shown value itself, not only the x-axis: TIMEPIN does not apply.
+                c.error(
+                    "UNSUPPORTED_WIDGET",
+                    f"{path}.{key}",
+                    f"Widget option 'time' pins the last {span}; this panel would reduce over "
+                    f"the dashboard range ({DASHBOARD_DURATION}) instead and show another value.",
+                    "Migrate this widget manually or remove the option in the source.",
+                )
+            continue
         if key in ignored:
             c.add(
                 "OPTION_IGNORED",
@@ -281,6 +328,30 @@ def _check_keys(
             )
 
 
+def _time_pin(path: str, span: str, c: _Collector) -> None:
+    """A widget pinned to its own time frame (`live_span`): TIMEPIN once approved."""
+    tag = "TIMEPIN"
+    entry = approved(tag)
+    default = " (the dashboard default)" if span == DASHBOARD_DURATION else ""
+    if entry is not None:
+        c.add(
+            "APPROXIMATED",
+            "warning",
+            path,
+            f"{tag}: Datadog showed the last {span}{default}. {entry.summary}",
+            "Check the panel; set the dashboard time range if the pinned frame matters.",
+            remark=tag,
+        )
+        return
+    c.error(
+        "UNSUPPORTED_WIDGET",
+        path,
+        "Widget option 'time' is not supported.",
+        f"Remark {tag} ({REMARKS[tag].summary}) awaits manual approval in "
+        "src/migrator/source/datadog/remarks.py; until then, migrate this widget manually.",
+    )
+
+
 @dataclass
 class _Displayed:
     """One displayed series of a request: a formula over named queries, or one query."""
@@ -295,7 +366,8 @@ class _Displayed:
 class _Request:
     queries: dict[str, tuple[str, str, dict[str, Any]]]  # name -> (path, text, raw query)
     displayed: list[_Displayed]
-    aggregators: dict[str, Any]  # query name -> source aggregator (query_value only)
+    aggregators: dict[str, Any]  # query name -> source aggregator (query_value, toplist)
+    limits: list[Any] = field(default_factory=list)  # toplist: formula `limit`s and request `sort`
 
 
 def _read_request(req: Any, path: str, wtype: str, c: _Collector) -> _Request | None:
@@ -355,6 +427,7 @@ def _read_request(req: Any, path: str, wtype: str, c: _Collector) -> _Request | 
         aggregators[qname] = q.get("aggregator")
 
     displayed: list[_Displayed] = []
+    limits: list[Any] = [req["sort"]] if "sort" in req else []
     formulas = req.get("formulas")
     if formulas is None:
         displayed = [_Displayed(None, "", "", [n]) for n in queries]
@@ -366,7 +439,10 @@ def _read_request(req: Any, path: str, wtype: str, c: _Collector) -> _Request | 
             if not isinstance(fo, dict) or not isinstance(fo.get("formula"), str):
                 c.error("UNSUPPORTED_WIDGET", fpath, "Formula is malformed.", "Fix it.")
                 continue
-            _check_keys(fo, _FORMULA_KEYS, fpath, c, "Formula")
+            keys = _TOPLIST_FORMULA_KEYS if wtype == "toplist" else _FORMULA_KEYS
+            _check_keys(fo, keys, fpath, c, "Formula")
+            if "limit" in fo:
+                limits.append(fo["limit"])
             text = fo["formula"]
             parsed = parse_formula(text)
             if not parsed.ok:
@@ -388,7 +464,7 @@ def _read_request(req: Any, path: str, wtype: str, c: _Collector) -> _Request | 
                 )
                 continue
             displayed.append(_Displayed(parsed.formula, f"{fpath}.formula", text, refs))
-    return _Request(queries=queries, displayed=displayed, aggregators=aggregators)
+    return _Request(queries=queries, displayed=displayed, aggregators=aggregators, limits=limits)
 
 
 def _series_name_format(labels: list[str]) -> str:
@@ -475,6 +551,8 @@ def _compile_requests(
 def _compile_widget(
     widget: Any, path: str, ctx: _Ctx
 ) -> tuple[PersesPanel | None, str, list[Diagnostic]]:
+    """The panel (None when blocked), its title, and diagnostics. A converted widget's remark
+    tags (APPROXIMATED / ASSUMED diagnostics) go into the panel description."""
     c = _Collector(ctx.source_id)
     definition = widget.get("definition") if isinstance(widget, dict) else None
     if not isinstance(definition, dict):
@@ -512,23 +590,34 @@ def _compile_widget(
     ]
     plugin: dict[str, Any] = {"kind": "TimeSeriesChart", "spec": {}}
     if wtype == "query_value" and not c.has_error():
-        calc = _stat_calculation(requests, dpath, c)
+        calc = _stat_calculation(requests, dpath, c, "Query value")
         plugin = {"kind": "StatChart", "spec": {"calculation": calc}}
     if c.has_error():
         return None, title, c.items
     queries = _compile_requests(requests, ctx, c)
     if queries is None:
         return None, title, c.items
-    return _panel(title, plugin, queries), title, c.items
+    if wtype == "toplist":
+        # After the queries, so a legacy `top(...)` query reports its documented block.
+        calc = _stat_calculation(requests, dpath, c, "Toplist")
+        sort = _toplist_sort(requests, dpath, c) if not c.has_error() else ""
+        plugin = {"kind": "BarChart", "spec": {"calculation": calc, "sort": sort}}
+        if c.has_error():
+            return None, title, c.items
+    return _panel(title, plugin, queries, _tags(c.items)), title, c.items
 
 
-def _stat_calculation(requests: list[_Request], dpath: str, c: _Collector) -> str:
+def _tags(diagnostics: list[Diagnostic]) -> list[str]:
+    return list(dict.fromkeys(d.remark for d in diagnostics if d.remark is not None))
+
+
+def _stat_calculation(requests: list[_Request], dpath: str, c: _Collector, what: str) -> str:
     displayed = [d for r in requests for d in r.displayed]
     if len(requests) != 1 or len(displayed) != 1:
         c.error(
             "UNSUPPORTED_WIDGET",
             f"{dpath}.requests",
-            "Query value widgets with several displayed values are not supported.",
+            f"{what} widgets with several displayed values are not supported.",
             "Migrate this widget manually.",
         )
         return ""
@@ -537,9 +626,9 @@ def _stat_calculation(requests: list[_Request], dpath: str, c: _Collector) -> st
     calc = _CALCULATIONS.get(agg) if isinstance(agg, str) else None
     if calc is None:
         message = (
-            "Query value widget has no aggregator."
+            f"{what} widget has no aggregator."
             if all(a is None for a in aggs)
-            else f"Query value aggregator '{agg}' is not supported."
+            else f"{what} aggregator '{agg}' is not supported."
         )
         c.error(
             "UNSUPPORTED_WIDGET",
@@ -551,11 +640,80 @@ def _stat_calculation(requests: list[_Request], dpath: str, c: _Collector) -> st
     return calc
 
 
-def _panel(title: str, plugin: dict[str, Any], queries: list[PersesQuery]) -> PersesPanel:
+def _limit(raw: Any) -> tuple[int, str] | None:
+    """(count, order) of a formula `limit` {count, order} or a request `sort`
+    {count, order_by: [{type: formula, index: 0, order}]}; None if malformed."""
+    if not isinstance(raw, dict):
+        return None
+    order = raw.get("order")
+    if "order_by" in raw:
+        by = raw["order_by"]
+        ok = (
+            isinstance(by, list)
+            and len(by) == 1
+            and isinstance(by[0], dict)
+            and set(by[0]) == {"type", "index", "order"}
+            and by[0]["type"] == "formula"
+            and by[0]["index"] == 0
+        )
+        if not ok or set(raw) != {"count", "order_by"}:
+            return None
+        order = by[0]["order"]
+    elif set(raw) != {"count", "order"}:
+        return None
+    count = raw.get("count")
+    if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+        return None
+    return (count, order) if order in ("asc", "desc") else None
+
+
+def _toplist_sort(requests: list[_Request], dpath: str, c: _Collector) -> str:
+    """BarChart sort from the toplist's one top-N limit, with the TOPN remark (approved) for
+    the dropped cut; blocks when the limit is missing, repeated or malformed."""
+    path = f"{dpath}.requests[0]"
+    limits = requests[0].limits
+    parsed = _limit(limits[0]) if len(limits) == 1 else None
+    if parsed is None:
+        c.error(
+            "UNSUPPORTED_WIDGET",
+            path,
+            "Toplist needs exactly one limit with a count and an order (asc or desc).",
+            "Migrate this widget manually.",
+        )
+        return ""
+    count, order = parsed
+    tag = "TOPN"
+    entry = approved(tag)
+    if entry is None:
+        c.error(
+            "UNSUPPORTED_WIDGET",
+            f"{dpath}.type",
+            "Widget type 'toplist' is not supported.",
+            f"Remark {tag} ({REMARKS[tag].summary}) awaits manual approval in "
+            "src/migrator/source/datadog/remarks.py; until then, migrate this widget manually.",
+        )
+        return ""
+    c.add(
+        "ASSUMED",
+        "warning",
+        path,
+        f"{tag}: Datadog showed the {'top' if order == 'desc' else 'bottom'} {count}. "
+        f"{entry.summary}",
+        "Check that the series beyond the cut do not crowd the panel.",
+        remark=tag,
+    )
+    return order
+
+
+def _panel(
+    title: str, plugin: dict[str, Any], queries: list[PersesQuery], tags: list[str] | None = None
+) -> PersesPanel:
+    # Dash0 shows the panel description "in the panel header next to the name"
+    # (https://www.dash0.com/docs/dash0/dashboards/configure-panels), so remark tags stay visible.
     return {
         "kind": "Panel",
         "spec": {
-            "display": {"name": title, "description": ""},
+            "display": {"name": title, "description": describe(tags or [])},
             "plugin": {"kind": plugin["kind"], "spec": plugin["spec"]},
             "queries": queries,
         },
@@ -657,8 +815,11 @@ class _Builder:
     def record(self, key: str, path: str, widget: Any, grid: _GridBuilder) -> None:
         panel, title, diags = _compile_widget(widget, path, self.ctx)
         self.c.items.extend(diags)
-        outcome: Outcome = "translated" if panel is not None else "blocked"
-        self.items.append(ItemResult(self.ctx.source_id, path, "widget", title, outcome))
+        outcome: Outcome = "blocked"
+        tags: tuple[str, ...] = ()
+        if panel is not None:
+            outcome, tags = remark_outcome(diags)
+        self.items.append(ItemResult(self.ctx.source_id, path, "widget", title, outcome, tags))
         self.anchors.append(path)
         if panel is not None:
             self.panels[key] = panel
@@ -751,10 +912,13 @@ def compile_dashboard(
             "Add widgets to the source dashboard or migrate it manually.",
         )
 
-    translated = sum(1 for it in b.items if it.outcome == "translated")
+    converted = [it for it in b.items if it.outcome != "blocked"]
+    translated = len(converted)
+    tags = tuple(dict.fromkeys(t for it in converted for t in it.remarks))
     outcome: Outcome
     if translated and translated == len(b.items):
-        outcome = "translated"
+        outcomes = {it.outcome for it in converted}
+        outcome = next((o for o in ("assumed", "approximated") if o in outcomes), "translated")
     elif translated:
         outcome = "partial"
     else:
@@ -768,9 +932,9 @@ def compile_dashboard(
             "spec": {
                 "display": {
                     "name": str(body.get("title") or ""),
-                    "description": str(body.get("description") or ""),
+                    "description": _description(str(body.get("description") or ""), tags),
                 },
-                "duration": "1h",
+                "duration": DASHBOARD_DURATION,
                 "variables": out_variables,
                 "panels": b.panels,
                 "layouts": b.layouts,
@@ -784,12 +948,20 @@ def compile_dashboard(
                 "Emitted dashboard failed validation: " + "; ".join(problems),
                 "This is a converter bug; report it with the source asset.",
             )
-            dashboard, outcome = None, "blocked"
+            dashboard, outcome, tags = None, "blocked", ()
 
-    items = [ItemResult(sid, "", "dashboard", asset.title, outcome), *b.items]
+    items = [ItemResult(sid, "", "dashboard", asset.title, outcome, tags), *b.items]
     return DashboardCompilation(
         dashboard=dashboard, items=items, diagnostics=_ordered(c.items, b.anchors)
     )
+
+
+def _description(source: str, tags: tuple[str, ...]) -> str:
+    """The source description plus one line naming the remark tags of converted panels."""
+    if not tags:
+        return source
+    note = f"Migration remarks: {' '.join(tags)} (see panel descriptions)."
+    return f"{source}\n\n{note}" if source else note
 
 
 def _path_key(path: str) -> tuple[str | int, ...]:

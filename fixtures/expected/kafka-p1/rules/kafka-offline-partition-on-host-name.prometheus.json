@@ -12,6 +12,7 @@
           },
           "expr": "avg_over_time((avg ({otel_metric_name=\"kafka.partition.offline\", otel_metric_type=\"sum\"}))[5m:1m]) > 0",
           "labels": {
+            "migration_remarks": "NEWHOST,FULLWINDOW",
             "severity": "warning"
           }
         },
@@ -23,6 +24,7 @@
           },
           "expr": "avg_over_time((avg ({otel_metric_name=\"kafka.partition.offline\", otel_metric_type=\"sum\"}))[5m:1m]) > 1",
           "labels": {
+            "migration_remarks": "NEWHOST,FULLWINDOW",
             "severity": "critical"
           }
         }
