@@ -1,8 +1,8 @@
 """Golden: Postgres dashboards at the P1 level (plan 05 Task 9, standing in for plan 04 Task 4).
 
 Regenerate by hand with `uv run migrator convert` and review the diff before committing.
-Plan 05 Task 1 (documented default aggregator) is not implemented, so queries without a
-space aggregator stay blocked with MISSING_AGGREGATOR, as the plan's fallback says.
+Plan 05 Task 1 (documented default aggregator) is implemented: a query without a space
+aggregator compiles with Datadog's default `avg` and warns DEFAULT_AGGREGATOR_APPLIED.
 """
 
 from __future__ import annotations
@@ -88,17 +88,31 @@ def test_metrics_widget_outcomes(run: tuple[int, Path]) -> None:
         if i["sourceId"] == METRICS and i["kind"] == "widget"
     }
     translated = sorted(int(p[8:-1]) for p, o in outcomes.items() if o == "translated")
-    assert translated == [0, 1, 6, 8]
+    assert translated == [0, 1, 2, 4, 6, 8]
     expected_errors = {
-        2: ["MISSING_AGGREGATOR"] * 3,  # Task 1 skipped: no documented default
         3: ["MISSING_METRIC_MAPPING"],  # system.io.util
-        4: ["MISSING_AGGREGATOR"] * 3,
-        5: ["MISSING_AGGREGATOR"] * 6,
+        5: ["MISSING_METRIC_MAPPING"],  # system.cpu.guest
         7: ["MISSING_METRIC_MAPPING"] * 2,  # system.mem.usable and system.mem.total
     }
     for n, codes in expected_errors.items():
         assert outcomes[f"widgets[{n}]"] == "blocked"
         assert widget_errors(rep, METRICS, f"widgets[{n}]") == codes, n
+
+
+def test_missing_aggregator_defaults_to_avg(run: tuple[int, Path]) -> None:
+    """Widgets 2, 4 and 5 have no space aggregator: each of their 12 queries gets avg and
+    one DEFAULT_AGGREGATOR_APPLIED warning; no query is blocked with MISSING_AGGREGATOR."""
+    rep = report(run[1])
+    assert all(d["code"] != "MISSING_AGGREGATOR" for d in rep["diagnostics"])
+    applied = [d for d in rep["diagnostics"] if d["code"] == "DEFAULT_AGGREGATOR_APPLIED"]
+    assert {(d["sourceId"], d["severity"]) for d in applied} == {(METRICS, "warning")}
+    widgets = Counter(d["sourcePath"].split(".")[0] for d in applied)
+    assert widgets == {"widgets[2]": 3, "widgets[4]": 3, "widgets[5]": 6}
+    d = json.loads((run[1] / "dashboards/postgres-metrics.json").read_text())
+    query = d["spec"]["panels"]["widget-4"]["spec"]["queries"][0]["spec"]["plugin"]["spec"]
+    assert query["query"] == (
+        'avg ({otel_metric_name="system.cpu.load_average.1m", otel_metric_type="gauge"})'
+    )
 
 
 def test_connections_query_dedups_per_instance(run: tuple[int, Path]) -> None:
@@ -120,40 +134,22 @@ def test_overview_is_partial_with_reviewed_counts(run: tuple[int, Path]) -> None
     assert (run[1] / "dashboards/postgres-overview.json").exists()
 
 
-def test_cpu_widget_stays_blocked_on_guest(run: tuple[int, Path], tmp_path: Path) -> None:
-    """Issue #41's `cpu widget stays blocked on guest`, adjusted for 05.T1 being skipped.
+def test_cpu_widget_stays_blocked_on_guest(run: tuple[int, Path]) -> None:
+    """Issue #41's `cpu widget stays blocked on guest`.
 
-    Today widgets[5] ("CPU usage (%)") is blocked earlier: its six queries have no
-    space aggregator, so each gets MISSING_AGGREGATOR before any mapping lookup.
-    Giving them an aggregator (what 05.T1 would do) leaves exactly one block:
-    system.cpu.guest has no mapping, while idle/system/iowait/user/stolen do.
+    widgets[5] ("CPU usage (%)") has six queries without a space aggregator; with the
+    default avg they reach the mapping lookup, and exactly one blocks: system.cpu.guest
+    has no mapping, while idle/system/iowait/user/stolen do.
     """
     rep = report(run[1])
-    assert widget_errors(rep, METRICS, "widgets[5]") == ["MISSING_AGGREGATOR"] * 6
-
-    source = json.loads(Path("fixtures/datadog/integrations-core/postgres", METRICS).read_text())
-    for request in source["widgets"][5]["definition"]["requests"]:
-        for query in request["queries"]:
-            query["query"] = "avg:" + query["query"]
-    (tmp_path / "in").mkdir()
-    (tmp_path / "in" / "postgresql_dashboard.json").write_text(json.dumps(source))
-    out = tmp_path / "out"
-    run_convert(
-        ConvertOptions(
-            source="datadog",
-            inputs=[str(tmp_path / "in")],
-            mapping=["fixtures/mappings/postgres.json"],
-            out=str(out),
-        )
-    )
-    rep = report(out)
-    (sid,) = {i["sourceId"] for i in rep["items"]}
-    assert widget_errors(rep, sid, "widgets[5]") == ["MISSING_METRIC_MAPPING"]
+    assert widget_errors(rep, METRICS, "widgets[5]") == ["MISSING_METRIC_MAPPING"]
     (guest,) = [
         d
         for d in rep["diagnostics"]
-        if d["severity"] == "error" and "widgets[5]" in d["sourcePath"]
+        if d["sourceId"] == METRICS
+        and d["severity"] == "error"
+        and d["sourcePath"].startswith("widgets[5].")
     ]
     assert "system.cpu.guest" in guest["message"]
-    outcome = {i["sourcePath"]: i["outcome"] for i in rep["items"]}
+    outcome = {i["sourcePath"]: i["outcome"] for i in rep["items"] if i["sourceId"] == METRICS}
     assert outcome["widgets[5]"] == "blocked"

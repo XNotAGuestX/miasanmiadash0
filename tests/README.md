@@ -113,9 +113,9 @@ requests:
   expected:
     outcome: translated | blocked
     promql: [...]                         # translated only
-    errors: [...]                         # e.g. MISSING_METRIC_MAPPING, MISSING_AGGREGATOR, UNSUPPORTED_FORMULA,
+    errors: [...]                         # e.g. MISSING_METRIC_MAPPING, UNSUPPORTED_FORMULA,
                                           #      UNSUPPORTED_QUERY_FUNCTION, UNSUPPORTED_QUERY_SYNTAX, UNSUPPORTED_DATA_SOURCE
-    warnings: [...]                       # e.g. TEMPLATE_VARIABLE_DROPPED (compared as a set)
+    warnings: [...]                       # e.g. TEMPLATE_VARIABLE_DROPPED, DEFAULT_AGGREGATOR_APPLIED (compared as a set)
   notes: [...]                            # optional, e.g. rule overlay applied
 widgets:   [{source_path, type, milestone, reviewed, expected: {outcome, panel_key, title, panel_plugin, promql, errors, warnings}}]
 dashboard: {milestone, reviewed, expected: {outcome, widgets: [{source_path, outcome, panel_key, promql}]}}
@@ -155,11 +155,11 @@ Agent0 proposed (plans 02/03/05). `ALLOWED_FUNCTIONS` in the script is empty; a 
 added through its own plan task with an exact test. The converter's mapping-independent checks
 also override Agent0, in PR #85's order: request read errors (non-metric data source, a formula with
 a function or a reference to a non-metric query) first; then for every displayed query a wrapping
-function, a syntax error (`count:`, `p95:`, `100*(...)`, `-sum:...`), a trailing function, a missing
-space aggregator (`MISSING_AGGREGATOR`: #85 has no default aggregator), or an undefined or non-`*`
-template variable. Error codes come from these rules, not Agent0's prose; a block that no rule
-explains gets `MISSING_METRIC_MAPPING` plus a note that the code is a proposal (the real code depends
-on the mapping). `TEMPLATE_VARIABLE_DROPPED` is expected for unprefixed `*` variables only; prefixed
+function, a syntax error (`count:`, `p95:`, `100*(...)`, `-sum:...`), a trailing function, or an
+undefined or non-`*` template variable. A query without a space aggregator compiles with Datadog's
+default `avg` and expects `DEFAULT_AGGREGATOR_APPLIED`. Error codes come from these rules, not
+Agent0's prose; a block that no rule explains gets `MISSING_METRIC_MAPPING` plus a note that the
+code is a proposal (the real code depends on the mapping). `TEMPLATE_VARIABLE_DROPPED` is expected for unprefixed `*` variables only; prefixed
 ones are promoted to a Perses ListVariable (matcher `<label>=~"^($name)$"`). Every OTel metric in
 a translated request is checked against the dataset snapshot and the catalog: present in the dataset →
 nothing to note; only in the catalog → stays `translated` with a `dataset` block and a note (no live check
