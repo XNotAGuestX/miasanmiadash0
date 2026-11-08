@@ -1,5 +1,11 @@
 # On-demand live comparison
 
+The [alert/function extension suite](LIVE_EXTENSIONS.md) exercises `weighted()`, gauge
+rollups, explicit rates and classic arithmetic metric monitors against a retained stream.
+It declares case-specific tolerances before comparison and preserves strict data coverage
+and per-bucket threshold decisions. `best_effort` outcomes participate in numeric checks;
+their approximation semantics remain distinct from API acceptance and numeric agreement.
+
 `scripts/live_compare.py` starts the full OpenTelemetry Demo, collects its metrics once,
 exports them to Datadog and Dash0, converts configured Datadog assets with the existing
 offline compiler, publishes demo-prefixed assets, verifies read-back and compares results.
