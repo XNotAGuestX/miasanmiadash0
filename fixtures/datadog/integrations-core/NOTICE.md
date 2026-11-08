@@ -28,9 +28,4 @@ Copied unmodified from each integration's assets/dashboards and assets/monitors 
 
 Copied unmodified from each integration's root folder:
 
-- docker_daemon/metadata.csv
-- kafka/metadata.csv
-- kafka_consumer/metadata.csv
-- nginx/metadata.csv
-- postgres/metadata.csv
-- redisdb/metadata.csv
+- every `<integration>/metadata.csv` at the pinned commit (261 files, #175); names and Git blob SHAs in `metadata-blobs.json`

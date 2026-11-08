@@ -102,6 +102,14 @@ every source location, plus queries whose syntax could not be parsed. Mapping co
 name presence only; functions, labels, units, options and other semantics can still block an
 otherwise mapped query. Unparsed queries never count as covered.
 
+`uv run scripts/generate_vendor_mappings.py` rebuilds the draft `vendor-table.json` mappings
+from the pinned vendor table and type metadata; `--check` verifies the committed bytes and
+`--skipped` lists rejected names and reasons. Generation requires explicit compatible unit
+pairs and rejects conflicting OTel definitions. Unit rules preserve Datadog values (for example,
+cores become nanocores with a factor of 10⁹); a conflicting vendor scale is rejected. Unknown
+or incompatible units stay unmapped. All generated entries keep `reviewed: null` and require
+human review; generation does not establish live telemetry equivalence.
+
 Each JSON file must contain one recognized dashboard or monitor. Arrays and export wrappers
 such as `{"dashboards": [...]}` remain unsupported. Empty folders and inputs with no recognized
 assets fail with `NO_SUPPORTED_ASSETS` before output is created. A run containing both recognized
