@@ -97,6 +97,25 @@ REMARKS: dict[str, Remark] = {
         evidence="see the mapping entry's ref",
         approved=_FELIX,
     ),
+    # Datadog toplist: one value per series (the query's time aggregator over the window), then
+    # the top or bottom N by `limit` {count, order}. Perses BarChart reduces each series with
+    # `calculation` and orders by `sort`, but has no count field (spec fields: calculation,
+    # format, sort, mode, orientation, groupBy, isStacked, visual; perses/plugins@57910ac
+    # barchart/schemas/bar.cue). Placed in `assumed` by Felix's decision (2026-11-08): the
+    # displayed set is wider than the source.
+    "TOPN": Remark(
+        category="assumed",
+        summary=(
+            "Datadog showed only the top (or bottom) N series; the Perses bar chart has no limit, "
+            "so it shows every series in the same order. The first N bars match."
+        ),
+        evidence=(
+            "https://docs.datadoghq.com/dashboards/widgets/top_list/ "
+            "https://github.com/perses/plugins/blob/57910acf0bf979561e13c6c28ea487ce86b2433f/"
+            "barchart/schemas/bar.cue"
+        ),
+        approved=_FELIX,
+    ),
     "ATTRVAL": Remark(
         category="assumed",
         summary=(

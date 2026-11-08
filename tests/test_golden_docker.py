@@ -4,11 +4,11 @@ Regenerate by hand with `uv run migrator convert` (arguments as in `convert` bel
 the diff before committing. The frozen copy fixtures/mappings/docker.json keeps edits to
 mappings/datadog/docker.json from churning the golden.
 
-Toplist, heatmap, event and image widgets block on their type. Widgets pinned to their own
-`time` (live_span) convert as approximated with the TIMEPIN remark (docs/REMARKS.md) when their
-query converts; the rest block on `.fill()`, arithmetic or a metric missing from the frozen
-mapping. Request-level PromQL is checked by the oracle suite (tests/unit/requests,
-docker cases with --include-unreviewed).
+Heatmap, event and image widgets block on their type; the toplists on their top() query.
+Widgets pinned to their own `time` (live_span) convert as approximated with the TIMEPIN remark
+(docs/REMARKS.md) when their query converts; the rest block on `.fill()`, arithmetic or a
+metric missing from the frozen mapping. Request-level PromQL is checked by the oracle suite
+(tests/unit/requests, docker cases with --include-unreviewed).
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ from tests.test_golden_dashboards import tree
 EXPECTED = Path("fixtures/expected/docker-p1")
 DASHBOARD = "dashboards/docker_dashboard.json"
 NOTES = [13, 16, 17, 19, 22]
-TYPE_BLOCKED = [1, 2, 3, 6, 9, 10, 15, 25, 26, 27]  # toplist, heatmap, event_*, image
+TYPE_BLOCKED = [3, 6, 9, 10, 15, 26]  # heatmap, event_*, image (toplists block on top())
 TIME_PINNED = [14, 20, 21, 23, 24]
 
 

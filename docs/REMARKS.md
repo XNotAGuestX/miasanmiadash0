@@ -54,7 +54,7 @@ Every tag needs manual approval before it converts anything.
 
 ### Assumed
 
-A mapping entry names one of these in its `assumption` field. Its `ref` must spell out the assumption and its evidence.
+A mapping entry names one of `AGG`, `DERIVED`, `ATTRVAL` or `SEMANTIC` in its `assumption` field; its `ref` must spell out the assumption and its evidence. `TOPN` is set by the dashboard converter; Felix placed it in this category (2026-11-08) because the panel shows more series than the source.
 
 | Tag | When | Approved |
 |---|---|---|
@@ -62,6 +62,7 @@ A mapping entry names one of these in its `assumption` field. Its `ref` must spe
 | `DERIVED` | The value is computed from other OTel metrics by an expression. | Yes, Felix 2026-11-08 |
 | `ATTRVAL` | The value is one slice of an OTel metric, selected by an attribute value that the OTel definition doesn't enumerate. | No (no entry uses it yet) |
 | `SEMANTIC` | The Datadog and OTel metrics measure the same thing (often paired in Datadog's vendor table), but their documented definitions differ in scope. | Yes, Felix 2026-11-08 |
+| `TOPN` | A toplist widget (no `top()`) with one `limit` `{count, order}` or request `sort`. It becomes a Perses `BarChart`: the query aggregator becomes `calculation`, the order becomes `sort`. The BarChart has no count field ([schema](https://github.com/perses/plugins/blob/57910acf0bf979561e13c6c28ea487ce86b2433f/barchart/schemas/bar.cue)), so every series shows; the first N bars match Datadog. Not yet confirmed that Dash0 renders `BarChart`. | Yes, Felix 2026-11-08 |
 
 ## Gaps
 

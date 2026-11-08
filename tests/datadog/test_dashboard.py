@@ -117,8 +117,9 @@ def test_translates_supported_widgets() -> None:
 
 def test_blocks_unsupported_widgets_with_exact_codes() -> None:
     c = compile_file("unsupported.json")
+    # Widget 0 is a toplist wrapped in top(): it reaches its query, where top() blocks.
     assert errors_by_widget(c) == {
-        "widgets[0]": ["UNSUPPORTED_WIDGET"],
+        "widgets[0]": ["UNSUPPORTED_QUERY_FUNCTION"],
         "widgets[1]": ["UNSUPPORTED_DATA_SOURCE"],
         "widgets[4]": ["UNSUPPORTED_QUERY_FUNCTION"],
     }
@@ -247,7 +248,7 @@ def test_overview_golden_charts_are_readable_and_do_not_overlap() -> None:
                 charts += 1
                 assert item["height"] >= 4, key
             assert not any(_overlap(item, other) for other in items[i + 1 :]), key
-    assert charts == 7
+    assert charts == 10
 
 
 def _laid_out(x: int, width: int, layout_type: str) -> dict[str, Any]:
@@ -715,3 +716,61 @@ def test_gap_reason_is_cited_in_the_block() -> None:
     assert d.message == (
         "No mapping for metric 'unmapped.metric' (gap NOOTEL: No OTel receiver emits it.)"
     )
+
+
+def _toplist(limit: dict[str, Any] | None = None, **req: Any) -> dict[str, Any]:
+    formula: dict[str, Any] = {"formula": "query1"}
+    if limit is not None:
+        formula["limit"] = limit
+    request = {
+        "queries": [
+            {
+                "data_source": "metrics",
+                "name": "query1",
+                "query": "avg:postgresql.connections{*} by {db}",
+                "aggregator": "max",
+            }
+        ],
+        "formulas": [formula],
+        "response_format": "scalar",
+        **req,
+    }
+    return {"definition": {"type": "toplist", "title": "Top", "requests": [request]}}
+
+
+def test_toplist_converts_to_a_sorted_bar_chart_under_topn() -> None:
+    c = compile_body(body(_toplist({"count": 5, "order": "asc"})))
+    assert (c.items[1].outcome, c.items[1].remarks) == ("assumed", ("TOPN",))
+    assert c.dashboard is not None and validate_dashboard(c.dashboard) == []
+    panel = c.dashboard["spec"]["panels"]["widget-0"]["spec"]
+    assert panel["plugin"] == {"kind": "BarChart", "spec": {"calculation": "max", "sort": "asc"}}
+    assert panel["display"]["description"].startswith("[TOPN] ")
+    [d] = [d for d in c.diagnostics if d.code == "ASSUMED"]
+    assert d.message.startswith("TOPN: Datadog showed the bottom 5. ")
+
+
+def test_toplist_reads_the_request_level_sort() -> None:
+    sort = {"count": 10, "order_by": [{"type": "formula", "index": 0, "order": "desc"}]}
+    c = compile_body(body(_toplist(sort=sort)))
+    assert c.dashboard is not None
+    plugin = c.dashboard["spec"]["panels"]["widget-0"]["spec"]["plugin"]
+    assert plugin["spec"]["sort"] == "desc"
+
+
+@pytest.mark.parametrize(
+    "limit", [None, {"count": 5}, {"count": 0, "order": "desc"}, {"count": 5, "order": "up"}]
+)
+def test_toplist_without_one_valid_limit_blocks(limit: dict[str, Any] | None) -> None:
+    c = compile_body(body(_toplist(limit)))
+    assert c.items[1].outcome == "blocked"
+    [d] = [d for d in c.diagnostics if d.severity == "error"]
+    assert d.message == "Toplist needs exactly one limit with a count and an order (asc or desc)."
+
+
+def test_toplist_blocks_until_topn_is_approved(monkeypatch: pytest.MonkeyPatch) -> None:
+    _unapprove(monkeypatch, "TOPN")
+    c = compile_body(body(_toplist({"count": 5, "order": "desc"})))
+    assert c.items[1].outcome == "blocked"
+    [d] = [d for d in c.diagnostics if d.severity == "error"]
+    assert d.message == "Widget type 'toplist' is not supported."
+    assert "TOPN" in d.suggested_action and "awaits manual approval" in d.suggested_action

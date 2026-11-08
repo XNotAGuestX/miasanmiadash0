@@ -52,7 +52,7 @@ class _Query(_Strict):
 
 
 class _PanelPlugin(_Strict):
-    kind: Literal["TimeSeriesChart", "Markdown", "StatChart"]
+    kind: Literal["TimeSeriesChart", "Markdown", "StatChart", "BarChart"]
     spec: dict[str, Any]
 
 

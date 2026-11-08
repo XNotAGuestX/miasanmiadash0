@@ -847,12 +847,29 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_WIDGET",
-      "message": "Widget type 'toplist' is not supported.",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'redis.slowlog.micros.count'.",
       "severity": "error",
       "sourceId": "dashboards/overview.json",
-      "sourcePath": "widgets[2].definition.widgets[3].definition.type",
-      "suggestedAction": "Migrate this widget manually."
+      "sourcePath": "widgets[2].definition.widgets[3].definition.requests[0].queries[0].query",
+      "sourceText": "sum:redis.slowlog.micros.count{$host,$scope} by {command,name}",
+      "suggestedAction": "Add a reviewed entry for 'redis.slowlog.micros.count' to the mapping file."
+    },
+    {
+      "code": "OPTION_IGNORED",
+      "message": "Query option 'semantic_mode' is ignored.",
+      "severity": "info",
+      "sourceId": "dashboards/overview.json",
+      "sourcePath": "widgets[2].definition.widgets[3].definition.requests[0].queries[0].semantic_mode",
+      "suggestedAction": "No action needed unless the option matters for this panel."
+    },
+    {
+      "code": "OPTION_IGNORED",
+      "message": "Widget option 'style' is ignored.",
+      "severity": "info",
+      "sourceId": "dashboards/overview.json",
+      "sourcePath": "widgets[2].definition.widgets[3].definition.style",
+      "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
       "code": "OPTION_IGNORED",

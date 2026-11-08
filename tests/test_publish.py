@@ -106,7 +106,7 @@ def test_dry_run_makes_no_requests(run_dir: Path) -> None:
     assert dry[0].endswith("(publish)  [approximated: NEWHOST FULLWINDOW]")
     assert sorted(line.rsplit("  ", 1)[1] for line in dry[1:]) == [
         "[partial: DERIVED]",
-        "[partial]",
+        "[partial: TOPN SEMANTIC]",
     ]
     assert not (run_dir / RECEIPTS_FILE).exists()
 

@@ -63,6 +63,10 @@ _DEF_KEYS: dict[str, tuple[set[str], set[str]]] = {
         _COMMON_DEF_IGNORED
         | {"autoscale", "precision", "custom_unit", "text_align", "timeseries_background"},
     ),
+    "toplist": (
+        {"type", "title", "requests"},
+        _COMMON_DEF_IGNORED | {"style"},
+    ),
     "note": (
         {"type", "content"},
         {
@@ -90,15 +94,24 @@ _REQ_KEYS: dict[str, tuple[set[str], set[str]]] = {
         {"queries", "formulas", "q", "response_format", "aggregator"},
         {"conditional_formats", "style", "display_type", "metadata"},
     ),
+    "toplist": (
+        {"queries", "formulas", "q", "response_format", "sort"},
+        {"conditional_formats", "style", "metadata"},
+    ),
 }
 _QUERY_KEYS: dict[str, tuple[set[str], set[str]]] = {
     "timeseries": ({"data_source", "name", "query"}, {"semantic_mode"}),
     "query_value": ({"data_source", "name", "query", "aggregator"}, {"semantic_mode"}),
+    "toplist": ({"data_source", "name", "query", "aggregator"}, {"semantic_mode"}),
 }
-# Formula display options are cosmetic; `limit` (top-N) changes the data and is blocked.
-_FORMULA_KEYS = ({"formula"}, {"alias", "style", "number_format", "cell_display_mode"})
+# Formula display options are cosmetic. `limit` (top-N) changes the data: it blocks, except on a
+# toplist, where it becomes the BarChart sort under the TOPN remark.
+_FORMULA_IGNORED = {"alias", "style", "number_format", "cell_display_mode"}
+_FORMULA_KEYS = ({"formula"}, _FORMULA_IGNORED)
+_TOPLIST_FORMULA_KEYS = ({"formula", "limit"}, _FORMULA_IGNORED)
 
-# Datadog query_value aggregator -> Perses StatChart calculation.
+# Datadog query_value / toplist aggregator -> Perses StatChart / BarChart calculation (both use
+# Perses common.#calculation, perses/plugins@57910ac barchart/schemas/bar.cue).
 _CALCULATIONS = {"avg": "mean", "last": "last-number", "max": "max", "min": "min", "sum": "sum"}
 
 
@@ -332,7 +345,8 @@ class _Displayed:
 class _Request:
     queries: dict[str, tuple[str, str, dict[str, Any]]]  # name -> (path, text, raw query)
     displayed: list[_Displayed]
-    aggregators: dict[str, Any]  # query name -> source aggregator (query_value only)
+    aggregators: dict[str, Any]  # query name -> source aggregator (query_value, toplist)
+    limits: list[Any] = field(default_factory=list)  # toplist: formula `limit`s and request `sort`
 
 
 def _read_request(req: Any, path: str, wtype: str, c: _Collector) -> _Request | None:
@@ -392,6 +406,7 @@ def _read_request(req: Any, path: str, wtype: str, c: _Collector) -> _Request | 
         aggregators[qname] = q.get("aggregator")
 
     displayed: list[_Displayed] = []
+    limits: list[Any] = [req["sort"]] if "sort" in req else []
     formulas = req.get("formulas")
     if formulas is None:
         displayed = [_Displayed(None, "", "", [n]) for n in queries]
@@ -403,7 +418,10 @@ def _read_request(req: Any, path: str, wtype: str, c: _Collector) -> _Request | 
             if not isinstance(fo, dict) or not isinstance(fo.get("formula"), str):
                 c.error("UNSUPPORTED_WIDGET", fpath, "Formula is malformed.", "Fix it.")
                 continue
-            _check_keys(fo, _FORMULA_KEYS, fpath, c, "Formula")
+            keys = _TOPLIST_FORMULA_KEYS if wtype == "toplist" else _FORMULA_KEYS
+            _check_keys(fo, keys, fpath, c, "Formula")
+            if "limit" in fo:
+                limits.append(fo["limit"])
             text = fo["formula"]
             parsed = parse_formula(text)
             if not parsed.ok:
@@ -425,7 +443,7 @@ def _read_request(req: Any, path: str, wtype: str, c: _Collector) -> _Request | 
                 )
                 continue
             displayed.append(_Displayed(parsed.formula, f"{fpath}.formula", text, refs))
-    return _Request(queries=queries, displayed=displayed, aggregators=aggregators)
+    return _Request(queries=queries, displayed=displayed, aggregators=aggregators, limits=limits)
 
 
 def _series_name_format(labels: list[str]) -> str:
@@ -530,13 +548,20 @@ def _compile_widget(
     ]
     plugin: dict[str, Any] = {"kind": "TimeSeriesChart", "spec": {}}
     if wtype == "query_value" and not c.has_error():
-        calc = _stat_calculation(requests, dpath, c)
+        calc = _stat_calculation(requests, dpath, c, "Query value")
         plugin = {"kind": "StatChart", "spec": {"calculation": calc}}
     if c.has_error():
         return None, title, c.items
     queries = _compile_requests(requests, ctx, c)
     if queries is None:
         return None, title, c.items
+    if wtype == "toplist":
+        # After the queries, so a legacy `top(...)` query reports its documented block.
+        calc = _stat_calculation(requests, dpath, c, "Toplist")
+        sort = _toplist_sort(requests, dpath, c) if not c.has_error() else ""
+        plugin = {"kind": "BarChart", "spec": {"calculation": calc, "sort": sort}}
+        if c.has_error():
+            return None, title, c.items
     return _panel(title, plugin, queries, _tags(c.items)), title, c.items
 
 
@@ -544,13 +569,13 @@ def _tags(diagnostics: list[Diagnostic]) -> list[str]:
     return list(dict.fromkeys(d.remark for d in diagnostics if d.remark is not None))
 
 
-def _stat_calculation(requests: list[_Request], dpath: str, c: _Collector) -> str:
+def _stat_calculation(requests: list[_Request], dpath: str, c: _Collector, what: str) -> str:
     displayed = [d for r in requests for d in r.displayed]
     if len(requests) != 1 or len(displayed) != 1:
         c.error(
             "UNSUPPORTED_WIDGET",
             f"{dpath}.requests",
-            "Query value widgets with several displayed values are not supported.",
+            f"{what} widgets with several displayed values are not supported.",
             "Migrate this widget manually.",
         )
         return ""
@@ -559,9 +584,9 @@ def _stat_calculation(requests: list[_Request], dpath: str, c: _Collector) -> st
     calc = _CALCULATIONS.get(agg) if isinstance(agg, str) else None
     if calc is None:
         message = (
-            "Query value widget has no aggregator."
+            f"{what} widget has no aggregator."
             if all(a is None for a in aggs)
-            else f"Query value aggregator '{agg}' is not supported."
+            else f"{what} aggregator '{agg}' is not supported."
         )
         c.error(
             "UNSUPPORTED_WIDGET",
@@ -571,6 +596,71 @@ def _stat_calculation(requests: list[_Request], dpath: str, c: _Collector) -> st
         )
         return ""
     return calc
+
+
+def _limit(raw: Any) -> tuple[int, str] | None:
+    """(count, order) of a formula `limit` {count, order} or a request `sort`
+    {count, order_by: [{type: formula, index: 0, order}]}; None if malformed."""
+    if not isinstance(raw, dict):
+        return None
+    order = raw.get("order")
+    if "order_by" in raw:
+        by = raw["order_by"]
+        ok = (
+            isinstance(by, list)
+            and len(by) == 1
+            and isinstance(by[0], dict)
+            and set(by[0]) == {"type", "index", "order"}
+            and by[0]["type"] == "formula"
+            and by[0]["index"] == 0
+        )
+        if not ok or set(raw) != {"count", "order_by"}:
+            return None
+        order = by[0]["order"]
+    elif set(raw) != {"count", "order"}:
+        return None
+    count = raw.get("count")
+    if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+        return None
+    return (count, order) if order in ("asc", "desc") else None
+
+
+def _toplist_sort(requests: list[_Request], dpath: str, c: _Collector) -> str:
+    """BarChart sort from the toplist's one top-N limit, with the TOPN remark (approved) for
+    the dropped cut; blocks when the limit is missing, repeated or malformed."""
+    path = f"{dpath}.requests[0]"
+    limits = requests[0].limits
+    parsed = _limit(limits[0]) if len(limits) == 1 else None
+    if parsed is None:
+        c.error(
+            "UNSUPPORTED_WIDGET",
+            path,
+            "Toplist needs exactly one limit with a count and an order (asc or desc).",
+            "Migrate this widget manually.",
+        )
+        return ""
+    count, order = parsed
+    tag = "TOPN"
+    entry = approved(tag)
+    if entry is None:
+        c.error(
+            "UNSUPPORTED_WIDGET",
+            f"{dpath}.type",
+            "Widget type 'toplist' is not supported.",
+            f"Remark {tag} ({REMARKS[tag].summary}) awaits manual approval in "
+            "src/migrator/source/datadog/remarks.py; until then, migrate this widget manually.",
+        )
+        return ""
+    c.add(
+        "ASSUMED",
+        "warning",
+        path,
+        f"{tag}: Datadog showed the {'top' if order == 'desc' else 'bottom'} {count}. "
+        f"{entry.summary}",
+        "Check that the series beyond the cut do not crowd the panel.",
+        remark=tag,
+    )
+    return order
 
 
 def _panel(

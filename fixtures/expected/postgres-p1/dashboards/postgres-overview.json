@@ -6,7 +6,7 @@
   },
   "spec": {
     "display": {
-      "description": "This dashboard provides a high-level overview of your PostgreSQL databases, so you can track throughput, replication, locks, and other metrics from all your servers and spot potential issues. Further reading on PostgreSQL monitoring:\n\n- [Datadog's guide to key PostgreSQL metrics](https://www.datadoghq.com/blog/postgresql-monitoring/)\n\n- [Collecting metrics with PostgreSQL monitoring tools](https://www.datadoghq.com/blog/postgresql-monitoring-tools/)\n\n- [How to monitor PostgreSQL with Datadog](https://www.datadoghq.com/blog/collect-postgresql-data-with-datadog/)\n\n- [Datadog's PostgreSQL integration docs](https://docs.datadoghq.com/integrations/postgres/)\n\nClone this template dashboard to make changes and add your own graph widgets.",
+      "description": "This dashboard provides a high-level overview of your PostgreSQL databases, so you can track throughput, replication, locks, and other metrics from all your servers and spot potential issues. Further reading on PostgreSQL monitoring:\n\n- [Datadog's guide to key PostgreSQL metrics](https://www.datadoghq.com/blog/postgresql-monitoring/)\n\n- [Collecting metrics with PostgreSQL monitoring tools](https://www.datadoghq.com/blog/postgresql-monitoring-tools/)\n\n- [How to monitor PostgreSQL with Datadog](https://www.datadoghq.com/blog/collect-postgresql-data-with-datadog/)\n\n- [Datadog's PostgreSQL integration docs](https://docs.datadoghq.com/integrations/postgres/)\n\nClone this template dashboard to make changes and add your own graph widgets.\n\nMigration remarks: TOPN (see panel descriptions).",
       "name": "Postgres - Overview"
     },
     "duration": "1h",
@@ -82,6 +82,24 @@
               "width": 10,
               "x": 0,
               "y": 0
+            },
+            {
+              "content": {
+                "$ref": "#/spec/panels/widget-2-3"
+              },
+              "height": 9,
+              "width": 6,
+              "x": 0,
+              "y": 12
+            },
+            {
+              "content": {
+                "$ref": "#/spec/panels/widget-2-4"
+              },
+              "height": 9,
+              "width": 6,
+              "x": 6,
+              "y": 12
             }
           ]
         }
@@ -139,6 +157,15 @@
             "title": "Connections Monitor"
           },
           "items": [
+            {
+              "content": {
+                "$ref": "#/spec/panels/widget-5-1"
+              },
+              "height": 12,
+              "width": 10,
+              "x": 14,
+              "y": 0
+            },
             {
               "content": {
                 "$ref": "#/spec/panels/widget-5-2"
@@ -267,6 +294,66 @@
           ]
         }
       },
+      "widget-2-3": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "description": "[TOPN] Datadog showed only the top (or bottom) N series; the Perses bar chart has no limit, so it shows every series in the same order. The first N bars match.",
+            "name": "Most frequently scanned indexes"
+          },
+          "plugin": {
+            "kind": "BarChart",
+            "spec": {
+              "calculation": "mean",
+              "sort": "desc"
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "avg by (postgresql_index_name) (max by (postgresql_index_name, service_instance_id, postgresql_database_name, postgresql_table_name) (rate({otel_metric_name=\"postgresql.index.scans\", otel_metric_type=\"sum\", postgresql_database_name=~\"^($db)$\", host_name=~\"^($host)$\"}[$__rate_interval])))",
+                    "seriesNameFormat": "{{postgresql_index_name}}"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "widget-2-4": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "description": "[TOPN] Datadog showed only the top (or bottom) N series; the Perses bar chart has no limit, so it shows every series in the same order. The first N bars match.",
+            "name": "Least frequently scanned indexes"
+          },
+          "plugin": {
+            "kind": "BarChart",
+            "spec": {
+              "calculation": "mean",
+              "sort": "asc"
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "avg by (postgresql_index_name) (max by (postgresql_index_name, service_instance_id, postgresql_database_name, postgresql_table_name) (rate({otel_metric_name=\"postgresql.index.scans\", otel_metric_type=\"sum\", postgresql_database_name=~\"^($db)$\", host_name=~\"^($host)$\"}[$__rate_interval])))",
+                    "seriesNameFormat": "{{postgresql_index_name}}"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
       "widget-4-0": {
         "kind": "Panel",
         "spec": {
@@ -367,6 +454,36 @@
                   "kind": "PrometheusTimeSeriesQuery",
                   "spec": {
                     "query": "avg by (postgresql_database_name) (max by (postgresql_database_name, service_instance_id, postgresql_table_name) (rate({otel_metric_name=\"postgresql.operations\", otel_metric_type=\"sum\", postgresql_database_name=~\"^($db)$\", host_name=~\"^($host)$\", operation=\"hot_upd\"}[$__rate_interval])))",
+                    "seriesNameFormat": "{{postgresql_database_name}}"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "widget-5-1": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "description": "[TOPN] Datadog showed only the top (or bottom) N series; the Perses bar chart has no limit, so it shows every series in the same order. The first N bars match.",
+            "name": "Most connected databases"
+          },
+          "plugin": {
+            "kind": "BarChart",
+            "spec": {
+              "calculation": "mean",
+              "sort": "desc"
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "max by (postgresql_database_name) (max by (postgresql_database_name, service_instance_id) ({otel_metric_name=\"postgresql.backends\", otel_metric_type=\"sum\", postgresql_database_name=~\"^($db)$\", host_name=~\"^($host)$\"}))",
                     "seriesNameFormat": "{{postgresql_database_name}}"
                   }
                 }

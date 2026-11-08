@@ -76,20 +76,104 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_WIDGET",
-      "message": "Widget type 'toplist' is not supported.",
-      "severity": "error",
+      "code": "OPTION_IGNORED",
+      "message": "Widget option 'custom_links' is ignored.",
+      "severity": "info",
       "sourceId": "dashboards/docker_dashboard.json",
-      "sourcePath": "widgets[1].definition.type",
-      "suggestedAction": "Migrate this widget manually."
+      "sourcePath": "widgets[1].definition.custom_links",
+      "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_WIDGET",
-      "message": "Widget type 'toplist' is not supported.",
+      "code": "UNSUPPORTED_QUERY_FUNCTION",
+      "message": "Function 'top' is not supported: Datadog ranks each series once over its points (https://docs.datadoghq.com/dashboards/functions/rank/#top); PromQL topk ranks at every step, and the docs leave the ranked window open.",
       "severity": "error",
       "sourceId": "dashboards/docker_dashboard.json",
-      "sourcePath": "widgets[2].definition.type",
-      "suggestedAction": "Migrate this widget manually."
+      "sourcePath": "widgets[1].definition.requests[0].q",
+      "sourceText": "top(avg:docker.mem.rss{$scope} by {container_name}, 5, 'max', 'desc')",
+      "suggestedAction": "Remove top() to convert all series unranked, or migrate this widget manually."
+    },
+    {
+      "code": "OPTION_IGNORED",
+      "message": "Request option 'style' is ignored.",
+      "severity": "info",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[1].definition.requests[0].style",
+      "suggestedAction": "No action needed unless the option matters for this panel."
+    },
+    {
+      "code": "APPROXIMATED",
+      "message": "TIMEPIN: Datadog showed the last 1h (the dashboard default). Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.",
+      "remark": "TIMEPIN",
+      "severity": "warning",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[1].definition.time",
+      "suggestedAction": "Check the panel; set the dashboard time range if the pinned frame matters."
+    },
+    {
+      "code": "OPTION_IGNORED",
+      "message": "Widget option 'title_align' is ignored.",
+      "severity": "info",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[1].definition.title_align",
+      "suggestedAction": "No action needed unless the option matters for this panel."
+    },
+    {
+      "code": "OPTION_IGNORED",
+      "message": "Widget option 'title_size' is ignored.",
+      "severity": "info",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[1].definition.title_size",
+      "suggestedAction": "No action needed unless the option matters for this panel."
+    },
+    {
+      "code": "OPTION_IGNORED",
+      "message": "Widget option 'custom_links' is ignored.",
+      "severity": "info",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[2].definition.custom_links",
+      "suggestedAction": "No action needed unless the option matters for this panel."
+    },
+    {
+      "code": "UNSUPPORTED_QUERY_FUNCTION",
+      "message": "Function 'top' is not supported: Datadog ranks each series once over its points (https://docs.datadoghq.com/dashboards/functions/rank/#top); PromQL topk ranks at every step, and the docs leave the ranked window open.",
+      "severity": "error",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[2].definition.requests[0].q",
+      "sourceText": "top(avg:docker.cpu.user{$scope} by {container_name}, 5, 'max', 'desc')",
+      "suggestedAction": "Remove top() to convert all series unranked, or migrate this widget manually."
+    },
+    {
+      "code": "OPTION_IGNORED",
+      "message": "Request option 'style' is ignored.",
+      "severity": "info",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[2].definition.requests[0].style",
+      "suggestedAction": "No action needed unless the option matters for this panel."
+    },
+    {
+      "code": "APPROXIMATED",
+      "message": "TIMEPIN: Datadog showed the last 1h (the dashboard default). Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.",
+      "remark": "TIMEPIN",
+      "severity": "warning",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[2].definition.time",
+      "suggestedAction": "Check the panel; set the dashboard time range if the pinned frame matters."
+    },
+    {
+      "code": "OPTION_IGNORED",
+      "message": "Widget option 'title_align' is ignored.",
+      "severity": "info",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[2].definition.title_align",
+      "suggestedAction": "No action needed unless the option matters for this panel."
+    },
+    {
+      "code": "OPTION_IGNORED",
+      "message": "Widget option 'title_size' is ignored.",
+      "severity": "info",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[2].definition.title_size",
+      "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
       "code": "UNSUPPORTED_WIDGET",
@@ -1273,12 +1357,54 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_WIDGET",
-      "message": "Widget type 'toplist' is not supported.",
+      "code": "OPTION_IGNORED",
+      "message": "Widget option 'custom_links' is ignored.",
+      "severity": "info",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[25].definition.custom_links",
+      "suggestedAction": "No action needed unless the option matters for this panel."
+    },
+    {
+      "code": "UNSUPPORTED_QUERY_FUNCTION",
+      "message": "Function 'top' is not supported: Datadog ranks each series once over its points (https://docs.datadoghq.com/dashboards/functions/rank/#top); PromQL topk ranks at every step, and the docs leave the ranked window open.",
       "severity": "error",
       "sourceId": "dashboards/docker_dashboard.json",
-      "sourcePath": "widgets[25].definition.type",
-      "suggestedAction": "Migrate this widget manually."
+      "sourcePath": "widgets[25].definition.requests[0].q",
+      "sourceText": "top(avg:docker.net.bytes_sent{$scope} by {container_name}, 5, 'max', 'desc')",
+      "suggestedAction": "Remove top() to convert all series unranked, or migrate this widget manually."
+    },
+    {
+      "code": "OPTION_IGNORED",
+      "message": "Request option 'style' is ignored.",
+      "severity": "info",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[25].definition.requests[0].style",
+      "suggestedAction": "No action needed unless the option matters for this panel."
+    },
+    {
+      "code": "APPROXIMATED",
+      "message": "TIMEPIN: Datadog showed the last 1h (the dashboard default). Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.",
+      "remark": "TIMEPIN",
+      "severity": "warning",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[25].definition.time",
+      "suggestedAction": "Check the panel; set the dashboard time range if the pinned frame matters."
+    },
+    {
+      "code": "OPTION_IGNORED",
+      "message": "Widget option 'title_align' is ignored.",
+      "severity": "info",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[25].definition.title_align",
+      "suggestedAction": "No action needed unless the option matters for this panel."
+    },
+    {
+      "code": "OPTION_IGNORED",
+      "message": "Widget option 'title_size' is ignored.",
+      "severity": "info",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[25].definition.title_size",
+      "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
       "code": "UNSUPPORTED_WIDGET",
@@ -1289,12 +1415,54 @@
       "suggestedAction": "Migrate this widget manually."
     },
     {
-      "code": "UNSUPPORTED_WIDGET",
-      "message": "Widget type 'toplist' is not supported.",
+      "code": "OPTION_IGNORED",
+      "message": "Widget option 'custom_links' is ignored.",
+      "severity": "info",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[27].definition.custom_links",
+      "suggestedAction": "No action needed unless the option matters for this panel."
+    },
+    {
+      "code": "UNSUPPORTED_QUERY_FUNCTION",
+      "message": "Function 'top' is not supported: Datadog ranks each series once over its points (https://docs.datadoghq.com/dashboards/functions/rank/#top); PromQL topk ranks at every step, and the docs leave the ranked window open.",
       "severity": "error",
       "sourceId": "dashboards/docker_dashboard.json",
-      "sourcePath": "widgets[27].definition.type",
-      "suggestedAction": "Migrate this widget manually."
+      "sourcePath": "widgets[27].definition.requests[0].q",
+      "sourceText": "top(timeshift(sum:docker.containers.running{$scope} by {docker_image}.fill(60), 40), 20, 'last', 'desc')",
+      "suggestedAction": "Remove top() to convert all series unranked, or migrate this widget manually."
+    },
+    {
+      "code": "OPTION_IGNORED",
+      "message": "Request option 'style' is ignored.",
+      "severity": "info",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[27].definition.requests[0].style",
+      "suggestedAction": "No action needed unless the option matters for this panel."
+    },
+    {
+      "code": "APPROXIMATED",
+      "message": "TIMEPIN: Datadog showed the last 1h (the dashboard default). Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.",
+      "remark": "TIMEPIN",
+      "severity": "warning",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[27].definition.time",
+      "suggestedAction": "Check the panel; set the dashboard time range if the pinned frame matters."
+    },
+    {
+      "code": "OPTION_IGNORED",
+      "message": "Widget option 'title_align' is ignored.",
+      "severity": "info",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[27].definition.title_align",
+      "suggestedAction": "No action needed unless the option matters for this panel."
+    },
+    {
+      "code": "OPTION_IGNORED",
+      "message": "Widget option 'title_size' is ignored.",
+      "severity": "info",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[27].definition.title_size",
+      "suggestedAction": "No action needed unless the option matters for this panel."
     }
   ],
   "format": "json",
