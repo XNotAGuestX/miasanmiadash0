@@ -48,6 +48,7 @@ _FELIX = Approval("Felix", "2026-11-08")
 # Current-session instruction explicitly requests weighted/custom-PromQL and other useful
 # deterministic approximations, tagged best_effort and checked empirically case by case.
 _FUNCTIONS = Approval("Felix (explicit best-effort function request, #163/#164)", "2026-11-08")
+_ASCOUNT = Approval("Felix (explicit best-effort .as_count() request, #181)", "2026-11-08")
 _PROMLABEL = Approval("Felix (explicit Prometheus label mapping request, #185)", "2026-11-08")
 
 REMARKS: dict[str, Remark] = {
@@ -80,6 +81,16 @@ REMARKS: dict[str, Remark] = {
         ),
         evidence="https://docs.datadoghq.com/metrics/custom_metrics/type_modifiers/",
         approved=_FUNCTIONS,
+    ),
+    "ASCOUNT": Remark(
+        category="best_effort",
+        summary=(
+            "Count per interval uses PromQL increase() of the mapped cumulative counter over "
+            "the panel step ($__interval). Datadog counts per UNIX-aligned rollup bucket; "
+            "bucket width, alignment, counter extrapolation and resets can differ."
+        ),
+        evidence="https://docs.datadoghq.com/metrics/custom_metrics/type_modifiers/",
+        approved=_ASCOUNT,
     ),
     # --- approximated -------------------------------------------------------------------
     # Datadog widget `time: {"live_span": X}` pins the widget to its own time frame. Neither

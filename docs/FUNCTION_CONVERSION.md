@@ -15,6 +15,7 @@ remain blocked rather than being guessed. This inventory determines the initial 
 | `agg:metric{filters}.rollup(reducer[,seconds])` | `gauge` | Apply `reducer_over_time` to each raw series before grain deduplication and space aggregation | `ROLLUP` |
 | `agg:metric{filters}.rollup(seconds)` | `gauge` | Same, with reducer `avg` | `ROLLUP` |
 | `agg:metric{filters}.as_rate()` | `rate` | Use the mapping's counter-reset-aware `rate()` with its configured `rateWindow` or `$__rate_interval` | `ASRATE` |
+| `agg:metric{filters}.as_count()` (dashboards) | `rate` | `increase()` of the mapped counter over the panel step `$__interval` | `ASCOUNT` |
 
 `reducer` is exactly `avg`, `sum`, `min`, `max` or `count`. Explicit seconds must be an ASCII
 integer from 1 through 86400, with at most five digits. Without an explicit interval, rollup
@@ -45,8 +46,11 @@ or smooth spikes differently; `sum` and `count` can differ substantially on irre
 submission interval, bucket normalization, zero alignment and interpolation differ from
 PromQL counter extrapolation. The compiler does not claim to reconstruct those in-app settings.
 
-`.as_count()` remains blocked: the query lacks a numeric graph bucket interval, and inventing
-one would change count units. `.fill()` remains blocked, including the undocumented numeric
+`ASCOUNT` (#181, Felix's explicit best-effort request) counts per panel step: Datadog counts
+per UNIX-aligned rollup bucket whose width depends on the graph, so bucket width, alignment,
+counter extrapolation and resets can differ. Only counter (`rate`) mappings qualify; gauges and
+expressions keep blocking. Monitor `.as_count()` still blocks (docs/ALERT_CONVERSION.md).
+`.fill()` remains blocked, including the undocumented numeric
 forms `.fill(0)` and `.fill(60)` in pinned inputs. Omitting those modifiers would change gaps
 or counts. Unknown functions and semantic combinations remain diagnostics.
 

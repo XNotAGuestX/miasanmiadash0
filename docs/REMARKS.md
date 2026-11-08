@@ -52,6 +52,7 @@ Felix authorized this category in the 2026-11-08 function-extension request. Eve
 | `WEIGHTED` | Explicit `sum` of a directly mapped gauge. Raw sample sums divided by the fullest selected series' sample count approximate occupancy over the target rate window. Missing submission cadence, unequal sampling and resource churn can change the result. |
 | `ROLLUP` | A directly mapped gauge with a supported reducer and bounded interval. Trailing PromQL sample windows approximate Datadog's UNIX-aligned buckets. Missing intervals follow the target rate window. |
 | `ASRATE` | A mapped cumulative counter uses PromQL `rate`. Datadog's interpolation, rollup and source metadata can differ. |
+| `ASCOUNT` | Dashboard `.as_count()` on a mapped cumulative counter uses PromQL `increase()` over `$__interval`. Datadog's UNIX-aligned rollup buckets, extrapolation and resets can differ. |
 
 Function-specific grammar, equations and empirical limitations are documented in [FUNCTION_CONVERSION.md](FUNCTION_CONVERSION.md).
 

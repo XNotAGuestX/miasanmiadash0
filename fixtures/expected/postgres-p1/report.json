@@ -1511,13 +1511,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.as_count()' or its arguments are not supported. weighted() requires explicit sum and no arguments; as_rate() takes no arguments.",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'postgresql.deadlocks.count'.",
       "severity": "error",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[3].definition.widgets[2].definition.requests[0].queries[0].query",
       "sourceText": "max:postgresql.deadlocks.count{$scope,$host} by {db}.as_count()",
-      "suggestedAction": "Use a documented supported form or migrate this query manually."
+      "suggestedAction": "Add a reviewed entry for 'postgresql.deadlocks.count' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -2872,13 +2872,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.as_count()' or its arguments are not supported. weighted() requires explicit sum and no arguments; as_rate() takes no arguments.",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'postgresql.bgwriter.checkpoints_timed'.",
       "severity": "error",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[8].definition.widgets[0].definition.requests[0].queries[0].query",
       "sourceText": "sum:postgresql.bgwriter.checkpoints_timed{$scope,$db,$host}.as_count()",
-      "suggestedAction": "Use a documented supported form or migrate this query manually."
+      "suggestedAction": "Add a reviewed entry for 'postgresql.bgwriter.checkpoints_timed' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -2889,13 +2889,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.as_count()' or its arguments are not supported. weighted() requires explicit sum and no arguments; as_rate() takes no arguments.",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'postgresql.bgwriter.checkpoints_requested'.",
       "severity": "error",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[8].definition.widgets[0].definition.requests[0].queries[1].query",
       "sourceText": "sum:postgresql.bgwriter.checkpoints_requested{$scope,$db,$host}.as_count()",
-      "suggestedAction": "Use a documented supported form or migrate this query manually."
+      "suggestedAction": "Add a reviewed entry for 'postgresql.bgwriter.checkpoints_requested' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -2930,13 +2930,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.as_count()' or its arguments are not supported. weighted() requires explicit sum and no arguments; as_rate() takes no arguments.",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'postgresql.bgwriter.checkpoints_requested'.",
       "severity": "error",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[8].definition.widgets[0].definition.requests[1].queries[0].query",
       "sourceText": "sum:postgresql.bgwriter.checkpoints_requested{$scope,$db,$host}.as_count()",
-      "suggestedAction": "Use a documented supported form or migrate this query manually."
+      "suggestedAction": "Add a reviewed entry for 'postgresql.bgwriter.checkpoints_requested' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",

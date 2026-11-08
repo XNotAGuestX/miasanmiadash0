@@ -68,7 +68,8 @@ def test_rollup_is_time_then_space(call, reducer, window) -> None:
         "rollup(avg, 60, 1)",
         "rollup(avg, weekly)",
         "as_rate(60)",
-        "as_count()",
+        "as_count(60)",
+        "as_count()",  # gauge mapping: blocked until a counter mapping exists
     ],
 )
 def test_unsupported_forms_are_blocked_completely(call) -> None:
@@ -101,6 +102,25 @@ def test_as_rate_requires_rate_mapping_and_retains_counter_reset_handling() -> N
         blocked = run(f"sum:postgresql.rows_fetched{{*}}.{modifier}", m)
         assert isinstance(blocked, CompiledError)
         assert "requires a 'gauge'" in blocked.diagnostics[-1].message
+
+
+def test_as_count_counts_per_panel_step_on_counter_mappings() -> None:  # #181
+    m = mapping(
+        postgresql__rows_fetched=entry(
+            kind="rate", target={"name": "postgresql.tup_fetched", "type": "sum"}, rateWindow="5m"
+        )
+    )
+    result = ok("sum:postgresql.rows_fetched{*} by {db}.as_count()", m)
+    assert result.promql == (
+        "sum by (postgresql_database_name) (increase("
+        '{otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum"}[$__interval]))'
+    )
+    assert codes(result) == ["BEST_EFFORT"]
+    assert result.diagnostics[0].remark == "ASCOUNT"
+    assert check_promql_syntax(result.promql) is None
+    blocked = run("sum:postgresql.connections{*}.as_count()")
+    assert isinstance(blocked, CompiledError)
+    assert "requires a 'rate'" in blocked.diagnostics[-1].message
 
 
 def test_expression_mapping_does_not_invent_raw_samples() -> None:
