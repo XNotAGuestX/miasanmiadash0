@@ -1201,12 +1201,12 @@
     },
     {
       "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 3.",
+      "message": "Function 'top' is not supported: Datadog ranks each series once over its points (https://docs.datadoghq.com/dashboards/functions/rank/#top); PromQL topk ranks at every step, and the docs leave the ranked window open.",
       "severity": "error",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[3].definition.widgets[0].definition.requests[0].formulas[0].formula",
       "sourceText": "top(query1, 5, 'mean', 'desc')",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
+      "suggestedAction": "Remove top() to convert all series unranked, or migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
