@@ -13,8 +13,11 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+from pathlib import Path
 
 from migrator.input import InputError
+
+_REPO = Path(__file__).resolve().parents[2]
 
 
 def _cmd_convert(args: argparse.Namespace) -> int:
@@ -26,7 +29,7 @@ def _cmd_convert(args: argparse.Namespace) -> int:
             ConvertOptions(
                 source=args.source,
                 inputs=args.input,
-                mapping=args.mapping,
+                mapping=args.mapping or [str(_REPO / "mappings" / args.source)],
                 out=args.out,
                 format=args.format,
                 project=args.project,
@@ -112,9 +115,9 @@ def build_parser() -> argparse.ArgumentParser:
     conv.add_argument("--input", required=True, nargs="+", help="input files or folders")
     conv.add_argument(
         "--mapping",
-        required=True,
         action="append",
-        help="reviewed mapping file (JSON) or a directory of them; repeatable",
+        help="mapping file (JSON) or a directory of them; repeatable "
+        "(default: the repository's mappings/<source> folder)",
     )
     conv.add_argument("--out", required=True, help="output directory (must be empty)")
     conv.add_argument("--format", choices=["json", "yaml"], default="json")

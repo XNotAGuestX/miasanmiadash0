@@ -48,6 +48,9 @@ _FELIX = Approval("Felix", "2026-11-08")
 # Current-session instruction explicitly requests weighted/custom-PromQL and other useful
 # deterministic approximations, tagged best_effort and checked empirically case by case.
 _FUNCTIONS = Approval("Felix (explicit best-effort function request, #163/#164)", "2026-11-08")
+_ASCOUNT = Approval("Felix (explicit best-effort .as_count() request, #181)", "2026-11-08")
+_PROMLABEL = Approval("Felix (explicit Prometheus label mapping request, #185)", "2026-11-08")
+_OTELTABLE = Approval("Felix (explicit full OTel mapping table request, #188)", "2026-11-08")
 
 REMARKS: dict[str, Remark] = {
     "WEIGHTED": Remark(
@@ -79,6 +82,16 @@ REMARKS: dict[str, Remark] = {
         ),
         evidence="https://docs.datadoghq.com/metrics/custom_metrics/type_modifiers/",
         approved=_FUNCTIONS,
+    ),
+    "ASCOUNT": Remark(
+        category="best_effort",
+        summary=(
+            "Count per interval uses PromQL increase() of the mapped cumulative counter over "
+            "the panel step ($__interval). Datadog counts per UNIX-aligned rollup bucket; "
+            "bucket width, alignment, counter extrapolation and resets can differ."
+        ),
+        evidence="https://docs.datadoghq.com/metrics/custom_metrics/type_modifiers/",
+        approved=_ASCOUNT,
     ),
     # --- approximated -------------------------------------------------------------------
     # Datadog widget `time: {"live_span": X}` pins the widget to its own time frame. Neither
@@ -161,6 +174,38 @@ REMARKS: dict[str, Remark] = {
         ),
         evidence="see the mapping entry's ref",
         approved=None,
+    ),
+    # OpenMetrics checks (#185): Datadog scrapes a Prometheus endpoint and tags each sample
+    # with its labels (renamed by the check's rename_labels). Collected with the OTel
+    # Prometheus receiver, Dash0 keeps the raw Prometheus name and labels; the scrape target
+    # is `instance`, there is no `host_name` (checked live in Dash0, issue #185).
+    "PROMLABEL": Remark(
+        category="assumed",
+        summary=(
+            "The Datadog metric is assumed to be the Prometheus series its OpenMetrics check "
+            "scrapes, collected by the OTel Prometheus receiver under the name and labels seen "
+            "in the check's test exposition. Datadog tags are those labels (after the check's "
+            "rename_labels); host is the scrape target instance."
+        ),
+        evidence=(
+            "https://docs.datadoghq.com/developers/custom_checks/prometheus/ "
+            "https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/"
+            "receiver/prometheusreceiver"
+        ),
+        approved=_PROMLABEL,
+    ),
+    # Datadog's OpenTelemetry metrics mapping table names the OTel counterpart, but a fact the
+    # converter needs is not confirmed by the pinned OTel catalog or Datadog metadata (#188).
+    "OTELTABLE": Remark(
+        category="assumed",
+        summary=(
+            "The OTel metric is the counterpart named in Datadog's OpenTelemetry mapping table, "
+            "but the pinned OTel and Datadog metadata do not confirm every fact: the target "
+            "type, the unit scale, an attribute rename, or the choice among several table "
+            "targets. The mapping entry's ref names the unconfirmed fact."
+        ),
+        evidence="https://docs.datadoghq.com/opentelemetry/mapping/metrics_mapping/",
+        approved=_OTELTABLE,
     ),
     "SEMANTIC": Remark(
         category="assumed",

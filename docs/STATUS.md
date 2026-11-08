@@ -18,7 +18,21 @@ Checks: `uv run migrator check` passed (ruff, strict mypy: 89 files;
 **1013 passed / 621 skipped**). Explicit backend strict typing/lint and 5 frontend
 adapter tests also passed. Converter, mappings, dependencies and goldens are unchanged.
 
-Last updated: 2026-11-08: general-input safeguards and mapping coverage implemented on
+Last updated: 2026-11-08: full-table draft mappings (#171 / #175, PRs #172 / #176) now
+validate explicit unit factors and reject catalog conflicts. Generation produces 194
+unreviewed entries and skips 1,871 names with reasons. Kubernetes CPU usage preserves
+Datadog nanocore values with a factor of 10⁹. Unknown/incompatible unit pairs and three
+conflicting Kubernetes memory/filesystem definitions remain unmapped. Existing hand-written
+mappings and review flags are unchanged; no live parity or destination import is claimed.
+
+Verification: `uv run migrator check` passed (ruff, strict mypy, **1,022 passed / 621 skipped**).
+The generator check reproduces the committed output. Two offline runs over all 845 pinned
+assets from 253 integrations exited 2 and produced **1,334 byte-identical files**. Blocked
+widgets changed from 12,451 before the vendor mappings to **12,411** (12,406 before the review
+fixes); converted monitors remain **5**, up from 3. Syntax/schema passed; API and semantics
+remain `not_run`. Private ignored evidence: `out/review-fixes/` in the isolated PR worktree.
+
+Earlier update: general-input safeguards and mapping coverage implemented on
 `167-general-inputs` ([#167](https://github.com/XNotAGuestX/thinchackdash/issues/167)); the required
 check passes (993 passed, 621 skipped). Review found no blocking issues; Felix explicitly
 authorized merging [PR #168](https://github.com/XNotAGuestX/thinchackdash/pull/168).
