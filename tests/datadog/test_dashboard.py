@@ -664,9 +664,43 @@ def _unapprove(monkeypatch: pytest.MonkeyPatch, tag: str) -> None:
     monkeypatch.setitem(remarks.REMARKS, tag, entry)
 
 
-def test_time_pin_blocks_until_the_remark_is_approved(monkeypatch: pytest.MonkeyPatch) -> None:
+def _widget_for_time(wtype: str) -> dict[str, Any]:
+    if wtype == "note":
+        return {"definition": {"type": "note", "content": "Context"}}
+    if wtype == "toplist":
+        return _toplist({"count": 5, "order": "desc"})
+    if wtype == "timeseries":
+        return ts({"q": "avg:postgresql.connections{*}"})
+    request = {"q": "avg:postgresql.connections{*}", "aggregator": "avg"}
+    return {"definition": {"type": wtype, "title": "Metric", "requests": [request]}}
+
+
+@pytest.mark.parametrize("wtype", ["timeseries", "query_value", "toplist", "note"])
+def test_empty_time_is_a_noop_even_without_timepin_approval(
+    monkeypatch: pytest.MonkeyPatch, wtype: str
+) -> None:
     _unapprove(monkeypatch, "TIMEPIN")
-    c = compile_body(body(ts(new_req("avg:postgresql.connections{*}"), time={"live_span": "1h"})))
+    widget = _widget_for_time(wtype)
+    baseline = compile_body(body(widget))
+    assert baseline.dashboard is not None
+    widget["definition"]["time"] = {}
+    c = compile_body(body(widget))
+    assert c.dashboard == baseline.dashboard
+    assert c.items == baseline.items
+    assert not any(d.remark == "TIMEPIN" for d in c.diagnostics)
+    [d] = [d for d in c.diagnostics if d.source_path.endswith(".time")]
+    assert (d.code, d.severity) == ("OPTION_IGNORED", "info")
+
+
+@pytest.mark.parametrize("wtype", ["timeseries", "query_value", "toplist", "note"])
+@pytest.mark.parametrize("span", ["1h", "1w"])
+def test_time_pin_blocks_until_the_remark_is_approved(
+    monkeypatch: pytest.MonkeyPatch, wtype: str, span: str
+) -> None:
+    _unapprove(monkeypatch, "TIMEPIN")
+    widget = _widget_for_time(wtype)
+    widget["definition"]["time"] = {"live_span": span}
+    c = compile_body(body(widget))
     assert [i.outcome for i in c.items] == ["blocked", "blocked"]
     [d] = [d for d in c.diagnostics if d.severity == "error"]
     assert (d.code, d.message) == ("UNSUPPORTED_WIDGET", "Widget option 'time' is not supported.")
@@ -701,36 +735,92 @@ def test_approved_time_pin_converts_with_tags_in_report_and_artifact(
     )
 
 
-def test_other_time_shapes_still_block(monkeypatch: pytest.MonkeyPatch) -> None:
-    _approve(monkeypatch, "TIMEPIN")
-    for time in [{"live_span": "1h", "type": "fixed"}, {"from": 1, "to": 2}]:
-        c = compile_body(body(ts(new_req("avg:postgresql.connections{*}"), time=time)))
-        assert c.items[1].outcome == "blocked", time
-
-
-def test_time_pin_on_a_reducing_widget_blocks_unless_it_is_the_default(
-    monkeypatch: pytest.MonkeyPatch,
+@pytest.mark.parametrize("wtype", ["timeseries", "query_value", "toplist", "note"])
+@pytest.mark.parametrize(
+    "time",
+    [
+        None, False, "1h", [], {"live_span": None}, {"live_span": 1}, {"live_span": []},
+        {"live_span": ""}, {"live_span": "unknown"}, {"live_span": "alert"},
+        {"live_span": "1h", "type": "fixed"}, {"from": 1, "to": 2},
+    ],
+)
+def test_other_time_shapes_still_block(
+    monkeypatch: pytest.MonkeyPatch, wtype: str, time: Any
 ) -> None:
-    # A query_value reduces over its time frame: a 1w pin shown over 1h is another number.
     _approve(monkeypatch, "TIMEPIN")
-
-    def qv(span: str) -> dict[str, Any]:
-        req = {"q": "avg:postgresql.connections{*}", "aggregator": "avg"}
-        return {
-            "definition": {
-                "type": "query_value",
-                "title": "V",
-                "requests": [req],
-                "time": {"live_span": span},
-            }
-        }
-
-    c = compile_body(body(qv("1w")))
-    assert c.items[1].outcome == "blocked"
+    widget = _widget_for_time(wtype)
+    widget["definition"]["time"] = time
+    c = compile_body(body(widget))
+    assert c.dashboard is None
+    assert [(i.outcome, i.remarks) for i in c.items] == [("blocked", ()), ("blocked", ())]
     [d] = [d for d in c.diagnostics if d.severity == "error"]
-    assert d.code == "UNSUPPORTED_WIDGET" and "last 1w" in d.message
-    c = compile_body(body(qv("1h")))
-    assert [(i.outcome, i.remarks) for i in c.items[1:]] == [("translated", ())]
+    assert (d.code, d.source_path) == ("UNSUPPORTED_WIDGET", "widgets[0].definition.time")
+
+
+@pytest.mark.parametrize("wtype", ["timeseries", "query_value", "toplist", "note"])
+@pytest.mark.parametrize("span", ["1m", "1h", "1w"])
+def test_time_pin_converts_all_supported_widgets_with_remarks(
+    monkeypatch: pytest.MonkeyPatch, wtype: str, span: str
+) -> None:
+    _approve(monkeypatch, "TIMEPIN")
+    widget = _widget_for_time(wtype)
+    baseline = compile_body(body(widget))
+    widget["definition"]["time"] = {"live_span": span}
+    c = compile_body(body(widget))
+    expected = ("assumed", ("TIMEPIN", "TOPN")) if wtype == "toplist" else (
+        "approximated", ("TIMEPIN",)
+    )
+    assert [(i.outcome, i.remarks) for i in c.items] == [expected, expected]
+    assert c.dashboard is not None and baseline.dashboard is not None
+    assert validate_dashboard(c.dashboard) == []
+    panel = c.dashboard["spec"]["panels"]["widget-0"]["spec"]
+    baseline_panel = baseline.dashboard["spec"]["panels"]["widget-0"]["spec"]
+    assert panel["queries"] == baseline_panel["queries"]
+    assert panel["plugin"] == baseline_panel["plugin"]
+    assert "[TIMEPIN]" in panel["display"]["description"]
+    assert "Values reduced over that range" in panel["display"]["description"]
+    [d] = [d for d in c.diagnostics if d.source_path.endswith(".time")]
+    assert (d.code, d.severity, d.remark) == ("APPROXIMATED", "warning", "TIMEPIN")
+    assert span in d.message
+
+
+@pytest.mark.parametrize(
+    "span",
+    [
+        "1m", "5m", "10m", "15m", "30m", "1h", "4h", "1d", "2d", "1w",
+        "1mo", "3mo", "6mo", "week_to_date", "month_to_date", "1y",
+    ],
+)
+def test_documented_preset_windows_are_approximated(span: str) -> None:
+    widget = _widget_for_time("query_value")
+    widget["definition"]["time"] = {"live_span": span}
+    c = compile_body(body(widget))
+    assert [(i.outcome, i.remarks) for i in c.items] == [
+        ("approximated", ("TIMEPIN",)), ("approximated", ("TIMEPIN",))
+    ]
+
+
+@pytest.mark.parametrize("wtype", ["timeseries", "query_value", "toplist"])
+@pytest.mark.parametrize(
+    ("query", "code"),
+    [
+        ("avg:unmapped.metric{*}", "MISSING_METRIC_MAPPING"),
+        ("avg:postgresql.connections{*}.weighted()", "UNSUPPORTED_QUERY_FUNCTION"),
+    ],
+)
+def test_time_pin_does_not_bypass_query_blockers(wtype: str, query: str, code: str) -> None:
+    widget = _widget_for_time(wtype)
+    definition = widget["definition"]
+    definition["time"] = {"live_span": "1m"}
+    request = definition["requests"][0]
+    if "q" in request:
+        request["q"] = query
+    else:
+        request["queries"][0]["query"] = query
+    c = compile_body(body(widget))
+    assert c.dashboard is None
+    assert [(i.outcome, i.remarks) for i in c.items] == [("blocked", ()), ("blocked", ())]
+    assert [d.code for d in c.diagnostics if d.severity == "error"] == [code]
 
 
 def test_partial_dashboard_with_an_approximated_widget_stays_partial(

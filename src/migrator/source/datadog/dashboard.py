@@ -49,6 +49,14 @@ AUTO_WIDTH = 12
 DASHBOARD_DURATION = "1h"  # spec.duration of every emitted dashboard
 AUTO_HEIGHT = 8
 _INDEX = re.compile(r"\[(\d+)\]")
+# Documented preset windows; `alert` needs monitor context and is not a time span.
+# https://docs.datadoghq.com/dashboards/widgets/timeseries/
+_LIVE_SPANS = frozenset(
+    {
+        "1m", "5m", "10m", "15m", "30m", "1h", "4h", "1d", "2d", "1w",
+        "1mo", "3mo", "6mo", "week_to_date", "month_to_date", "1y",
+    }
+)
 
 # --- Allowed source keys per level: (silently used, ignored with OPTION_IGNORED) ----
 
@@ -271,8 +279,7 @@ def _check_keys(
         if key == "time" and what == "Widget" and obj[key] == {}:
             # An empty widget time object sets no override, so the widget follows the
             # dashboard time range, as every Perses panel does (Perses has no per-panel time
-            # range: https://perses.dev/docs/perses/latest/api/dashboard/). A non-empty
-            # `time` (for example `live_span`) still blocks.
+            # range: https://perses.dev/docs/perses/latest/api/dashboard/).
             c.add(
                 "OPTION_IGNORED",
                 "info",
@@ -288,28 +295,11 @@ def _check_keys(
             and isinstance(value, dict)
             and list(value) == ["live_span"]
             and isinstance(value["live_span"], str)
+            and value["live_span"] in _LIVE_SPANS
         ):
-            span = value["live_span"]
-            if obj.get("type") == "timeseries":
-                _time_pin(f"{path}.{key}", span, c)
-            elif span == DASHBOARD_DURATION:
-                c.add(
-                    "OPTION_IGNORED",
-                    "info",
-                    f"{path}.{key}",
-                    f"Widget option 'time' pins the dashboard default ({span}) and is ignored.",
-                    "No action needed.",
-                )
-            else:
-                # Single values and toplists reduce over the time frame, so another frame
-                # changes the shown value itself, not only the x-axis: TIMEPIN does not apply.
-                c.error(
-                    "UNSUPPORTED_WIDGET",
-                    f"{path}.{key}",
-                    f"Widget option 'time' pins the last {span}; this panel would reduce over "
-                    f"the dashboard range ({DASHBOARD_DURATION}) instead and show another value.",
-                    "Migrate this widget manually or remove the option in the source.",
-                )
+            # Felix approved losing the pinned window on reducing panels too (#158).
+            # Even the default 1h pin differs once the dashboard time picker changes.
+            _time_pin(f"{path}.{key}", value["live_span"], c)
             continue
         if key in ignored:
             c.add(
@@ -577,7 +567,8 @@ def _compile_widget(
             c.error("UNSUPPORTED_WIDGET", f"{dpath}.content", "Note has no text.", "Fix it.")
         if c.has_error():
             return None, title, c.items
-        return _panel(title, {"kind": "Markdown", "spec": {"text": content}}, []), title, c.items
+        panel = _panel(title, {"kind": "Markdown", "spec": {"text": content}}, [], _tags(c.items))
+        return panel, title, c.items
 
     raw_requests = definition.get("requests")
     if not isinstance(raw_requests, list) or not raw_requests:

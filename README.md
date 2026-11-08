@@ -169,6 +169,7 @@ A missing variable gives `error: missing env: <NAMES>` and exit 1, without print
 - `group` widgets are flattened into the grid.
 - Other widget types (toplist, table, heatmap, …) are blocked with `UNSUPPORTED_WIDGET`.
 - A widget is all or nothing: it never drops one of its series.
+- Empty `time: {}` is a no-op. Supported pinned `live_span` windows convert with an `approximated` `TIMEPIN` remark: the panel follows the dashboard time picker, so query values and rankings can change. Independent query or mapping errors still block; see [the time-window limits](docs/REMARKS.md#approximated).
 
 **Queries:**
 - Supported form: `<avg|sum|min|max>:<metric>{<tag filters, $template vars>} by {<tags>}`.

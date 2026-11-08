@@ -130,7 +130,7 @@
         "kind": "Panel",
         "spec": {
           "display": {
-            "description": "[TIMEPIN] Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.",
+            "description": "[TIMEPIN] Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker. Values reduced over that range, including query values and rankings, can change.",
             "name": "Cache memory by image"
           },
           "plugin": {
@@ -205,7 +205,7 @@
         "kind": "Panel",
         "spec": {
           "display": {
-            "description": "[TIMEPIN] Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.",
+            "description": "[TIMEPIN] Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker. Values reduced over that range, including query values and rankings, can change.",
             "name": "Avg. I/O bytes read by image"
           },
           "plugin": {
@@ -232,7 +232,7 @@
         "kind": "Panel",
         "spec": {
           "display": {
-            "description": "[TIMEPIN] Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.",
+            "description": "[TIMEPIN] Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker. Values reduced over that range, including query values and rankings, can change.",
             "name": "Avg. I/O bytes written by image"
           },
           "plugin": {
@@ -275,7 +275,7 @@
         "kind": "Panel",
         "spec": {
           "display": {
-            "description": "[TIMEPIN] Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.",
+            "description": "[TIMEPIN] Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker. Values reduced over that range, including query values and rankings, can change.",
             "name": "Avg. rx bytes by image"
           },
           "plugin": {
@@ -302,7 +302,7 @@
         "kind": "Panel",
         "spec": {
           "display": {
-            "description": "[TIMEPIN] Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.",
+            "description": "[TIMEPIN] Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker. Values reduced over that range, including query values and rankings, can change.",
             "name": "Avg. tx bytes by image"
           },
           "plugin": {
