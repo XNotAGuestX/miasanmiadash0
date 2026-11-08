@@ -83,7 +83,7 @@ Totals        translated     partial     blocked
   skipped files: 0
 ```
 
-`--input` takes files or folders, which are read recursively. `--mapping` takes a mapping file or a folder; a folder means its `*.json` files, sorted, not recursive. Repeat `--mapping` to add more. All files merge into one table; a metric defined in two files is an input error naming both. `--out` must be empty. It receives:
+`--input` takes files or folders, which are read recursively. `--mapping` takes a mapping file or a folder; a folder means its `*.json` files, sorted, not recursive. Repeat `--mapping` to add more. Without `--mapping`, the repository's `mappings/<source>` folder is used, so `--source datadog` loads every file in `mappings/datadog`. All files merge into one table; a metric defined in two files is an input error naming both. `--out` must be empty. It receives:
 
 - `dashboards/<slug>.json`: Perses dashboards, the Dash0 import body;
 - `check-rules/<slug>.json`: Dash0 check-rule bodies, disabled and without an `id`;
@@ -95,7 +95,7 @@ Totals        translated     partial     blocked
 Options: `--format yaml` writes the dashboards and Prometheus rules as YAML. `--project <name>` sets the Perses project; the default is `datadog-migration`.
 
 General-purpose dashboards can mix integrations: filenames and folder names never select a
-service. Use `--mapping mappings/datadog` to make the whole explicit mapping table available.
+service. The whole explicit mapping table (`mappings/datadog`) is available by default.
 Before compiling assets, the provider inspects known metric-query slots with the full query
 parsers. The terminal summary and `report.json.mappingCoverage` list missing metric names and
 every source location, plus queries whose syntax could not be parsed. Mapping coverage checks
