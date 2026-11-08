@@ -177,7 +177,7 @@
                 "plugin": {
                   "kind": "PrometheusTimeSeriesQuery",
                   "spec": {
-                    "query": "(max (sum by (service_instance_id) (max by (service_instance_id, postgresql_database_name) ({otel_metric_name=\"postgresql.backends\", otel_metric_type=\"sum\"})) / on (service_instance_id) max by (service_instance_id) ({otel_metric_name=\"postgresql.connection.max\", otel_metric_type=\"gauge\"}))) * 100"
+                    "query": "(max (sum by (service_instance_id) (max by (service_instance_id, postgresql_database_name) ({otel_metric_name=\"postgresql.backends\", otel_metric_type=\"sum\", host_name=~\"^($host)$\"})) / on (service_instance_id) max by (service_instance_id) ({otel_metric_name=\"postgresql.connection.max\", otel_metric_type=\"gauge\", host_name=~\"^($host)$\"}))) * 100"
                   }
                 }
               }
@@ -205,7 +205,7 @@
                 "plugin": {
                   "kind": "PrometheusTimeSeriesQuery",
                   "spec": {
-                    "query": "(sum (max by (service_instance_id, postgresql_database_name) (rate({otel_metric_name=\"postgresql.tup_fetched\", otel_metric_type=\"sum\"}[$__rate_interval])))) / ((sum (max by (service_instance_id, postgresql_database_name) (rate({otel_metric_name=\"postgresql.tup_fetched\", otel_metric_type=\"sum\"}[$__rate_interval])))) + (sum (max by (service_instance_id, postgresql_database_name) (rate({otel_metric_name=\"postgresql.tup_returned\", otel_metric_type=\"sum\"}[$__rate_interval]))))) * 100"
+                    "query": "(sum (max by (service_instance_id, postgresql_database_name) (rate({otel_metric_name=\"postgresql.tup_fetched\", otel_metric_type=\"sum\", host_name=~\"^($host)$\"}[$__rate_interval])))) / ((sum (max by (service_instance_id, postgresql_database_name) (rate({otel_metric_name=\"postgresql.tup_fetched\", otel_metric_type=\"sum\", host_name=~\"^($host)$\"}[$__rate_interval])))) + (sum (max by (service_instance_id, postgresql_database_name) (rate({otel_metric_name=\"postgresql.tup_returned\", otel_metric_type=\"sum\", host_name=~\"^($host)$\"}[$__rate_interval]))))) * 100"
                   }
                 }
               }
@@ -231,7 +231,7 @@
                 "plugin": {
                   "kind": "PrometheusTimeSeriesQuery",
                   "spec": {
-                    "query": "avg by (postgresql_database_name) (max by (postgresql_database_name, service_instance_id) (rate({otel_metric_name=\"postgresql.tup_inserted\", otel_metric_type=\"sum\"}[$__rate_interval])))",
+                    "query": "avg by (postgresql_database_name) (max by (postgresql_database_name, service_instance_id) (rate({otel_metric_name=\"postgresql.tup_inserted\", otel_metric_type=\"sum\", postgresql_database_name=~\"^($db)$\", host_name=~\"^($host)$\"}[$__rate_interval])))",
                     "seriesNameFormat": "{{postgresql_database_name}}"
                   }
                 }
@@ -258,7 +258,7 @@
                 "plugin": {
                   "kind": "PrometheusTimeSeriesQuery",
                   "spec": {
-                    "query": "avg by (postgresql_database_name) (max by (postgresql_database_name, service_instance_id) (rate({otel_metric_name=\"postgresql.tup_updated\", otel_metric_type=\"sum\"}[$__rate_interval])))",
+                    "query": "avg by (postgresql_database_name) (max by (postgresql_database_name, service_instance_id) (rate({otel_metric_name=\"postgresql.tup_updated\", otel_metric_type=\"sum\", postgresql_database_name=~\"^($db)$\", host_name=~\"^($host)$\"}[$__rate_interval])))",
                     "seriesNameFormat": "{{postgresql_database_name}}"
                   }
                 }
@@ -285,7 +285,7 @@
                 "plugin": {
                   "kind": "PrometheusTimeSeriesQuery",
                   "spec": {
-                    "query": "avg by (postgresql_database_name) (max by (postgresql_database_name, service_instance_id) (rate({otel_metric_name=\"postgresql.tup_deleted\", otel_metric_type=\"sum\"}[$__rate_interval])))",
+                    "query": "avg by (postgresql_database_name) (max by (postgresql_database_name, service_instance_id) (rate({otel_metric_name=\"postgresql.tup_deleted\", otel_metric_type=\"sum\", postgresql_database_name=~\"^($db)$\", host_name=~\"^($host)$\"}[$__rate_interval])))",
                     "seriesNameFormat": "{{postgresql_database_name}}"
                   }
                 }
@@ -311,6 +311,43 @@
         }
       }
     },
-    "variables": []
+    "variables": [
+      {
+        "kind": "ListVariable",
+        "spec": {
+          "allowAllValue": true,
+          "allowMultiple": true,
+          "defaultValue": "$__all",
+          "display": {
+            "name": "db"
+          },
+          "name": "db",
+          "plugin": {
+            "kind": "PrometheusLabelValuesVariable",
+            "spec": {
+              "labelName": "postgresql_database_name"
+            }
+          }
+        }
+      },
+      {
+        "kind": "ListVariable",
+        "spec": {
+          "allowAllValue": true,
+          "allowMultiple": true,
+          "defaultValue": "$__all",
+          "display": {
+            "name": "host"
+          },
+          "name": "host",
+          "plugin": {
+            "kind": "PrometheusLabelValuesVariable",
+            "spec": {
+              "labelName": "host_name"
+            }
+          }
+        }
+      }
+    ]
   }
 }

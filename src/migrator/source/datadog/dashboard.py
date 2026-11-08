@@ -198,7 +198,11 @@ def _promote_variables(
     body: dict[str, Any], variables: list[TemplateVariable], mapping: DatadogMapping
 ) -> dict[str, str]:
     """Pick variables that become Perses ListVariables: prefixed, default '*', and the
-    prefix tag maps to the same label in every query that uses the variable."""
+    prefix tag maps to the same label in every mapped query that uses the variable.
+
+    Queries whose metric has no mapping entry are skipped: they are blocked with
+    MISSING_METRIC_MAPPING and never render a matcher. A mapped entry without the prefix
+    label still prevents promotion."""
     parsed = [
         r.query
         for r in map(parse_metric_query, _all_query_strings(body.get("widgets")))
@@ -213,7 +217,8 @@ def _promote_variables(
             if not any(isinstance(f, VariableFilter) and f.name == var.name for f in q.filters):
                 continue
             entry = mapping.metrics.get(q.metric)
-            labels.add(entry.labels.get(var.prefix) if entry is not None else None)
+            if entry is not None:
+                labels.add(entry.labels.get(var.prefix))
         if len(labels) == 1:
             label = next(iter(labels))
             if label is not None:

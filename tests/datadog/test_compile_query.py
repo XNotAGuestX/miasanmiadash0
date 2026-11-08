@@ -66,7 +66,6 @@ def test_compiles_tag_filters_into_matchers() -> None:
 def test_blocking_checks() -> None:
     cases = {
         "avg:postgresql.connections{*}.rollup(max)": "UNSUPPORTED_QUERY_FUNCTION",
-        "postgresql.connections{*}": "MISSING_AGGREGATOR",
         "avg:system.io.util{$scope}": "MISSING_METRIC_MAPPING",
         "avg:postgresql.connections{*} by {table}": "MISSING_LABEL_MAPPING",
         "avg:postgresql.connections{table:x}": "MISSING_LABEL_MAPPING",
@@ -77,6 +76,29 @@ def test_blocking_checks() -> None:
         assert isinstance(r, CompiledError), text
         assert codes(r) == [code], text
         assert r.diagnostics[-1].severity == "error"
+
+
+LOAD = entry(target={"name": "system.cpu.load_average.1m", "type": "gauge"}, labels={})
+LOAD_SEL = '{otel_metric_name="system.cpu.load_average.1m", otel_metric_type="gauge"}'
+
+
+def test_missing_aggregator_defaults_to_avg() -> None:
+    r = ok("system.load.1{*}", mapping(system__load__1=LOAD))
+    assert r.promql == f"avg ({LOAD_SEL})"
+    (warning,) = r.diagnostics
+    assert (warning.code, warning.severity) == ("DEFAULT_AGGREGATOR_APPLIED", "warning")
+    assert "https://docs.datadoghq.com/dashboards/querying/#aggregation-method" in warning.message
+
+
+def test_missing_aggregator_never_blocks() -> None:
+    m = mapping(system__load__1=LOAD)
+    for text in ("system.load.1{*}", "system.load.1{$scope}", "system.io.util{*}"):
+        assert "MISSING_AGGREGATOR" not in codes(run(text, m)), text
+    # A later check may still block; the warning collected so far stays.
+    assert codes(run("system.io.util{*}", m)) == [
+        "DEFAULT_AGGREGATOR_APPLIED",
+        "MISSING_METRIC_MAPPING",
+    ]
 
 
 def test_blocks_non_star_template_default() -> None:
