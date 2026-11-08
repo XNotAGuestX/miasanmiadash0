@@ -56,3 +56,45 @@ conflicting-host rejection. The broader harness retains its strict data/coverage
 Live source preflight observed one series with ten finite buckets for each of weighted
 Redis memory, average/max rollup Redis memory and PostgreSQL explicit rate. This establishes
 source availability only; the integrated destination comparison is recorded separately.
+
+## Observed result, 2026-11-08
+
+One integrated live run used the existing `default` demo dataset and retained stream
+`demo-live-4c447ebf85d1`. The historical measurement window was **03:44–03:54 UTC**, end
+exclusive, on a 60-second grid. The dry-run reported **8 cases, 0 blocked**. The actual
+comparison exited **0: 8/8 passed**, with one nonzero series and **10/10 finite samples**
+on each side for every case. No collection wait or second comparison run was needed.
+
+| Case | Outcome | Relative mean difference | Declared tolerance | Result |
+| --- | --- | ---: | ---: | --- |
+| Redis weighted used memory | `best_effort` / `WEIGHTED` | 0.351950% | 4.9% | passed |
+| Redis average rollup, 60s | `best_effort` / `ROLLUP` | 0.000000% | 4.9% | passed |
+| Redis maximum rollup, 60s | `best_effort` / `ROLLUP` | 0.068225% | 4.9% | passed |
+| PostgreSQL explicit rate | `best_effort` / `ASRATE` | 3.266330% | 4.9% | passed |
+| Redis used-memory baseline | `translated` | 0.068225% | 3% | passed |
+| Redis used/RSS dashboard ratio | `translated` | 0.068271% | 3% | passed |
+| Average ratio monitor | `translated` | 0.072932% | 3% | passed |
+| Maximum percentage monitor | `translated` | 0.068223% | 3% | passed |
+
+Both degraded and failed threshold decisions agreed at all ten timestamps for each
+monitor, independently of the numeric tolerance. Values stayed below both thresholds;
+this run does not establish threshold-crossing or notification behavior.
+
+All three generated demo-prefixed assets were API accepted and read back successfully:
+
+| Asset | Returned ID | Read-back |
+| --- | --- | --- |
+| Function dashboard | `a8939cb3-aaeb-42cf-b084-6ae835835008` | passed |
+| Average ratio check, disabled | `859023b6-6a73-40eb-80fa-8d8c32353600` | passed |
+| Maximum percentage check, disabled | `b0dac707-4921-434f-bd4d-1563f7fac3ad` | passed |
+
+The checks remained disabled, and all assets and the telemetry stream were retained.
+UI rendering was not inspected. The weighted case used a stable reporting population;
+it does not empirically validate sparse or ephemeral-series weighting. The reported
+errors apply to the chosen ten-minute means, rather than a universal or per-bucket bound.
+Numeric passes do not clear `remarkBehaviorValidation: not_run` for best-effort semantics.
+
+Private, ignored evidence is in
+`/private/tmp/thinchackdash-outcomes/out/live/extensions-165-20261108/comparison.json`
+and `comparison.md`, with normal compilation artifacts and import receipts alongside.
+No credentials, raw live responses or run artifacts are committed.
