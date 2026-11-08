@@ -162,6 +162,15 @@ def test_blocks_unconvertible_formulas_never_emitting_a_partial_series() -> None
     assert errors_by_widget(c) == {"widgets[0]": ["UNSUPPORTED_FORMULA"]}
 
 
+def test_abs_formula_translates_and_query_abs_stays_blocked() -> None:
+    c = compile_body(body(ts(new_req("avg:postgresql.connections{*}", formulas=["abs(query1)"]))))
+    assert c.dashboard is not None and validate_dashboard(c.dashboard) == []
+    assert queries_of(c, "widget-0") == [{"query": f"abs({CONN})"}]
+    c = compile_body(body(ts(new_req("abs(avg:postgresql.connections{*})"))))
+    [d] = [d for d in c.diagnostics if d.severity == "error"]
+    assert (d.code, d.message) == ("UNSUPPORTED_QUERY_FUNCTION", "Function 'abs' is not supported.")
+
+
 def test_formula_uses_only_referenced_queries() -> None:
     c = compile_body(
         body(
