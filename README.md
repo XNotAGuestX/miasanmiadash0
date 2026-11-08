@@ -34,11 +34,19 @@ uv run migrator convert --source datadog \
 Output of that command:
 
 ```text
-PARTIAL    postgres-metrics 6/9 widgets
-PARTIAL    postgres-overview 8/30 widgets
-TRANSLATED postgres/monitors/percent_usage_connections.json monitor
-BLOCKED    postgres/monitors/replication_delay.json monitor
-total: dashboards 0 translated/2 partial/0 blocked, widgets 14 translated/0 partial/25 blocked, monitors 1 translated/0 partial/1 blocked, skipped files 0
+Dashboards
+  PARTIAL     postgres-metrics   6/9 widgets
+  PARTIAL     postgres-overview  8/30 widgets
+
+Monitors
+  TRANSLATED  postgres/monitors/percent_usage_connections.json
+  BLOCKED     postgres/monitors/replication_delay.json
+
+Totals        translated     partial     blocked
+  dashboards           0           2           0
+  widgets             14           0          25
+  monitors             1           0           1
+  skipped files: 0
 ```
 
 `--input` takes files or folders, which are read recursively. `--mapping` takes a mapping file or a folder; a folder means its `*.json` files, sorted, not recursive. Repeat `--mapping` to add more. All files merge into one table; a metric defined in two files is an input error naming both. `--out` must be empty. It receives:

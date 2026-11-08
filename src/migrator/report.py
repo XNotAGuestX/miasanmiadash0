@@ -44,30 +44,36 @@ def manifest_entry(
 
 
 def format_summary(report: dict[str, Any], slugs: dict[str, str]) -> str:
-    """One line per dashboard and monitor, then a totals line."""
-    lines: list[str] = []
+    """Dashboards and monitors grouped and aligned, then a totals table."""
     items = report["items"]
+    dashboards: list[tuple[str, str, str]] = []
+    monitors: list[tuple[str, str, str]] = []
     for item in items:
+        outcome = item["outcome"].upper()
         if item["kind"] == "dashboard":
             widgets = [
                 w for w in items if w["kind"] == "widget" and w["sourceId"] == item["sourceId"]
             ]
             done = sum(1 for w in widgets if w["outcome"] == "translated")
             name = slugs.get(item["sourceId"], item["sourceId"])
-            lines.append(f"{item['outcome'].upper():<10} {name} {done}/{len(widgets)} widgets")
+            dashboards.append((outcome, name, f"{done}/{len(widgets)} widgets"))
         elif item["kind"] == "monitor":
-            lines.append(f"{item['outcome'].upper():<10} {item['sourceId']} monitor")
+            monitors.append((outcome, item["sourceId"], ""))
+
+    lines: list[str] = []
+    for title, section in (("Dashboards", dashboards), ("Monitors", monitors)):
+        if not section:
+            continue
+        name_w = max(len(name) for _, name, _ in section)
+        lines.append(title)
+        for outcome, name, detail in section:
+            lines.append(f"  {outcome:<10}  {name:<{name_w}}  {detail}".rstrip())
+        lines.append("")
+
     s = report["summary"]
-    lines.append(
-        "total: dashboards {d}, widgets {w}, monitors {m}, skipped files {k}".format(
-            d=_fmt(s["dashboards"]),
-            w=_fmt(s["widgets"]),
-            m=_fmt(s["monitors"]),
-            k=s["skippedFiles"],
-        )
-    )
+    header = "".join(f"{o:>12}" for o in OUTCOMES)
+    lines.append(f"{'Totals':<12}{header}")
+    for kind in ("dashboards", "widgets", "monitors"):
+        lines.append(f"  {kind:<10}" + "".join(f"{s[kind][o]:>12}" for o in OUTCOMES))
+    lines.append(f"  skipped files: {s['skippedFiles']}")
     return "\n".join(lines)
-
-
-def _fmt(counts: dict[str, int]) -> str:
-    return "/".join(f"{counts[o]} {o}" for o in OUTCOMES)

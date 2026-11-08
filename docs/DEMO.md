@@ -74,11 +74,19 @@ uv run migrator convert --source datadog \
 Real output:
 
 ```text
-PARTIAL    postgres-metrics 6/9 widgets
-PARTIAL    postgres-overview 8/30 widgets
-TRANSLATED postgres/monitors/percent_usage_connections.json monitor
-BLOCKED    postgres/monitors/replication_delay.json monitor
-total: dashboards 0 translated/2 partial/0 blocked, widgets 14 translated/0 partial/25 blocked, monitors 1 translated/0 partial/1 blocked, skipped files 0
+Dashboards
+  PARTIAL     postgres-metrics   6/9 widgets
+  PARTIAL     postgres-overview  8/30 widgets
+
+Monitors
+  TRANSLATED  postgres/monitors/percent_usage_connections.json
+  BLOCKED     postgres/monitors/replication_delay.json
+
+Totals        translated     partial     blocked
+  dashboards           0           2           0
+  widgets             14           0          25
+  monitors             1           0           1
+  skipped files: 0
 ```
 
 Exit code `2`, because something is partial or blocked. Show:
