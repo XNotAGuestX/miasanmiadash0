@@ -24,7 +24,7 @@ import yaml
 
 from migrator.source.asset import CompileOptions, SourceAsset
 from migrator.source.datadog.dashboard import DashboardCompilation, compile_dashboard
-from migrator.source.datadog.mapping import DatadogMapping, parse_mapping
+from migrator.source.datadog.mapping import DatadogMapping, parse_mappings
 from migrator.target import Diagnostic
 from migrator.write import assign_slugs
 
@@ -162,10 +162,12 @@ def case_params(level: str) -> list[Any]:
 
 
 def load_mapping(path: Path) -> DatadogMapping:
-    """Parse a reviewed mapping file; skip the case while the file does not exist yet."""
+    """Parse a reviewed mapping file, or a directory of them as one table (`--mapping <dir>`);
+    skip the case while the path does not exist yet."""
     if not path.exists():
         pytest.skip(f"mapping file {path.relative_to(ROOT)} does not exist yet")
-    parsed = parse_mapping(load_json(path))
+    files = sorted(path.glob("*.json")) if path.is_dir() else [path]
+    parsed = parse_mappings([(f.name, load_json(f)) for f in files])
     assert parsed.ok, getattr(parsed, "errors", None)
     return parsed.mapping
 

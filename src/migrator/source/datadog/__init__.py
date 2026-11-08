@@ -3,20 +3,20 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
 
 from migrator.http import HttpSend, urllib_send
 from migrator.input import InputError, InputFile
 from migrator.source.asset import (
     CompileOptions,
     FetchSelection,
+    MappingFile,
     ProviderLoadResult,
     SourceAsset,
 )
 from migrator.source.datadog.api import fetch_datadog_assets
 from migrator.source.datadog.assets import recognize_assets
 from migrator.source.datadog.dashboard import compile_dashboard
-from migrator.source.datadog.mapping import parse_mapping
+from migrator.source.datadog.mapping import parse_mappings
 from migrator.source.datadog.monitor import compile_monitor
 from migrator.target import CompileResult, DashboardArtifact
 from migrator.write import assign_slugs
@@ -41,9 +41,9 @@ class DatadogProvider:
         return fetch_datadog_assets(sel, env, out, send)
 
     def compile(
-        self, assets: list[SourceAsset], mapping: Any, options: CompileOptions
+        self, assets: list[SourceAsset], mappings: list[MappingFile], options: CompileOptions
     ) -> CompileResult:
-        parsed = parse_mapping(mapping)
+        parsed = parse_mappings([(m.source_id, m.raw) for m in mappings])
         if not parsed.ok:
             raise InputError("invalid mapping: " + "; ".join(parsed.errors))
         result = CompileResult()

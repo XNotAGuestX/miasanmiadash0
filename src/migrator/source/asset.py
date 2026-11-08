@@ -26,6 +26,16 @@ class SourceAsset:
 
 
 @dataclass(frozen=True)
+class MappingFile:
+    """One mapping file, read by shared code: its file name and parsed JSON.
+
+    The provider validates and merges the files into its own mapping table."""
+
+    source_id: str
+    raw: Any
+
+
+@dataclass(frozen=True)
 class CompileOptions:
     project: str = "datadog-migration"
 
@@ -51,7 +61,7 @@ class SourceProvider(Protocol):
     def load(self, files: list[InputFile]) -> ProviderLoadResult: ...
 
     def compile(
-        self, assets: list[SourceAsset], mapping: Any, options: CompileOptions
+        self, assets: list[SourceAsset], mappings: list[MappingFile], options: CompileOptions
     ) -> CompileResult: ...
 
 

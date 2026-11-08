@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from migrator.cli import main
 from migrator.convert import ConvertOptions, ConvertResult, Format, run_convert
 from migrator.input import InputError, collect_input_files
 from migrator.source.provider import get_provider
@@ -15,11 +16,11 @@ from migrator.version import COMPILER_VERSION
 from migrator.write import assign_slugs, slugify, stable_stringify
 
 SYNTH = Path("fixtures/datadog/synthetic/dashboards")
-MAPPING = "mappings/datadog/postgres.json"
+MAPPING = "mappings/datadog"
 
 
 def convert(tmp: Path, inputs: list[str], fmt: Format = "json", name: str = "out") -> ConvertResult:
-    return run_convert(ConvertOptions("datadog", inputs, MAPPING, str(tmp / name), fmt))
+    return run_convert(ConvertOptions("datadog", inputs, [MAPPING], str(tmp / name), fmt))
 
 
 def tree(root: Path) -> dict[str, bytes]:
@@ -182,7 +183,7 @@ def test_refuses_non_empty_out_and_bad_mapping(tmp_path: Path) -> None:
     bad = tmp_path / "bad.json"
     bad.write_text('{"version": 1, "source": "datadog", "metrics": {"m": {"kind": "nope"}}}')
     with pytest.raises(InputError, match="invalid mapping"):
-        run_convert(ConvertOptions("datadog", [str(SYNTH)], str(bad), str(tmp_path / "o2")))
+        run_convert(ConvertOptions("datadog", [str(SYNTH)], [str(bad)], str(tmp_path / "o2")))
 
 
 def test_cli_entry_point_exit_codes(tmp_path: Path) -> None:
@@ -209,3 +210,40 @@ def test_cli_entry_point_exit_codes(tmp_path: Path) -> None:
     )
     assert r.returncode == 0, r.stderr
     assert r.stdout.startswith("TRANSLATED synthetic-supported 2/2 widgets")
+
+
+PG = "fixtures/datadog/integrations-core/postgres"
+
+
+def test_mapping_directory_equals_its_files(tmp_path: Path) -> None:
+    run_convert(ConvertOptions("datadog", [PG], [MAPPING], str(tmp_path / "dir")))
+    files = [f"{MAPPING}/postgres.json", f"{MAPPING}/host.json"]
+    run_convert(ConvertOptions("datadog", [PG], files, str(tmp_path / "two")))
+    dir_out, two_out = tree(tmp_path / "dir/dashboards"), tree(tmp_path / "two/dashboards")
+    assert dir_out and dir_out == two_out
+    report = json.loads((tmp_path / "two/report.json").read_text())
+    assert [m["sourceId"] for m in report["mapping"]] == ["host.json", "postgres.json"]
+    report = json.loads((tmp_path / "dir/report.json").read_text())
+    names = sorted(p.name for p in Path(MAPPING).glob("*.json"))
+    assert [m["sourceId"] for m in report["mapping"]] == names
+
+
+def test_metric_in_two_mapping_files_exits_1_naming_both(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    copy = tmp_path / "copy.json"
+    copy.write_text(Path(MAPPING, "host.json").read_text())
+    args = ["convert", "--source", "datadog", "--input", PG, "--out", str(tmp_path / "o")]
+    assert main([*args, "--mapping", MAPPING, "--mapping", str(copy)]) == 1
+    err = capsys.readouterr().err
+    assert "metrics.system.cpu.idle: defined in both copy.json and host.json" in err
+
+
+def test_mapping_paths_need_unique_names_and_files(tmp_path: Path) -> None:
+    with pytest.raises(InputError, match="duplicate mapping file name: host.json"):
+        run_convert(
+            ConvertOptions("datadog", [PG], [MAPPING, f"{MAPPING}/host.json"], str(tmp_path / "a"))
+        )
+    (tmp_path / "empty").mkdir()
+    with pytest.raises(InputError, match="no mapping files"):
+        run_convert(ConvertOptions("datadog", [PG], [str(tmp_path / "empty")], str(tmp_path / "b")))
