@@ -26,6 +26,7 @@ from migrator.destination.dash0 import (
 from migrator.http import HttpSend, urllib_send
 from migrator.input import InputError
 from migrator.receipts import Receipt, decide, load_receipts, record_receipt, save_receipts
+from migrator.report import CONVERTED
 from migrator.target import Dash0CheckRule, PersesDashboard
 from migrator.validation import validate_check_rule, validate_dashboard
 
@@ -158,7 +159,7 @@ def _plan(root: Path, allow_partial: bool) -> tuple[list[_Selected], list[str]]:
         if kind is None:
             continue  # sources, Prometheus rule files and anything else are never published
         outcome = entry.get("outcome")
-        if outcome == "translated" or (outcome == "partial" and allow_partial):
+        if outcome in CONVERTED or (outcome == "partial" and allow_partial):
             selected.append(_load_selected(root, entry, kind))
         elif outcome == "partial":
             excluded.append(f"SKIP {entry['path']}  (partial; pass --allow-partial to publish)")

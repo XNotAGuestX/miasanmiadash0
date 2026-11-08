@@ -162,7 +162,9 @@ tests/scripts/                    # pytest: dev-time scripts (build_expected rul
 
 ## 8. Shared output contract
 
-**Outcomes.** Each item (dashboard, widget, monitor) has one: `translated | partial | blocked`. Only a dashboard can be `partial`. A widget or monitor is all or nothing; never drop a series.
+**Outcomes.** Each item (dashboard, widget, monitor) has one: `translated | approximated | partial | blocked`. Only a dashboard can be `partial`. A widget or monitor is all or nothing; never drop a series.
+
+**Approximated** means converted with a remark: the item differs from the source in one documented, minor way, and an `APPROXIMATED` warning says how. Each reason is listed in `src/migrator/source/datadog/approximations.py` and needs manual approval (`approved`, set only by a human reviewer); an unapproved reason keeps blocking. A dashboard is `approximated` when every widget is translated or approximated and at least one is approximated. Approximated artifacts are eligible to publish like translated ones; the exit code stays `2`.
 
 **Diagnostic fields:** `{code, severity: "error"|"warning"|"info", sourceId, sourcePath, message, suggestedAction, sourceText?}`.
 
@@ -198,6 +200,7 @@ tests/scripts/                    # pytest: dev-time scripts (build_expected rul
 | `THRESHOLD_MISMATCH` | error | 06 |
 | `NOTIFICATION_NOT_MIGRATED` | warning | 06 |
 | `TEXT_TRUNCATED` | warning | 06 |
+| `APPROXIMATED` | warning | approximations |
 | `IMPORT_FAILED` | error | 07 |
 | `IMPORT_RESULT_UNKNOWN` | error | 07 |
 

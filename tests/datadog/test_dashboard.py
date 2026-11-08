@@ -1,3 +1,4 @@
+import dataclasses
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -6,6 +7,7 @@ from typing import Any
 import pytest
 
 from migrator.source.asset import CompileOptions, SourceAsset
+from migrator.source.datadog import approximations
 from migrator.source.datadog.compile_query import TemplateVariable
 from migrator.source.datadog.dashboard import (
     DashboardCompilation,
@@ -618,3 +620,46 @@ def test_other_wrapping_functions_keep_the_generic_message() -> None:
         "UNSUPPORTED_FORMULA",
         "Formula syntax is not supported at offset 6.",
     )
+
+
+def _approve_time_pin(monkeypatch: pytest.MonkeyPatch) -> None:
+    entry = approximations.APPROXIMATIONS["WIDGET_TIME_PIN"]
+    approved = dataclasses.replace(entry, approved=approximations.Approval("test", "2026-11-08"))
+    monkeypatch.setitem(approximations.APPROXIMATIONS, "WIDGET_TIME_PIN", approved)
+
+
+def test_time_pin_blocks_until_the_approximation_is_approved() -> None:
+    assert approximations.APPROXIMATIONS["WIDGET_TIME_PIN"].approved is None
+    c = compile_body(body(ts(new_req("avg:postgresql.connections{*}"), time={"live_span": "1h"})))
+    assert [i.outcome for i in c.items] == ["blocked", "blocked"]
+    [d] = [d for d in c.diagnostics if d.severity == "error"]
+    assert (d.code, d.message) == ("UNSUPPORTED_WIDGET", "Widget option 'time' is not supported.")
+    assert "WIDGET_TIME_PIN" in d.suggested_action
+    assert "awaits manual approval" in d.suggested_action
+
+
+def test_approved_time_pin_converts_with_a_remark(monkeypatch: pytest.MonkeyPatch) -> None:
+    _approve_time_pin(monkeypatch)
+    pinned = ts(new_req("avg:postgresql.connections{*}"), time={"live_span": "1h"})
+    c = compile_body(body(pinned, ts(new_req("avg:postgresql.connections{*}"))))
+    assert [i.outcome for i in c.items] == ["approximated", "approximated", "translated"]
+    assert c.dashboard is not None and validate_dashboard(c.dashboard) == []
+    [d] = [d for d in c.diagnostics if d.code == "APPROXIMATED"]
+    assert d.severity == "warning" and d.message.startswith("WIDGET_TIME_PIN: ")
+    assert d.source_path == "widgets[0].definition.time"
+
+
+def test_approved_time_pin_covers_only_the_dashboard_range(monkeypatch: pytest.MonkeyPatch) -> None:
+    _approve_time_pin(monkeypatch)
+    for time in [{"live_span": "1w"}, {"live_span": "1h", "type": "fixed"}]:
+        c = compile_body(body(ts(new_req("avg:postgresql.connections{*}"), time=time)))
+        assert c.items[1].outcome == "blocked", time
+
+
+def test_partial_dashboard_with_an_approximated_widget_stays_partial(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _approve_time_pin(monkeypatch)
+    pinned = ts(new_req("avg:postgresql.connections{*}"), time={"live_span": "1h"})
+    c = compile_body(body(pinned, ts(new_req("avg:unmapped.metric{*}"))))
+    assert [i.outcome for i in c.items] == ["partial", "approximated", "blocked"]

@@ -988,7 +988,7 @@
       "severity": "error",
       "sourceId": "dashboards/NGINX-Overview_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[4].definition.time",
-      "suggestedAction": "Migrate this widget manually or remove the option in the source."
+      "suggestedAction": "Approximation WIDGET_TIME_PIN (Widget time pin dropped: it equals the dashboard default range, so the default view is identical, but the panel follows the time picker where Datadog's widget would not.) awaits manual approval in src/migrator/source/datadog/approximations.py; until then, migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1172,7 +1172,7 @@
       "severity": "error",
       "sourceId": "dashboards/NGINX-Overview_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[0].definition.time",
-      "suggestedAction": "Migrate this widget manually or remove the option in the source."
+      "suggestedAction": "Approximation WIDGET_TIME_PIN (Widget time pin dropped: it equals the dashboard default range, so the default view is identical, but the panel follows the time picker where Datadog's widget would not.) awaits manual approval in src/migrator/source/datadog/approximations.py; until then, migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1268,7 +1268,7 @@
       "severity": "error",
       "sourceId": "dashboards/NGINX-Overview_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[1].definition.time",
-      "suggestedAction": "Migrate this widget manually or remove the option in the source."
+      "suggestedAction": "Approximation WIDGET_TIME_PIN (Widget time pin dropped: it equals the dashboard default range, so the default view is identical, but the panel follows the time picker where Datadog's widget would not.) awaits manual approval in src/migrator/source/datadog/approximations.py; until then, migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -3460,17 +3460,20 @@
   "reportVersion": 1,
   "summary": {
     "dashboards": {
+      "approximated": 0,
       "blocked": 0,
       "partial": 3,
       "translated": 0
     },
     "monitors": {
+      "approximated": 0,
       "blocked": 0,
       "partial": 0,
       "translated": 0
     },
     "skippedFiles": 0,
     "widgets": {
+      "approximated": 0,
       "blocked": 29,
       "partial": 0,
       "translated": 21

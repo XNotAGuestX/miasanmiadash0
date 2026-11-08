@@ -79,17 +79,20 @@
   "reportVersion": 1,
   "summary": {
     "dashboards": {
+      "approximated": 0,
       "blocked": 0,
       "partial": 0,
       "translated": 0
     },
     "monitors": {
+      "approximated": 0,
       "blocked": 1,
       "partial": 0,
       "translated": 1
     },
     "skippedFiles": 0,
     "widgets": {
+      "approximated": 0,
       "blocked": 0,
       "partial": 0,
       "translated": 0

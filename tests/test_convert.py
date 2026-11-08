@@ -209,7 +209,7 @@ def test_cli_entry_point_exit_codes(tmp_path: Path) -> None:
         str(tmp_path / "ok"),
     )
     assert r.returncode == 0, r.stderr
-    assert r.stdout.startswith("Dashboards\n  TRANSLATED  synthetic-supported  2/2 widgets\n")
+    assert r.stdout.startswith("Dashboards\n  TRANSLATED    synthetic-supported  2/2 widgets\n")
 
 
 PG = "fixtures/datadog/integrations-core/postgres"
@@ -247,3 +247,21 @@ def test_mapping_paths_need_unique_names_and_files(tmp_path: Path) -> None:
     (tmp_path / "empty").mkdir()
     with pytest.raises(InputError, match="no mapping files"):
         run_convert(ConvertOptions("datadog", [PG], [str(tmp_path / "empty")], str(tmp_path / "b")))
+
+
+def test_approximated_items_are_converted_and_eligible() -> None:
+    from migrator.report import exit_code_for, manifest_entry, summarize
+    from migrator.target import ItemResult
+
+    items = [
+        ItemResult("d.json", "", "dashboard", "D", "approximated"),
+        ItemResult("d.json", "widgets[0]", "widget", "W", "approximated"),
+    ]
+    assert summarize(items, 0)["widgets"] == {
+        "translated": 0,
+        "approximated": 1,
+        "partial": 0,
+        "blocked": 0,
+    }
+    assert manifest_entry("p", "dashboard", "d.json", "x", "approximated")["eligible"] is True
+    assert exit_code_for(items) == 2  # only an all-translated run exits 0

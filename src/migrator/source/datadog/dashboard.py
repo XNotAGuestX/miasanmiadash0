@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from migrator.source.asset import CompileOptions, SourceAsset
+from migrator.source.datadog.approximations import APPROXIMATIONS, approved
 from migrator.source.datadog.compile_query import (
     CompiledOk,
     QueryContext,
@@ -43,6 +44,7 @@ from migrator.target import (
 from migrator.validation import check_promql_syntax, validate_dashboard
 
 AUTO_WIDTH = 12
+DASHBOARD_DURATION = "1h"  # spec.duration of every emitted dashboard
 AUTO_HEIGHT = 8
 _INDEX = re.compile(r"\[(\d+)\]")
 
@@ -263,6 +265,9 @@ def _check_keys(
                 "No action needed.",
             )
             continue
+        if key == "time" and what == "Widget" and obj[key] == {"live_span": DASHBOARD_DURATION}:
+            _time_pin(f"{path}.{key}", c)
+            continue
         if key in ignored:
             c.add(
                 "OPTION_IGNORED",
@@ -278,6 +283,22 @@ def _check_keys(
                 f"{what} option '{key}' is not supported.",
                 "Migrate this widget manually or remove the option in the source.",
             )
+
+
+def _time_pin(path: str, c: _Collector) -> None:
+    """A widget pinned to the dashboard's own default range: approximated once approved."""
+    reason = "WIDGET_TIME_PIN"
+    entry = approved(reason)
+    if entry is not None:
+        c.add("APPROXIMATED", "warning", path, f"{reason}: {entry.remark}", "Check the panel.")
+        return
+    c.error(
+        "UNSUPPORTED_WIDGET",
+        path,
+        "Widget option 'time' is not supported.",
+        f"Approximation {reason} ({APPROXIMATIONS[reason].remark}) awaits manual approval in "
+        "src/migrator/source/datadog/approximations.py; until then, migrate this widget manually.",
+    )
 
 
 @dataclass
@@ -453,6 +474,8 @@ def _compile_requests(
 def _compile_widget(
     widget: Any, path: str, ctx: _Ctx
 ) -> tuple[PersesPanel | None, str, list[Diagnostic]]:
+    """The panel (None when blocked), its title, and diagnostics. The widget is approximated
+    when its diagnostics include an APPROXIMATED warning."""
     c = _Collector(ctx.source_id)
     definition = widget.get("definition") if isinstance(widget, dict) else None
     if not isinstance(definition, dict):
@@ -635,7 +658,10 @@ class _Builder:
     def record(self, key: str, path: str, widget: Any, grid: _GridBuilder) -> None:
         panel, title, diags = _compile_widget(widget, path, self.ctx)
         self.c.items.extend(diags)
-        outcome: Outcome = "translated" if panel is not None else "blocked"
+        outcome: Outcome = "blocked"
+        if panel is not None:
+            approx = any(d.code == "APPROXIMATED" for d in diags)
+            outcome = "approximated" if approx else "translated"
         self.items.append(ItemResult(self.ctx.source_id, path, "widget", title, outcome))
         self.anchors.append(path)
         if panel is not None:
@@ -729,10 +755,11 @@ def compile_dashboard(
             "Add widgets to the source dashboard or migrate it manually.",
         )
 
-    translated = sum(1 for it in b.items if it.outcome == "translated")
+    translated = sum(1 for it in b.items if it.outcome in ("translated", "approximated"))
+    approximated = any(it.outcome == "approximated" for it in b.items)
     outcome: Outcome
     if translated and translated == len(b.items):
-        outcome = "translated"
+        outcome = "approximated" if approximated else "translated"
     elif translated:
         outcome = "partial"
     else:
@@ -748,7 +775,7 @@ def compile_dashboard(
                     "name": str(body.get("title") or ""),
                     "description": str(body.get("description") or ""),
                 },
-                "duration": "1h",
+                "duration": DASHBOARD_DURATION,
                 "variables": out_variables,
                 "panels": b.panels,
                 "layouts": b.layouts,

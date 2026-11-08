@@ -37,11 +37,12 @@ DiagnosticCode = Literal[
     "THRESHOLD_MISMATCH",
     "NOTIFICATION_NOT_MIGRATED",
     "TEXT_TRUNCATED",
+    "APPROXIMATED",
     "IMPORT_FAILED",
     "IMPORT_RESULT_UNKNOWN",
 ]
 
-Outcome = Literal["translated", "partial", "blocked"]
+Outcome = Literal["translated", "approximated", "partial", "blocked"]
 ItemKind = Literal["dashboard", "widget", "monitor"]
 Level = Literal["passed", "failed", "not_run"]
 

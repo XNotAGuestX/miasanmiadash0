@@ -6,7 +6,9 @@ from typing import Any, Literal
 
 from migrator.target import ItemResult, Outcome
 
-OUTCOMES: tuple[Outcome, ...] = ("translated", "partial", "blocked")
+OUTCOMES: tuple[Outcome, ...] = ("translated", "approximated", "partial", "blocked")
+# Outcomes whose artifacts are converted and eligible to publish without a flag.
+CONVERTED: tuple[Outcome, ...] = ("translated", "approximated")
 ManifestKind = Literal["dashboard", "prometheus-rule", "check-rule", "source"]
 
 
@@ -39,7 +41,7 @@ def manifest_entry(
         "sourceId": source_id,
         "sha256": digest,
         "outcome": outcome,
-        "eligible": outcome == "translated",
+        "eligible": outcome in CONVERTED,
     }
 
 
@@ -54,9 +56,13 @@ def format_summary(report: dict[str, Any], slugs: dict[str, str]) -> str:
             widgets = [
                 w for w in items if w["kind"] == "widget" and w["sourceId"] == item["sourceId"]
             ]
-            done = sum(1 for w in widgets if w["outcome"] == "translated")
+            done = sum(1 for w in widgets if w["outcome"] in CONVERTED)
+            approx = sum(1 for w in widgets if w["outcome"] == "approximated")
+            detail = f"{done}/{len(widgets)} widgets" + (
+                f", {approx} approximated" if approx else ""
+            )
             name = slugs.get(item["sourceId"], item["sourceId"])
-            dashboards.append((outcome, name, f"{done}/{len(widgets)} widgets"))
+            dashboards.append((outcome, name, detail))
         elif item["kind"] == "monitor":
             monitors.append((outcome, item["sourceId"], ""))
 
@@ -67,13 +73,13 @@ def format_summary(report: dict[str, Any], slugs: dict[str, str]) -> str:
         name_w = max(len(name) for _, name, _ in section)
         lines.append(title)
         for outcome, name, detail in section:
-            lines.append(f"  {outcome:<10}  {name:<{name_w}}  {detail}".rstrip())
+            lines.append(f"  {outcome:<12}  {name:<{name_w}}  {detail}".rstrip())
         lines.append("")
 
     s = report["summary"]
-    header = "".join(f"{o:>12}" for o in OUTCOMES)
+    header = "".join(f"{o:>14}" for o in OUTCOMES)
     lines.append(f"{'Totals':<12}{header}")
     for kind in ("dashboards", "widgets", "monitors"):
-        lines.append(f"  {kind:<10}" + "".join(f"{s[kind][o]:>12}" for o in OUTCOMES))
+        lines.append(f"  {kind:<10}" + "".join(f"{s[kind][o]:>14}" for o in OUTCOMES))
     lines.append(f"  skipped files: {s['skippedFiles']}")
     return "\n".join(lines)

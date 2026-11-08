@@ -61,7 +61,7 @@ Totals        translated     partial     blocked
 Options: `--format yaml` writes the dashboards and Prometheus rules as YAML. `--project <name>` sets the Perses project; the default is `datadog-migration`.
 
 Exit codes:
-- `0`: everything translated;
+- `0`: everything translated (an `approximated` item, converted with an approved remark, still gives `2`);
 - `2`: something partial or blocked;
 - `1`: bad input, mapping or arguments.
 
