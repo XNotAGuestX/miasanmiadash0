@@ -81,6 +81,10 @@ def run_convert(opts: ConvertOptions) -> ConvertResult:
     mappings = _read_mappings(opts.mapping)
 
     loaded = provider.load(files)
+    if not loaded.assets:
+        details = "; ".join(f"{d.code}: {d.source_id}: {d.message}" for d in loaded.diagnostics)
+        message = "NO_SUPPORTED_ASSETS: no recognized dashboards or monitors in the input."
+        raise InputError(f"{message} {details}" if details else message)
     result = provider.compile(
         loaded.assets,
         [MappingFile(name, raw) for name, _, raw in mappings],
@@ -135,6 +139,8 @@ def run_convert(opts: ConvertOptions) -> ConvertResult:
         "diagnostics": [d.to_dict() for d in loaded.diagnostics + result.diagnostics],
         "validation": validation.to_dict(),
     }
+    if result.mapping_coverage is not None:
+        report["mappingCoverage"] = result.mapping_coverage.to_dict()
     _write(out, "report.json", stable_stringify(report))
     manifest: dict[str, Any] = {
         "manifestVersion": 1,
@@ -145,4 +151,6 @@ def run_convert(opts: ConvertOptions) -> ConvertResult:
     }
     _write(out, "manifest.json", stable_stringify(manifest))
     slugs = {a.source_id: a.slug for a in result.dashboards}
-    return ConvertResult(report, manifest, exit_code_for(result.items), slugs)
+    return ConvertResult(
+        report, manifest, exit_code_for(result.items, len(loaded.diagnostics)), slugs
+    )

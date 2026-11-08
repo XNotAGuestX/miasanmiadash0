@@ -1,6 +1,29 @@
 # Shared project status
 
-Last updated: 2026-11-08: parallel alert/function extensions integrated on `164-best-effort-outcomes`; all eight live cases pass at their declared tolerances, and the required check passes (971 passed, 621 skipped). Felix's review/merge is pending. Earlier comparison failures remain tracked in #148 and #161. Open work: the orchestrator handoff [`handoff/README.md`](handoff/README.md). Work is tracked in [issues](https://github.com/XNotAGuestX/thinchackdash/issues) and on the [project board](https://github.com/users/XNotAGuestX/projects/3).
+Last updated: 2026-11-08: general-input safeguards and mapping coverage implemented on
+`167-general-inputs` ([#167](https://github.com/XNotAGuestX/thinchackdash/issues/167)); the required
+check passes (993 passed, 621 skipped). Review found no blocking issues; Felix explicitly
+authorized merging [PR #168](https://github.com/XNotAGuestX/thinchackdash/pull/168).
+The prior alert/function extension PR #166 is merged. Earlier comparison failures remain
+tracked in #148 and #161. Open work: the orchestrator handoff [`handoff/README.md`](handoff/README.md).
+Work is tracked in [issues](https://github.com/XNotAGuestX/thinchackdash/issues) and on the
+[project board](https://github.com/users/XNotAGuestX/projects/3).
+
+General-input behavior (#167): no recognized assets produces `NO_SUPPORTED_ASSETS`, exit 1,
+before output creation. Mixed recognized/skipped files preserve source copies and supported
+artifacts, show skipped-file warnings, and exit 2. The Datadog provider inspects known metric
+query slots with the existing full parsers before compilation; the deterministic report and
+terminal summary show exact metric mapping presence, missing names and source locations,
+and explicitly unparsed queries. File/folder names never choose an integration. Mapping
+coverage does not bypass compiler semantics or prove runtime equivalence. Target selection
+and bundle extraction remain outside this change.
+
+Verification: `uv run migrator check` passed (ruff, strict mypy: 88 files; **993 passed /
+621 skipped**, 25.53s); focused general-input/conversion tests: **41 passed**. The final check
+used localhost access for existing HTTP transport tests. Six frozen reports were regenerated
+and checked to differ only by the new `mappingCoverage` field: target dashboards, rules,
+manifests and all existing report fields are unchanged. No vendor calls or live semantic
+verification were performed for this offline change.
 
 2026-11-08 update ([#146](https://github.com/XNotAGuestX/thinchackdash/issues/146), branch
 `146-live-comparison`): on-demand comparison harness implemented with independent workload

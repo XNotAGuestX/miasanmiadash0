@@ -65,7 +65,7 @@ uv run migrator convert --source datadog \
   --mapping mappings/datadog --out /tmp/pg-out
 ```
 
-Output of that command:
+Example outcome summary (the mapping coverage section follows the totals):
 
 ```text
 Dashboards
@@ -89,15 +89,28 @@ Totals        translated     partial     blocked
 - `check-rules/<slug>.json`: Dash0 check-rule bodies, disabled and without an `id`;
 - `rules/<slug>.prometheus.json`: Prometheus rule groups, warning then critical;
 - `source/`: byte copies of the inputs;
-- `report.json`: an outcome per dashboard, widget and monitor, every diagnostic, and each mapping file's name and sha256;
+- `report.json`: an outcome per dashboard, widget and monitor, every diagnostic, each mapping file's name and sha256, and metric mapping coverage;
 - `manifest.json`: every file with its sha256 and whether it is eligible to publish.
 
 Options: `--format yaml` writes the dashboards and Prometheus rules as YAML. `--project <name>` sets the Perses project; the default is `datadog-migration`.
 
+General-purpose dashboards can mix integrations: filenames and folder names never select a
+service. Use `--mapping mappings/datadog` to make the whole explicit mapping table available.
+Before compiling assets, the provider inspects known metric-query slots with the full query
+parsers. The terminal summary and `report.json.mappingCoverage` list missing metric names and
+every source location, plus queries whose syntax could not be parsed. Mapping coverage checks
+name presence only; functions, labels, units, options and other semantics can still block an
+otherwise mapped query. Unparsed queries never count as covered.
+
+Each JSON file must contain one recognized dashboard or monitor. Arrays and export wrappers
+such as `{"dashboards": [...]}` remain unsupported. Empty folders and inputs with no recognized
+assets fail with `NO_SUPPORTED_ASSETS` before output is created. A run containing both recognized
+and skipped files preserves all inputs, prints each skipped-file warning and returns exit 2.
+
 Exit codes:
 - `0`: everything translated (an `approximated` or `assumed` item, converted with an approved remark tag, still gives `2`; see [docs/REMARKS.md](docs/REMARKS.md));
-- `2`: something partial or blocked;
-- `1`: bad input, mapping or arguments.
+- `2`: something partial, blocked or skipped (also converted items with remark categories);
+- `1`: bad input, mapping or arguments, including no recognized assets.
 
 The same inputs, mapping and version always produce the same bytes.
 
