@@ -1,0 +1,92 @@
+# Remarks: converted, but not an exact translation
+
+Most items either translate exactly or block. Two more outcomes cover items that convert while differing from the source in a known, bounded way. Each such reason is a **remark tag**: a short uppercase code with a one-line summary. The tag travels with the item into every artifact, so a reader in Dash0 can see why a panel or check rule isn't an exact copy.
+
+The registry is [`src/migrator/source/datadog/remarks.py`](../src/migrator/source/datadog/remarks.py). It is the single source of truth for tags, summaries, evidence and approvals.
+
+## Outcomes
+
+| Outcome | Meaning | Publish |
+|---|---|---|
+| `translated` | Exact translation. | Eligible. |
+| `approximated` | Exact except for one documented, minor behaviour the target lacks. | Eligible; published as its own group, tagged. |
+| `assumed` | The exact Datadog metric has no OTel counterpart. The value is rebuilt deterministically from OTel data under a stated, high-confidence assumption. | Eligible; published as its own group, tagged. |
+| `partial` | Dashboard only: some widgets converted, some blocked. | Only with `--allow-partial`. |
+| `blocked` | Not converted. `report.json` says why. | Never. |
+
+- **Precedence:** an item with both kinds of tag is `assumed`, which beats `approximated`, which beats `translated`.
+- **Dashboard outcome:** a dashboard whose widgets all converted takes the strongest widget outcome. If any widget is blocked, the dashboard is `partial`.
+- **Exit code:** `convert` still exits `2` unless every item is `translated`.
+
+**Approximated vs assumed.** The two categories answer different questions:
+- `approximated`: the data is right, but a behaviour around it differs, such as the time frame or alert timing.
+- `assumed`: the data itself is reconstructed, because no OTel metric carries the Datadog value as such.
+
+## Manual approval
+
+Every tag needs manual approval before it converts anything.
+- A tag with `approved=None` keeps blocking exactly as if it didn't exist. The block's suggested action names the tag that awaits approval.
+- Only a human reviewer sets `approved = Approval("<who>", "<YYYY-MM-DD>")`, in the PR that adds or changes the tag. Coding agents leave it `None`.
+- Adding a new reason means adding a new tag. A new reason is never folded into an existing tag.
+
+## Where tags appear
+
+| Artifact | Field |
+|---|---|
+| `report.json` | Each converted item's `remarks`; each `APPROXIMATED` / `ASSUMED` diagnostic's `remark` |
+| `manifest.json` | `remarks` on dashboard, check-rule and Prometheus-rule entries |
+| Perses panel | `spec.display.description`: `[TAG] summary`. Dash0 shows panel descriptions "in the panel header next to the name" ([Dash0 docs](https://www.dash0.com/docs/dash0/dashboards/configure-panels)). |
+| Perses dashboard | One line appended to `spec.display.description`: `Migration remarks: TAG … (see panel descriptions).` |
+| Check rule and Prometheus rules | Label `migration_remarks: "TAG1,TAG2"`. Dash0 merges check-rule labels into each failed check ([Dash0 docs](https://www.dash0.com/docs/dash0/monitoring/alerting/route-alert-check-notifications)). |
+| `publish` output | Groups in order: translated, approximated, assumed, partial. Each line ends with `[category: TAGS]`. |
+
+## Tags
+
+### Approximated
+
+| Tag | When | Why it's only approximate | Approved |
+|---|---|---|---|
+| `TIMEPIN` | A widget has `time: {"live_span": X}` | Neither Perses nor Dash0 has a per-panel time range. Perses has only the dashboard `duration` ([Perses API](https://perses.dev/docs/perses/latest/api/dashboard/)). Dash0's panel settings are name, description, group, hide header and header color. The panel follows the dashboard time picker. When X equals the dashboard default (`1h`), the default view is identical. | No |
+| `FULLWINDOW` | Monitor `require_full_window: true` | Dash0 evaluates partial windows, so a new series can alert early. | Yes, under A3 |
+| `NEWHOST` | Monitor `new_host_delay > 0` | Dash0 has no new-host grace period. | Yes, under A3 |
+
+`FULLWINDOW` and `NEWHOST` were approximated with a warning under decision A3 before tags existed. They moved into this category unchanged, and their approval cites A3.
+
+### Assumed
+
+A mapping entry names one of these in its `assumption` field. Its `ref` must spell out the assumption and its evidence.
+
+| Tag | When |
+|---|---|
+| `AGG` | The value is rebuilt by aggregating OTel series over an attribute, for example summing memory states. |
+| `DERIVED` | The value is computed from other OTel metrics by an expression. |
+| `ATTRVAL` | The value is one slice of an OTel metric, selected by an attribute value that the OTel definition doesn't enumerate. |
+| `SEMANTIC` | Datadog's vendor table pairs the metrics, but their documented definitions differ in scope. |
+
+None of the assumed tags is approved yet.
+
+## Gaps
+
+When a Datadog metric was checked and found unmappable, even with an assumption, its mapping file records it under `gaps`:
+
+```json
+"gaps": { "<datadog metric>": { "tag": "NOOTEL", "reason": "<evidence>" } }
+```
+
+A widget using that metric still blocks, but its `MISSING_METRIC_MAPPING` message cites the gap tag and reason.
+
+| Tag | Meaning |
+|---|---|
+| `NOOTEL` | No OTel metric carries it in the pinned sources. |
+| `NOEQUIV` | OTel has related data, but there is no deterministic rebuild. |
+
+Other short tags may appear; each gap's `reason` explains its tag.
+
+## Not remarks
+
+These diagnostics stay as they are, because the converted value is exact:
+- `DEFAULT_AGGREGATOR_APPLIED`: Datadog's documented default.
+- `LAYOUT_APPROXIMATED`: cosmetic.
+- `OPTION_IGNORED`.
+
+`TEMPLATE_VARIABLE_DROPPED` (a `*` default) is a candidate for a future tag.

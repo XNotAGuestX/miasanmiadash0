@@ -61,7 +61,7 @@ Totals        translated     partial     blocked
 Options: `--format yaml` writes the dashboards and Prometheus rules as YAML. `--project <name>` sets the Perses project; the default is `datadog-migration`.
 
 Exit codes:
-- `0`: everything translated (an `approximated` item, converted with an approved remark, still gives `2`);
+- `0`: everything translated (an `approximated` or `assumed` item, converted with an approved remark tag, still gives `2`; see [docs/REMARKS.md](docs/REMARKS.md));
 - `2`: something partial or blocked;
 - `1`: bad input, mapping or arguments.
 
@@ -158,7 +158,7 @@ A missing variable gives `error: missing env: <NAMES>` and exit 1, without print
 - `rate`: `rate(...[$__rate_interval])` for per-second counters;
 - `expression`: a reviewed PromQL template, such as the deduplicated connection ratio.
 
-Entries can also carry fixed label matchers, unit scale, label renames and a deduplication grain. A file may set top-level `labels`: entries without their own `labels` inherit them, and an entry's own `labels` replace them whole. An unmapped metric or label blocks the query. Entries with `reviewed: null` still convert but carry an `UNREVIEWED_MAPPING` warning; only a human sets `reviewed`. Files exist for `postgres`, `kafka`, `docker`, `redis`, `nginx` and `host` (`system.*` metrics).
+Entries can also carry fixed label matchers, unit scale, label renames and a deduplication grain. A file may set top-level `labels`: entries without their own `labels` inherit them, and an entry's own `labels` replace them whole. An unmapped metric or label blocks the query. Entries with `reviewed: null` still convert but carry an `UNREVIEWED_MAPPING` warning; only a human sets `reviewed`. An entry may carry an `assumption` tag when no exact OTel metric exists, and a file may record unmappable metrics under `gaps`; see [docs/REMARKS.md](docs/REMARKS.md). Files exist for `postgres`, `kafka`, `docker`, `redis`, `nginx` and `host` (`system.*` metrics).
 
 **Monitors:**
 - Supported: `query alert` / `metric alert` with `<avg|max|min|sum>(last_<n><m|h|d>):<query> <op> <number>`, a window ≤ 7 days, and options within the reviewed allowlist.
@@ -172,7 +172,7 @@ Entries can also carry fixed label matchers, unit scale, label renames and a ded
 - **Monitor behaviour that isn't migrated:**
   - notifications and `@handles` (`NOTIFICATION_NOT_MIGRATED`);
   - no-data alerts, auto-resolve, renotify, escalation and recovery thresholds (all block the monitor);
-  - a new-host grace period and full-window evaluation, which are only approximated (`MONITOR_OPTION_APPROXIMATED`).
+  - a new-host grace period and full-window evaluation, which convert as `approximated` with the remark tags `NEWHOST` and `FULLWINDOW` ([docs/REMARKS.md](docs/REMARKS.md)).
 - **Mappings need human review.** Every shipped entry is still `reviewed: null`.
 - **Series churn.** After a collector restart, Dash0 can briefly hold two series for one instance. Sums must deduplicate first, as the Postgres entries do with `max by (service_instance_id, …)`; see [DASH0_INVENTORY.md caveat 2](docs/DASH0_INVENTORY.md#caveats).
 - **Ephemeral demo data.** The `default` dataset has data only while the demo stack runs ([caveat 1](docs/DASH0_INVENTORY.md#caveats)).

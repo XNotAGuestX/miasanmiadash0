@@ -162,9 +162,9 @@ tests/scripts/                    # pytest: dev-time scripts (build_expected rul
 
 ## 8. Shared output contract
 
-**Outcomes.** Each item (dashboard, widget, monitor) has one: `translated | approximated | partial | blocked`. Only a dashboard can be `partial`. A widget or monitor is all or nothing; never drop a series.
+**Outcomes.** Each item (dashboard, widget, monitor) has one: `translated | approximated | assumed | partial | blocked`. Only a dashboard can be `partial`. A widget or monitor is all or nothing; never drop a series.
 
-**Approximated** means converted with a remark: the item differs from the source in one documented, minor way, and an `APPROXIMATED` warning says how. Each reason is listed in `src/migrator/source/datadog/approximations.py` and needs manual approval (`approved`, set only by a human reviewer); an unapproved reason keeps blocking. A dashboard is `approximated` when every widget is translated or approximated and at least one is approximated. Approximated artifacts are eligible to publish like translated ones; the exit code stays `2`.
+**Approximated** and **assumed** mean converted with remarks: each reason is a remark tag in `src/migrator/source/datadog/remarks.py` that needs manual approval (only a human sets `approved`; an unapproved tag keeps blocking). `approximated`: exact except for one documented behaviour the target lacks (`TIMEPIN`, `FULLWINDOW`, `NEWHOST`). `assumed`: the Datadog metric has no exact OTel counterpart and a mapping entry's `assumption` tag (`AGG`, `DERIVED`, `ATTRVAL`, `SEMANTIC`) rebuilds it. Precedence assumed > approximated > translated; a dashboard with every widget converted takes the strongest widget outcome. Tags go to the report, manifest, panel and dashboard descriptions and a `migration_remarks` rule label; publish groups them separately. Mapping files may record unmappable metrics under `gaps` (tag + reason). Full rules: [docs/REMARKS.md](../REMARKS.md).
 
 **Diagnostic fields:** `{code, severity: "error"|"warning"|"info", sourceId, sourcePath, message, suggestedAction, sourceText?}`.
 
@@ -196,11 +196,11 @@ tests/scripts/                    # pytest: dev-time scripts (build_expected rul
 | `DEFAULT_AGGREGATOR_APPLIED` | warning | 05 |
 | `UNSUPPORTED_MONITOR_TYPE` | error | 06 |
 | `UNSUPPORTED_MONITOR_OPTION` | error | 06 |
-| `MONITOR_OPTION_APPROXIMATED` | warning | 06 |
 | `THRESHOLD_MISMATCH` | error | 06 |
 | `NOTIFICATION_NOT_MIGRATED` | warning | 06 |
 | `TEXT_TRUNCATED` | warning | 06 |
-| `APPROXIMATED` | warning | approximations |
+| `APPROXIMATED` | warning | remarks (`remark` = tag) |
+| `ASSUMED` | warning | remarks (`remark` = tag) |
 | `IMPORT_FAILED` | error | 07 |
 | `IMPORT_RESULT_UNKNOWN` | error | 07 |
 
