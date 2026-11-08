@@ -29,7 +29,8 @@ fetch nginx/assets/monitors/upstream_health_check_failures.json nginx/monitors/u
 fetch nginx/assets/monitors/upstream_latency.json nginx/monitors/upstream_latency.json
 fetch nginx/assets/monitors/upstream_peer_fails.json nginx/monitors/upstream_peer_fails.json
 fetch nginx/assets/monitors/worker_crashes.json nginx/monitors/worker_crashes.json
-for svc in postgres redisdb nginx kafka kafka_consumer docker_daemon; do
+# Every integration's metadata.csv (#175); the list and blob SHAs live in metadata-blobs.json.
+for svc in $(python3 -c "import json; print(' '.join(json.load(open('$D/metadata-blobs.json'))))"); do
   fetch "$svc/metadata.csv" "$svc/metadata.csv"
 done
 fetch LICENSE LICENSE
