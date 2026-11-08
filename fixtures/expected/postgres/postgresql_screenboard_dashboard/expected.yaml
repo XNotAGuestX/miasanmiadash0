@@ -400,7 +400,9 @@ requests:
   expected:
     outcome: blocked
     errors:
-    - UNSUPPORTED_FORMULA
+    - MISSING_METRIC_MAPPING
+  notes:
+  - 'error code is a proposal: Agent0 blocked the request and no source-text rule applies; the converter''s code depends on the reviewed mapping'
 - source_path: widgets[6].definition.widgets[3].definition.requests[0]
   milestone: p2
   reviewed: false
@@ -735,7 +737,7 @@ widgets:
   expected:
     outcome: blocked
     errors:
-    - UNSUPPORTED_FORMULA
+    - MISSING_METRIC_MAPPING
 - source_path: widgets[6].definition.widgets[3]
   type: toplist
   milestone: p2
