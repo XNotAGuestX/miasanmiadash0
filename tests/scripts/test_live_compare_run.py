@@ -256,6 +256,20 @@ def test_keep_running_is_explicit(tmp_path):
     assert DockerStub.calls == ["stop", "prepare", "start"]
 
 
+def test_semantic_mode_recheck_reuses_same_window_and_publication_receipts(tmp_path):
+    vendors = Vendors()
+    assert run(tmp_path, vendors) == 0
+    state = json.loads((tmp_path / "state.json").read_text())
+    assert run(tmp_path, vendors, "--datadog-semantic-mode", "combined") == 0
+    assert json.loads((tmp_path / "state.json").read_text())["start"] == state["start"]
+    assert len(vendors.imports()) == 2 and DockerStub.calls.count("start") == 1
+    report = json.loads((tmp_path / "comparison.json").read_text())
+    assert report["querySettings"]["datadogSemanticModeOverride"] == "combined"
+    assert all(
+        q["semantic_mode"] == "combined" for c in report["cases"] for q in c["sourceQueries"]
+    )
+
+
 def test_threshold_mismatch_fails_even_when_numeric_difference_is_within_tolerance(tmp_path):
     vendors = Vendors()
     vendors.value, vendors.difference = 79, 2

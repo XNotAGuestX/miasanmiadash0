@@ -16,8 +16,8 @@ shared-sample run against the existing demo dataset `default` is in progress; nu
 is not yet established. See [LIVE_COMPARE.md](LIVE_COMPARE.md).
 
 Verification on an isolated uv-managed CPython 3.13.18 environment, synced from `uv.lock`:
-`uv run migrator check` → **779 passed, 621 skipped**, ruff and mypy strict passed.
-The new harness also passes explicit script lint/type checks and 67 focused offline tests.
+`uv run migrator check` → **781 passed, 621 skipped**, ruff and mypy strict passed.
+The new harness also passes explicit script lint/type checks and 69 focused offline tests.
 
 Highest-priority requirement: deterministic conversion before all other objectives. No LLM involvement in source-to-Perses or query/alert conversion, including optional inference, repair, and fallback paths. Codex and Claude remain implementation assistants only.
 
@@ -32,7 +32,7 @@ Highest-priority requirement: deterministic conversion before all other objectiv
 | Oracle cases | 9 integrations-core dashboards, 207 requests; Agent0 proposals plus the deterministic rules in `scripts/build_expected.py`; none human-reviewed, so they skip by default | `fixtures/expected/*/*/expected.yaml`; `uv run pytest --include-unreviewed` |
 | Dash0 | Import contract checked live; Postgres dashboards and the disabled check rule published and read back | Sections below; sanitized responses in `fixtures/dash0/live-2026-11-07/` |
 | Telemetry | Not durable: `default` has receiver data only 2026-11-07 ~14:05–15:21 UTC (one `docker-desktop` host) | [`DASH0_INVENTORY.md`](DASH0_INVENTORY.md) |
-| Automated checks | Green on branch `146-live-comparison`: `uv run migrator check` (ruff, mypy --strict, pytest) | 779 passed, 621 skipped (unreviewed oracle cases); uv-managed Python and locked dependencies |
+| Automated checks | Green on branch `146-live-comparison`: `uv run migrator check` (ruff, mypy --strict, pytest) | 781 passed, 621 skipped (unreviewed oracle cases); uv-managed Python and locked dependencies |
 | Submission | Not started | #2; steps in `handoff/README.md`, "Human-only items" (only on the user's request) |
 
 ## Recorded decisions

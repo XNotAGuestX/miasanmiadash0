@@ -23,6 +23,7 @@ First validate configuration and source/target pairing offline:
 uv run scripts/live_compare.py \
   --dataset-config scripts/live/datasets/otel-demo.yaml \
   --tests scripts/live/suites/default.yaml \
+  --datadog-semantic-mode combined \
   --dash0-dataset migration-demo \
   --out out/live/demo-01 --dry-run
 ```
@@ -60,6 +61,20 @@ A query PAT is not an ingestion API key. Create the latter in Datadog's
 The preflight verifies query access to both vendors and separately validates the ingestion
 key before starting containers or publishing. A missing ingestion key is recorded explicitly;
 successful query authentication alone is not reported as successful parity.
+
+For this shared-OTel-sample environment, use `--datadog-semantic-mode combined`.
+Datadog ingests OTel metric names, while the source fixtures query classic Datadog names.
+Its documented [Combined telemetry mode](https://docs.datadoghq.com/metrics/open_telemetry/query_metrics/)
+resolves those equivalent metrics in Datadog. Native mode queries only the literal metric
+name and can correctly return no data even when the OTel samples have arrived. Availability
+of this capability depends on the Datadog organization; an unavailable mode fails explicitly.
+
+Without the override, the script honors a source query's declared `semantic_mode` and otherwise
+uses Datadog's Native default. The explicit override affects live query evaluation only; it
+does not change compiler inputs, target artifacts, collected samples or tolerance settings.
+It is recorded in `querySettings` and every executed source query. Re-running the same output
+directory with another explicit mode reuses the fixed measurement window and existing publish
+receipts. Preserve prior `comparison.json`/`.md` first if both evaluations should be retained.
 
 Exit codes: **0** all selected comparisons and read-backs passed; **2** comparison failures
 or blocked conversions; **1** configuration, credentials, HTTP, Docker or cleanup failure.
@@ -219,4 +234,5 @@ Focused tests use fake vendor APIs and stubbed Docker operations. They never est
 parity. A real two-vendor run requires configured credentials and recorded IDs/read-back/
 numeric evidence. On 2026-11-08 the authorized `.env` PAT and Dash0 token passed actual query
 API checks; the subsequently supplied ingestion key also passed Datadog's validation API.
-See `docs/STATUS.md` for the recorded live comparison outcome.
+Read-only diagnostics confirmed that Combined mode returns the original source queries'
+OTel-backed series. See `docs/STATUS.md` for the full recorded comparison outcome.

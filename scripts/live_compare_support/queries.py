@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 from urllib.parse import urlencode
 
@@ -29,6 +29,15 @@ class BoundQuery:
     monitor_aggregator: str = ""
     comparator: str = ""
     thresholds: dict[str, float] | None = None
+
+
+def with_semantic_mode(bound: BoundQuery, mode: str | None) -> BoundQuery:
+    """Explicit live evaluation setting; never modifies conversion artifacts."""
+    if mode is None:
+        return bound
+    if mode not in ("native", "combined"):
+        raise DataError("unsupported Datadog telemetry semantic mode")
+    return replace(bound, queries=[{**q, "semantic_mode": mode} for q in bound.queries])
 
 
 def pointer(value: Any, path: str) -> Any:
@@ -192,6 +201,12 @@ def pair(case: Case, source: Any, target: Any, rate_interval: str, run_id: str) 
         }
         for q in raw_queries
     ]
+    for query, original in zip(queries, raw_queries, strict=True):
+        if "semantic_mode" in original:
+            mode = original["semantic_mode"]
+            if mode not in ("native", "combined"):
+                raise DataError("unsupported source Datadog semantic_mode")
+            query["semantic_mode"] = mode
     target_text = target["spec"]["panels"][case.panel]["spec"]["queries"][case.query_index]
     plugin = target_text["spec"]["plugin"]
     if plugin["kind"] != "PrometheusTimeSeriesQuery":

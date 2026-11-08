@@ -34,6 +34,7 @@ comparison suites and the Dash0 dataset are independently selectable.
 uv run scripts/live_compare.py \
   --dataset-config scripts/live/datasets/otel-demo.yaml \
   --tests scripts/live/suites/default.yaml \
+  --datadog-semantic-mode combined \
   --dash0-dataset migration-demo --out out/live/demo-01 --dry-run
 ```
 

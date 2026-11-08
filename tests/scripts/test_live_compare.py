@@ -219,6 +219,22 @@ def test_default_pairs_compile_deterministically_and_wrong_pair_fails(tmp_path):
         runner.bind_case(a, bad, suite, "demo-live-test")
 
 
+def test_source_semantic_mode_is_preserved_and_override_is_explicit(tmp_path):
+    suite = cfg.load(SUITE, cfg.Suite)
+    runner.compile_suite(suite, SUITE, tmp_path / "compiled")
+    _, source, target = runner.artifact(tmp_path / "compiled", suite.cases[0])
+    source["widgets"][0]["definition"]["requests"][0]["queries"][0]["semantic_mode"] = "combined"
+    bound = queries.pair(suite.cases[0], source, target, "5m", "demo-live-test")
+    assert bound.queries[0]["semantic_mode"] == "combined"
+    explicit = queries.with_semantic_mode(bound, "native")
+    assert explicit.queries[0]["semantic_mode"] == "native"
+    assert bound.queries[0]["semantic_mode"] == "combined"
+    assert explicit.target == bound.target
+    assert queries.with_semantic_mode(bound, None) is bound
+    with pytest.raises(cp.DataError):
+        queries.with_semantic_mode(bound, "guess")
+
+
 def test_readback_allows_only_known_normalizations(tmp_path):
     suite = cfg.load(SUITE, cfg.Suite)
     runner.compile_suite(suite, SUITE, tmp_path / "compiled")

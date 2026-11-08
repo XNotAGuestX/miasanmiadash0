@@ -41,6 +41,7 @@ from live_compare_support.queries import (
     query_source,
     query_target,
     validate_ingestion_key,
+    with_semantic_mode,
 )
 from migrator.convert import ConvertOptions, run_convert
 from migrator.destination.dash0 import Dash0Config, read_back, read_dash0_config
@@ -416,6 +417,7 @@ def execute(
                 "status": "failed",
                 "assets": [],
                 "cases": blocked,
+                "querySettings": {"datadogSemanticModeOverride": args.datadog_semantic_mode},
             }
             operational_error = False
             try:
@@ -424,6 +426,7 @@ def execute(
                     return 2
                 first = next(c for c in cases if c.id not in {b["id"] for b in blocked})
                 _, preflight = bind_case(compiled, first, suite, run_id)
+                preflight = with_semantic_mode(preflight, args.datadog_semantic_mode)
                 # Auth/dataset checks happen before containers or publication.
                 end_probe = int(now()) // suite.step_seconds * suite.step_seconds
                 query_source(
@@ -506,6 +509,7 @@ def execute(
                             raise DataError("published asset read-back failed or receipt missing")
                         _, source, _ = artifact(compiled, case)
                         bound = pair(case, source, remote[path], suite.rate_interval, run_id)
+                        bound = with_semantic_mode(bound, args.datadog_semantic_mode)
                         result.update(
                             sourceQueries=bound.queries,
                             sourceFormula=bound.formula,
@@ -596,6 +600,11 @@ def main(
     parser.add_argument("--case", action="append")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--keep-running", action="store_true")
+    parser.add_argument(
+        "--datadog-semantic-mode",
+        choices=["native", "combined"],
+        help="explicit query evaluation override; shared OTel samples use combined",
+    )
     env_files = parser.add_mutually_exclusive_group()
     env_files.add_argument(
         "--env-file", type=Path, help="literal .env file (default: repository .env when present)"
