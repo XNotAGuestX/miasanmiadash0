@@ -288,7 +288,27 @@ def _check_keys(
             and list(value) == ["live_span"]
             and isinstance(value["live_span"], str)
         ):
-            _time_pin(f"{path}.{key}", value["live_span"], c)
+            span = value["live_span"]
+            if obj.get("type") == "timeseries":
+                _time_pin(f"{path}.{key}", span, c)
+            elif span == DASHBOARD_DURATION:
+                c.add(
+                    "OPTION_IGNORED",
+                    "info",
+                    f"{path}.{key}",
+                    f"Widget option 'time' pins the dashboard default ({span}) and is ignored.",
+                    "No action needed.",
+                )
+            else:
+                # Single values and toplists reduce over the time frame, so another frame
+                # changes the shown value itself, not only the x-axis: TIMEPIN does not apply.
+                c.error(
+                    "UNSUPPORTED_WIDGET",
+                    f"{path}.{key}",
+                    f"Widget option 'time' pins the last {span}; this panel would reduce over "
+                    f"the dashboard range ({DASHBOARD_DURATION}) instead and show another value.",
+                    "Migrate this widget manually or remove the option in the source.",
+                )
             continue
         if key in ignored:
             c.add(
@@ -906,7 +926,7 @@ def compile_dashboard(
                 "Emitted dashboard failed validation: " + "; ".join(problems),
                 "This is a converter bug; report it with the source asset.",
             )
-            dashboard, outcome = None, "blocked"
+            dashboard, outcome, tags = None, "blocked", ()
 
     items = [ItemResult(sid, "", "dashboard", asset.title, outcome, tags), *b.items]
     return DashboardCompilation(

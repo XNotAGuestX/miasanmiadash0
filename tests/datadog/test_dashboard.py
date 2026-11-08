@@ -679,6 +679,31 @@ def test_other_time_shapes_still_block(monkeypatch: pytest.MonkeyPatch) -> None:
         assert c.items[1].outcome == "blocked", time
 
 
+def test_time_pin_on_a_reducing_widget_blocks_unless_it_is_the_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # A query_value reduces over its time frame: a 1w pin shown over 1h is another number.
+    _approve(monkeypatch, "TIMEPIN")
+
+    def qv(span: str) -> dict[str, Any]:
+        req = {"q": "avg:postgresql.connections{*}", "aggregator": "avg"}
+        return {
+            "definition": {
+                "type": "query_value",
+                "title": "V",
+                "requests": [req],
+                "time": {"live_span": span},
+            }
+        }
+
+    c = compile_body(body(qv("1w")))
+    assert c.items[1].outcome == "blocked"
+    [d] = [d for d in c.diagnostics if d.severity == "error"]
+    assert d.code == "UNSUPPORTED_WIDGET" and "last 1w" in d.message
+    c = compile_body(body(qv("1h")))
+    assert [(i.outcome, i.remarks) for i in c.items[1:]] == [("translated", ())]
+
+
 def test_partial_dashboard_with_an_approximated_widget_stays_partial(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -326,15 +326,6 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.as_count()' is not supported.",
-      "severity": "error",
-      "sourceId": "dashboards/NGINX-Overview_dashboard.json",
-      "sourcePath": "widgets[1].definition.widgets[0].definition.requests[0].q",
-      "sourceText": "sum:nginx.net.conn_dropped_per_s{*}.as_count()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
-    },
-    {
       "code": "OPTION_IGNORED",
       "message": "Widget option 'text_align' is ignored.",
       "severity": "info",
@@ -343,13 +334,12 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "APPROXIMATED",
-      "message": "TIMEPIN: Datadog showed the last 15m. Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.",
-      "remark": "TIMEPIN",
-      "severity": "warning",
+      "code": "UNSUPPORTED_WIDGET",
+      "message": "Widget option 'time' pins the last 15m; this panel would reduce over the dashboard range (1h) instead and show another value.",
+      "severity": "error",
       "sourceId": "dashboards/NGINX-Overview_dashboard.json",
       "sourcePath": "widgets[1].definition.widgets[0].definition.time",
-      "suggestedAction": "Check the panel; set the dashboard time range if the pinned frame matters."
+      "suggestedAction": "Migrate this widget manually or remove the option in the source."
     },
     {
       "code": "OPTION_IGNORED",
