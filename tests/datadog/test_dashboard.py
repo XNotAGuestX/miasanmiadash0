@@ -233,7 +233,7 @@ def test_overview_golden_charts_are_readable_and_do_not_overlap() -> None:
                 charts += 1
                 assert item["height"] >= 4, key
             assert not any(_overlap(item, other) for other in items[i + 1 :]), key
-    assert charts == 5
+    assert charts == 7
 
 
 def _laid_out(x: int, width: int, layout_type: str) -> dict[str, Any]:

@@ -950,13 +950,31 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "MISSING_METRIC_MAPPING",
-      "message": "No mapping for metric 'postgresql.dead_rows'.",
-      "severity": "error",
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'postgresql.dead_rows' has not been reviewed by a human.",
+      "severity": "warning",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[2].definition.widgets[0].definition.requests[0].queries[0].query",
       "sourceText": "sum:postgresql.dead_rows{$scope,$db,$table,$host}",
-      "suggestedAction": "Add a reviewed entry for 'postgresql.dead_rows' to the mapping file."
+      "suggestedAction": "Review the 'postgresql.dead_rows' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$scope' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
+      "sourcePath": "widgets[2].definition.widgets[0].definition.requests[0].queries[0].query",
+      "sourceText": "sum:postgresql.dead_rows{$scope,$db,$table,$host}",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$table' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
+      "sourcePath": "widgets[2].definition.widgets[0].definition.requests[0].queries[0].query",
+      "sourceText": "sum:postgresql.dead_rows{$scope,$db,$table,$host}",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1752,13 +1770,22 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "MISSING_METRIC_MAPPING",
-      "message": "No mapping for metric 'postgresql.rows_hot_updated'.",
-      "severity": "error",
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'postgresql.rows_hot_updated' has not been reviewed by a human.",
+      "severity": "warning",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[4].definition.requests[0].queries[0].query",
       "sourceText": "avg:postgresql.rows_hot_updated{$scope,$db,$host} by {db}",
-      "suggestedAction": "Add a reviewed entry for 'postgresql.rows_hot_updated' to the mapping file."
+      "suggestedAction": "Review the 'postgresql.rows_hot_updated' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$scope' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
+      "sourcePath": "widgets[4].definition.widgets[4].definition.requests[0].queries[0].query",
+      "sourceText": "avg:postgresql.rows_hot_updated{$scope,$db,$host} by {db}",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
     },
     {
       "code": "OPTION_IGNORED",
@@ -2139,13 +2166,22 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "MISSING_METRIC_MAPPING",
-      "message": "No mapping for metric 'postgresql.index_scans'.",
-      "severity": "error",
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'postgresql.index_scans' has not been reviewed by a human.",
+      "severity": "warning",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[6].definition.widgets[0].definition.requests[0].queries[0].query",
       "sourceText": "avg:postgresql.index_scans{$scope,$db,$host} by {db}",
-      "suggestedAction": "Add a reviewed entry for 'postgresql.index_scans' to the mapping file."
+      "suggestedAction": "Review the 'postgresql.index_scans' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$scope' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
+      "sourcePath": "widgets[6].definition.widgets[0].definition.requests[0].queries[0].query",
+      "sourceText": "avg:postgresql.index_scans{$scope,$db,$host} by {db}",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
     },
     {
       "code": "OPTION_IGNORED",
@@ -2807,7 +2843,7 @@
     },
     {
       "kind": "widget",
-      "outcome": "blocked",
+      "outcome": "translated",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[2].definition.widgets[0]",
       "title": "Dead rows"
@@ -2905,7 +2941,7 @@
     },
     {
       "kind": "widget",
-      "outcome": "blocked",
+      "outcome": "translated",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[4]",
       "title": "Heap-only updates "
@@ -2990,7 +3026,7 @@
   ],
   "mapping": [
     {
-      "sha256": "df05db108b199f982914cfdb7b419c7253451182fddb35bfdce4799ff8bce75d",
+      "sha256": "4123ccb1de4a78cf0f8eb5d0c205e2aeaece6292d7d41289680449e304fc5c0e",
       "sourceId": "postgres.json"
     }
   ],
@@ -3009,9 +3045,9 @@
     },
     "skippedFiles": 0,
     "widgets": {
-      "blocked": 25,
+      "blocked": 23,
       "partial": 0,
-      "translated": 14
+      "translated": 16
     }
   },
   "validation": {
