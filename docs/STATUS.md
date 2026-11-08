@@ -90,7 +90,9 @@ raw API responses or run artifacts are committed.
 
 - **B2 demo telemetry owner** (#4): `default` data exists only while one machine runs the OTel Demo stack.
 - **No controlled threshold crossing.** Postgres connection usage is about 0.08 against thresholds 0.8 and 0.9; `scripts/hold-pg-connections.sh` exists, the live run needs B2 and an enabled demo check.
-- **B3 Datadog account:** feature horizon (#122): the live `fetch` round trip and numeric spot checks need it.
+- **B3 comparison credentials resolved:** the authorized PAT and ingestion API key work for
+  the live harness. The asset-`fetch` round trip remains unverified (#122); harness PAT support
+  does not change the core fetch client's authentication contract.
 - **Starter/fork relationship** (#2) unresolved; settle before submission.
 - **Mapping review:** every entry is `reviewed: null`; evidence and goldens per service are #111–#115, the sign-off is human.
 - **Target labels** follow the data (postgresqlreceiver 0.160.0, legacy `postgresql_database_name`, `postgresql_table_name`); the user still has to confirm them.

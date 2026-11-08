@@ -7,7 +7,7 @@ A deterministic CLI that migrates Datadog dashboards and metric monitors to Dash
 **State (2026-11-07):**
 - `convert` works offline and is covered by golden tests.
 - `publish` has run live against Dash0: the Postgres check rule and both dashboards were imported and read back (plan 07 Task 5).
-- `fetch` is implemented but has only been tested against a fake API; the live run waits on a Datadog account (B3).
+- `fetch` is implemented but its asset-fetch round trip has only been tested against a fake API.
 
 See [STATUS.md](docs/STATUS.md) for details and [DEMO.md](docs/DEMO.md) for the demo runbook.
 
