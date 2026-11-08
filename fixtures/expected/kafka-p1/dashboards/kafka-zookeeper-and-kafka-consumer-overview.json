@@ -6,7 +6,7 @@
   },
   "spec": {
     "display": {
-      "description": "## Kafka Overview Dashboard\n\nThis dashboard provides an overview of your Kafka environment. It displays metrics from Kafka, Zookeeper, and Kafka Consumer Integrations with Datadog, giving you a complete view of the health and observability measures of your Kafka Cluster. Enabling the Kafka integration alone populates most of the dashboard widgets. To populate all groups with data, enable all three integrations.\n\nIf you would benefit from visualizing the topology of your streaming data pipelines, or from investigating localized bottlenecks within your data streams setup, check out [Data Streams Monitoring](https://www.datadoghq.com/product/data-streams-monitoring/).\n\nFor more information, read:\n* [Kafka integration documentation](https://docs.datadoghq.com/integrations/kafka/?tab=host)\n* [Monitoring Kafka blog post](https://www.datadoghq.com/blog/monitor-kafka-with-datadog/)\n* [ZooKeeper integration documentation](https://docs.datadoghq.com/integrations/zk/?tab=host)",
+      "description": "## Kafka Overview Dashboard\n\nThis dashboard provides an overview of your Kafka environment. It displays metrics from Kafka, Zookeeper, and Kafka Consumer Integrations with Datadog, giving you a complete view of the health and observability measures of your Kafka Cluster. Enabling the Kafka integration alone populates most of the dashboard widgets. To populate all groups with data, enable all three integrations.\n\nIf you would benefit from visualizing the topology of your streaming data pipelines, or from investigating localized bottlenecks within your data streams setup, check out [Data Streams Monitoring](https://www.datadoghq.com/product/data-streams-monitoring/).\n\nFor more information, read:\n* [Kafka integration documentation](https://docs.datadoghq.com/integrations/kafka/?tab=host)\n* [Monitoring Kafka blog post](https://www.datadoghq.com/blog/monitor-kafka-with-datadog/)\n* [ZooKeeper integration documentation](https://docs.datadoghq.com/integrations/zk/?tab=host)\n\nMigration remarks: WEIGHTED (see panel descriptions).",
       "name": "Kafka, Zookeeper and Kafka Consumer Overview"
     },
     "duration": "1h",
@@ -53,6 +53,24 @@
             "title": "Clusters Health"
           },
           "items": [
+            {
+              "content": {
+                "$ref": "#/spec/panels/widget-3-0"
+              },
+              "height": 3,
+              "width": 4,
+              "x": 0,
+              "y": 0
+            },
+            {
+              "content": {
+                "$ref": "#/spec/panels/widget-3-1"
+              },
+              "height": 3,
+              "width": 4,
+              "x": 4,
+              "y": 0
+            },
             {
               "content": {
                 "$ref": "#/spec/panels/widget-3-2"
@@ -246,6 +264,62 @@
             }
           },
           "queries": []
+        }
+      },
+      "widget-3-0": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "description": "[WEIGHTED] Weighted sum uses raw sample sums normalized by the fullest selected series in the rate window. Datadog's submission cadence and graph buckets are unavailable; unequal cadence, sparse series and resource churn can change the result.",
+            "name": "Offline Partitions"
+          },
+          "plugin": {
+            "kind": "StatChart",
+            "spec": {
+              "calculation": "mean"
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "sum (sum_over_time({otel_metric_name=\"kafka.partition.offline\", otel_metric_type=\"sum\"}[$__rate_interval]) / scalar(max(count_over_time({otel_metric_name=\"kafka.partition.offline\", otel_metric_type=\"sum\"}[$__rate_interval]))))"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "widget-3-1": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "description": "[WEIGHTED] Weighted sum uses raw sample sums normalized by the fullest selected series in the rate window. Datadog's submission cadence and graph buckets are unavailable; unequal cadence, sparse series and resource churn can change the result.",
+            "name": "Under Replicated Partitions"
+          },
+          "plugin": {
+            "kind": "StatChart",
+            "spec": {
+              "calculation": "mean"
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "sum (sum_over_time({otel_metric_name=\"kafka.partition.underReplicated\", otel_metric_type=\"sum\"}[$__rate_interval]) / scalar(max(count_over_time({otel_metric_name=\"kafka.partition.underReplicated\", otel_metric_type=\"sum\"}[$__rate_interval]))))"
+                  }
+                }
+              }
+            }
+          ]
         }
       },
       "widget-3-2": {

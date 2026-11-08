@@ -1512,12 +1512,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.as_count()' is not supported.",
+      "message": "Query function '.as_count()' or its arguments are not supported. weighted() requires explicit sum and no arguments; as_rate() takes no arguments.",
       "severity": "error",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[3].definition.widgets[2].definition.requests[0].queries[0].query",
       "sourceText": "max:postgresql.deadlocks.count{$scope,$host} by {db}.as_count()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Use a documented supported form or migrate this query manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -2088,13 +2088,32 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.rollup()' is blocked: Datadog aligns rollup buckets to UNIX time and picks the default interval per graph (https://docs.datadoghq.com/dashboards/functions/rollup/); a PromQL '<agg>_over_time' window per dashboard step does not reproduce them.",
-      "severity": "error",
+      "code": "BEST_EFFORT",
+      "message": "ROLLUP: Rollup uses a trailing PromQL sample window before space aggregation, instead of Datadog's UNIX-aligned graph buckets. An omitted interval follows the target rate window. Boundary values and sparse-series weights can differ. Window=$__rate_interval; reducer=max.",
+      "remark": "ROLLUP",
+      "severity": "warning",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[0].definition.requests[0].queries[0].query",
       "sourceText": "avg:postgresql.connections{$scope,$db,$host} by {db}.rollup(max)",
-      "suggestedAction": "Migrate this widget manually, or remove '.rollup()' from the source query if the default time aggregation is acceptable."
+      "suggestedAction": "Verify the source and target numerically on representative telemetry; no global error bound is guaranteed."
+    },
+    {
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'postgresql.connections' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
+      "sourcePath": "widgets[5].definition.widgets[0].definition.requests[0].queries[0].query",
+      "sourceText": "avg:postgresql.connections{$scope,$db,$host} by {db}.rollup(max)",
+      "suggestedAction": "Review the 'postgresql.connections' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$scope' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
+      "sourcePath": "widgets[5].definition.widgets[0].definition.requests[0].queries[0].query",
+      "sourceText": "avg:postgresql.connections{$scope,$db,$host} by {db}.rollup(max)",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
     },
     {
       "code": "OPTION_IGNORED",
@@ -2854,12 +2873,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.as_count()' is not supported.",
+      "message": "Query function '.as_count()' or its arguments are not supported. weighted() requires explicit sum and no arguments; as_rate() takes no arguments.",
       "severity": "error",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[8].definition.widgets[0].definition.requests[0].queries[0].query",
       "sourceText": "sum:postgresql.bgwriter.checkpoints_timed{$scope,$db,$host}.as_count()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Use a documented supported form or migrate this query manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -2871,12 +2890,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.as_count()' is not supported.",
+      "message": "Query function '.as_count()' or its arguments are not supported. weighted() requires explicit sum and no arguments; as_rate() takes no arguments.",
       "severity": "error",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[8].definition.widgets[0].definition.requests[0].queries[1].query",
       "sourceText": "sum:postgresql.bgwriter.checkpoints_requested{$scope,$db,$host}.as_count()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Use a documented supported form or migrate this query manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -2912,12 +2931,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.as_count()' is not supported.",
+      "message": "Query function '.as_count()' or its arguments are not supported. weighted() requires explicit sum and no arguments; as_rate() takes no arguments.",
       "severity": "error",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[8].definition.widgets[0].definition.requests[1].queries[0].query",
       "sourceText": "sum:postgresql.bgwriter.checkpoints_requested{$scope,$db,$host}.as_count()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Use a documented supported form or migrate this query manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -3306,6 +3325,7 @@
     "dashboards": {
       "approximated": 0,
       "assumed": 0,
+      "best_effort": 0,
       "blocked": 0,
       "partial": 2,
       "translated": 0
@@ -3313,6 +3333,7 @@
     "monitors": {
       "approximated": 0,
       "assumed": 0,
+      "best_effort": 0,
       "blocked": 0,
       "partial": 0,
       "translated": 0
@@ -3321,6 +3342,7 @@
     "widgets": {
       "approximated": 0,
       "assumed": 3,
+      "best_effort": 0,
       "blocked": 20,
       "partial": 0,
       "translated": 16

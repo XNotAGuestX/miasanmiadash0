@@ -1701,6 +1701,7 @@
     "dashboards": {
       "approximated": 0,
       "assumed": 0,
+      "best_effort": 0,
       "blocked": 0,
       "partial": 1,
       "translated": 0
@@ -1708,6 +1709,7 @@
     "monitors": {
       "approximated": 0,
       "assumed": 0,
+      "best_effort": 0,
       "blocked": 0,
       "partial": 0,
       "translated": 0
@@ -1716,6 +1718,7 @@
     "widgets": {
       "approximated": 5,
       "assumed": 0,
+      "best_effort": 0,
       "blocked": 18,
       "partial": 0,
       "translated": 5

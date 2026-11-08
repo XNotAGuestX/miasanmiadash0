@@ -1,6 +1,6 @@
 # Shared project status
 
-Last updated: 2026-11-08: on-demand comparison harness implemented on branch `146-live-comparison`; real two-vendor evidence recorded (4/6 cases within 3%). Review is pending; the two connection-value failures are tracked in #148. Open work: the orchestrator handoff [`handoff/README.md`](handoff/README.md) (epic #104, live-Datadog horizon #122 and implementation #146). Work is tracked in [issues](https://github.com/XNotAGuestX/thinchackdash/issues) and on the [project board](https://github.com/users/XNotAGuestX/projects/3).
+Last updated: 2026-11-08: parallel alert/function extensions integrated on `164-best-effort-outcomes`; all eight live cases pass at their declared tolerances, and the required check passes (971 passed, 621 skipped). Felix's review/merge is pending. Earlier comparison failures remain tracked in #148 and #161. Open work: the orchestrator handoff [`handoff/README.md`](handoff/README.md). Work is tracked in [issues](https://github.com/XNotAGuestX/thinchackdash/issues) and on the [project board](https://github.com/users/XNotAGuestX/projects/3).
 
 2026-11-08 update ([#146](https://github.com/XNotAGuestX/thinchackdash/issues/146), branch
 `146-live-comparison`): on-demand comparison harness implemented with independent workload
@@ -23,17 +23,60 @@ Highest-priority requirement: deterministic conversion before all other objectiv
 
 ## Actual state
 
+The current branch adds classic metric-alert arithmetic and exact evaluation-delay rendering,
+plus bounded `weighted()`, `rollup()` and `as_rate()` functions under a distinct `best_effort`
+category. Reports, manifests, descriptions and publish groups preserve every reason tag.
+The single consolidated review integrates parallel tasks #162–#165 and the retained-stream
+implementation from pending #159. No mapping review flags, dependencies or source assets changed.
+
+The full pinned inventory with `mappings/datadog` now emits **122/251 widgets**, up from
+118/251: four Kafka panels move from blocked to `best_effort`. Redis `high_mem` arithmetic
+also converts, raising supported monitors from **2/13 to 3/13**. All nine dashboards remain
+partial because independent metric/widget gaps persist. `.as_count()`, `.fill()`, ambiguous
+modifier chains and unsupported metric kinds still block. Frozen goldens were regenerated;
+unreviewed oracle proposals were not accepted or rewritten.
+
+Final verification, uv-managed CPython 3.13.18 and locked dependencies:
+`uv run migrator check` passed: ruff, strict mypy (86 files), **971 passed / 621 skipped**.
+Explicit live-script ruff and strict mypy also passed (8 files). Four HTTP transport tests
+need localhost socket access, so the final required check ran outside the network sandbox.
+
+One actual retained-stream comparison in demo dataset `default`, **2026-11-08 03:44–03:54 UTC**,
+passed **8/8 cases**, exit 0, with 10/10 finite samples on each side for every case:
+
+| Case | Relative mean difference | Declared tolerance |
+| --- | ---: | ---: |
+| Redis weighted memory | 0.351950% | 4.9% |
+| Redis average rollup | 0.000000% | 4.9% |
+| Redis maximum rollup | 0.068225% | 4.9% |
+| PostgreSQL explicit rate | 3.266330% | 4.9% |
+| Redis baseline memory | 0.068225% | 3% |
+| Dashboard memory ratio | 0.068271% | 3% |
+| Average ratio monitor | 0.072932% | 3% |
+| Maximum percentage monitor | 0.068223% | 3% |
+
+Both alert threshold levels agreed at every sampled timestamp. All three destination
+assets were imported and read back: dashboard `a8939cb3-aaeb-42cf-b084-6ae835835008`,
+disabled average check `859023b6-6a73-40eb-80fa-8d8c32353600`, disabled maximum check
+`b0dac707-4921-434f-bd4d-1563f7fac3ad`. The stream and assets were retained. No second
+comparison run or collection wait was needed. Threshold crossing, UI rendering,
+notification delivery and irregular/churning weighted series remain unverified; stable
+numeric evidence does not remove the `best_effort` category or prove a universal error bound.
+Delayed monitor comparison is explicitly rejected by the harness until source history
+shifting is implemented. See [LIVE_EXTENSIONS.md](LIVE_EXTENSIONS.md) for reproduction and
+private ignored evidence locations. Compiler `api`/`semantics` validation remains `not_run`.
+
 | Area | State | Evidence |
 | --- | --- | --- |
 | CLI/runtime/package | `convert` (offline), `publish` (run live 2026-11-07), `fetch` (offline-tested; live is horizon #122) | Python ≥ 3.13 + uv; `uv run migrator {convert,publish,fetch,test,typecheck,lint,check}` |
 | Dashboards | Plans 02–05 merged | Golden `fixtures/expected/postgres-p1/` (byte-equal and determinism tests) |
-| Monitors | Plan 06 merged: `percent_usage_connections` translated, `replication_delay` blocked | Golden `fixtures/expected/postgres-monitors/` |
+| Monitors | Plan 06 merged; branch #162 adds classic arithmetic and evaluation delay; Redis high-memory now supported, replication anomalies still blocked | [ALERT_CONVERSION.md](ALERT_CONVERSION.md), goldens and live extension comparison |
 | Mappings | `postgres`, `kafka`, `docker`, `redis`, `nginx`; every entry `reviewed: null` | `mappings/datadog/`; Redis/nginx notes in `REVIEW-redis-nginx.md` |
 | Oracle cases | 9 integrations-core dashboards, 207 requests; Agent0 proposals plus the deterministic rules in `scripts/build_expected.py`; none human-reviewed, so they skip by default | `fixtures/expected/*/*/expected.yaml`; `uv run pytest --include-unreviewed` |
 | Dash0 | Import contract checked live; Postgres dashboards and the disabled check rule published and read back | Sections below; sanitized responses in `fixtures/dash0/live-2026-11-07/` |
-| Live comparison | Real shared-sample run completed: 4/6 numeric cases pass at 3%; connection values differ by 3.2787%; both imported assets read back | Results below; follow-up #148 |
-| Telemetry | On-demand run recorded 2026-11-08 02:32–02:42 UTC in `default`; its stack is stopped. Older demo inventory is historical | [`DASH0_INVENTORY.md`](DASH0_INVENTORY.md); live evidence below |
-| Automated checks | Green on branch `146-live-comparison`: `uv run migrator check` (ruff, mypy --strict, pytest) | 781 passed, 621 skipped (unreviewed oracle cases); uv-managed Python and locked dependencies |
+| Live comparison | Extension run: 8/8 pass at declared 3%/4.9%, all 3 assets read back; earlier 4/6 and infrastructure 9/28 results retain their failures | [LIVE_EXTENSIONS.md](LIVE_EXTENSIONS.md); follow-ups #148/#161 |
+| Telemetry | Retained infrastructure stream `demo-live-4c447ebf85d1` is running in `default`; original on-demand stack is stopped | [LIVE_COMPARE.md](LIVE_COMPARE.md), #157 |
+| Automated checks | Green on branch `164-best-effort-outcomes`: `uv run migrator check` (ruff, mypy --strict, pytest) | 971 passed, 621 skipped (unreviewed oracle cases); uv-managed Python and locked dependencies |
 | Submission | Not started | #2; steps in `handoff/README.md`, "Human-only items" (only on the user's request) |
 
 ## Live shared-sample comparison (2026-11-08)

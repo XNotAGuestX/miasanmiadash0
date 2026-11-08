@@ -73,9 +73,11 @@ def test_outcomes(run: tuple[int, Path]) -> None:
     widgets = Counter((i["sourceId"], i["outcome"]) for i in items if i["kind"] == "widget")
     assert widgets == {
         ("dashboards/kafka_dashboard.json", "translated"): 10,
-        ("dashboards/kafka_dashboard.json", "blocked"): 36,
+        ("dashboards/kafka_dashboard.json", "best_effort"): 2,
+        ("dashboards/kafka_dashboard.json", "blocked"): 34,
         ("dashboards/kafka_kraft_dashboard.json", "translated"): 10,
-        ("dashboards/kafka_kraft_dashboard.json", "blocked"): 42,
+        ("dashboards/kafka_kraft_dashboard.json", "best_effort"): 2,
+        ("dashboards/kafka_kraft_dashboard.json", "blocked"): 40,
     }
     monitors = {i["sourceId"]: i["outcome"] for i in items if i["kind"] == "monitor"}
     assert monitors == {

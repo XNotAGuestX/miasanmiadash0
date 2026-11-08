@@ -19,6 +19,10 @@
 
 ## Waves
 
+Current-session extension tracks (2026-11-08): [#162](https://github.com/XNotAGuestX/thinchackdash/issues/162) broadens metric-monitor arithmetic, [#163](https://github.com/XNotAGuestX/thinchackdash/issues/163) adds high-impact deterministic function approximations, [#164](https://github.com/XNotAGuestX/thinchackdash/issues/164) propagates the distinct `best_effort` category, and [#165](https://github.com/XNotAGuestX/thinchackdash/issues/165) verifies cases empirically against the retained shared telemetry stream. These tracks run in parallel under Felix's explicit request. Approximate functions carry tags and never bypass missing mappings or other unsupported semantics. Merge remains subject to Felix's review.
+
+Implementation is consolidated on `164-best-effort-outcomes` for one final review: **971 tests passed / 621 skipped**, lint and strict typing passed, and one real extension comparison passed **8/8** with full coverage. Four more pinned Kafka panels and one Redis arithmetic monitor now convert. The review also carries #159's retained-stream implementation as a dependency. No additional review/test cycles are planned after these passing checks; the next action is Felix's concrete review/merge. Details and limitations: [STATUS.md](../STATUS.md), [LIVE_EXTENSIONS.md](../LIVE_EXTENSIONS.md).
+
 Every issue is self-contained: summary, context, files, acceptance criteria, verify commands, stop conditions and the shared Definition of Done. Start a wave-2 issue once its "Depends on" issues are merged.
 
 | Wave | Issue | Work | Owns (files) | Merge |
@@ -113,6 +117,14 @@ and monitor values differed by 3.2787% and failed. Follow-up: [#148](https://git
 The script loads `.env` automatically; see [STATUS.md](../STATUS.md#live-shared-sample-comparison-2026-11-08)
 for the numeric outcome and recorded import IDs.
 Compiler semantics, mappings and review status are unchanged.
+
+Felix requested broader live coverage on 2026-11-08 in [#157](https://github.com/XNotAGuestX/thinchackdash/issues/157):
+28 cases across PostgreSQL, Redis, NGINX, Kafka, host and Docker, including approved assumed
+and approximated outcomes from pending PR #156. Its retained-stream lifecycle starts without
+a measurement wait and reuses completed historical windows for subsequent suites. The
+infrastructure suite is a two-minute smoke at the unchanged 3% tolerance; the original
+default suite keeps its ten-minute window. Live numeric parity does not certify the tagged
+behavior differences. See [LIVE_COMPARE.md](../LIVE_COMPARE.md#reuse-a-running-stream).
 
 ## Open decisions and blockers
 

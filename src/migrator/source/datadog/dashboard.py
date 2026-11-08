@@ -542,7 +542,7 @@ def _compile_widget(
     widget: Any, path: str, ctx: _Ctx
 ) -> tuple[PersesPanel | None, str, list[Diagnostic]]:
     """The panel (None when blocked), its title, and diagnostics. A converted widget's remark
-    tags (APPROXIMATED / ASSUMED diagnostics) go into the panel description."""
+    tags go into the panel description, including BEST_EFFORT function diagnostics."""
     c = _Collector(ctx.source_id)
     definition = widget.get("definition") if isinstance(widget, dict) else None
     if not isinstance(definition, dict):
@@ -909,7 +909,9 @@ def compile_dashboard(
     outcome: Outcome
     if translated and translated == len(b.items):
         outcomes = {it.outcome for it in converted}
-        outcome = next((o for o in ("assumed", "approximated") if o in outcomes), "translated")
+        outcome = next(
+            (o for o in ("best_effort", "assumed", "approximated") if o in outcomes), "translated"
+        )
     elif translated:
         outcome = "partial"
     else:

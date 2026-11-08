@@ -234,13 +234,23 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
-      "severity": "error",
+      "code": "BEST_EFFORT",
+      "message": "WEIGHTED: Weighted sum uses raw sample sums normalized by the fullest selected series in the rate window. Datadog's submission cadence and graph buckets are unavailable; unequal cadence, sparse series and resource churn can change the result. Window=$__rate_interval; denominator=max sample count across all selected raw series.",
+      "remark": "WEIGHTED",
+      "severity": "warning",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[3].definition.widgets[0].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.replication.offline_partitions_count{*}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Verify the source and target numerically on representative telemetry; no global error bound is guaranteed."
+    },
+    {
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'kafka.replication.offline_partitions_count' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/kafka_dashboard.json",
+      "sourcePath": "widgets[3].definition.widgets[0].definition.requests[0].queries[0].query",
+      "sourceText": "sum:kafka.replication.offline_partitions_count{*}.weighted()",
+      "suggestedAction": "Review the 'kafka.replication.offline_partitions_count' entry against its ref and set 'reviewed'."
     },
     {
       "code": "OPTION_IGNORED",
@@ -291,13 +301,32 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
-      "severity": "error",
+      "code": "BEST_EFFORT",
+      "message": "WEIGHTED: Weighted sum uses raw sample sums normalized by the fullest selected series in the rate window. Datadog's submission cadence and graph buckets are unavailable; unequal cadence, sparse series and resource churn can change the result. Window=$__rate_interval; denominator=max sample count across all selected raw series.",
+      "remark": "WEIGHTED",
+      "severity": "warning",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[3].definition.widgets[1].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.replication.under_replicated_partitions{$env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Verify the source and target numerically on representative telemetry; no global error bound is guaranteed."
+    },
+    {
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'kafka.replication.under_replicated_partitions' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/kafka_dashboard.json",
+      "sourcePath": "widgets[3].definition.widgets[1].definition.requests[0].queries[0].query",
+      "sourceText": "sum:kafka.replication.under_replicated_partitions{$env}.weighted()",
+      "suggestedAction": "Review the 'kafka.replication.under_replicated_partitions' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$env' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/kafka_dashboard.json",
+      "sourcePath": "widgets[3].definition.widgets[1].definition.requests[0].queries[0].query",
+      "sourceText": "sum:kafka.replication.under_replicated_partitions{$env}.weighted()",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
     },
     {
       "code": "OPTION_IGNORED",
@@ -831,21 +860,21 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "message": "'.weighted()' requires a 'gauge' metric mapping; expressions and other metric kinds lack the raw series semantics required by this implementation.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[2].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.net.bytes_in.rate{$env} by {env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Use a reviewed mapping of the documented metric kind or migrate manually."
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "message": "'.weighted()' requires a 'gauge' metric mapping; expressions and other metric kinds lack the raw series semantics required by this implementation.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[2].definition.requests[0].queries[1].query",
       "sourceText": "sum:kafka.net.bytes_out.rate{$env} by {env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Use a reviewed mapping of the documented metric kind or migrate manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -920,22 +949,78 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "BEST_EFFORT",
+      "message": "WEIGHTED: Weighted sum uses raw sample sums normalized by the fullest selected series in the rate window. Datadog's submission cadence and graph buckets are unavailable; unequal cadence, sparse series and resource churn can change the result. Window=$__rate_interval; denominator=max sample count across all selected raw series.",
+      "remark": "WEIGHTED",
+      "severity": "warning",
+      "sourceId": "dashboards/kafka_dashboard.json",
+      "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[0].query",
+      "sourceText": "sum:kafka.request.producer_request_purgatory.size{$env} by {env}.weighted()",
+      "suggestedAction": "Verify the source and target numerically on representative telemetry; no global error bound is guaranteed."
+    },
+    {
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'kafka.request.producer_request_purgatory.size' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/kafka_dashboard.json",
+      "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[0].query",
+      "sourceText": "sum:kafka.request.producer_request_purgatory.size{$env} by {env}.weighted()",
+      "suggestedAction": "Review the 'kafka.request.producer_request_purgatory.size' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$env' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/kafka_dashboard.json",
+      "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[0].query",
+      "sourceText": "sum:kafka.request.producer_request_purgatory.size{$env} by {env}.weighted()",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
+    },
+    {
+      "code": "MISSING_LABEL_MAPPING",
+      "message": "No label mapping for group-by tag 'env' on metric 'kafka.request.producer_request_purgatory.size'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.request.producer_request_purgatory.size{$env} by {env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed label mapping for 'env' to the 'kafka.request.producer_request_purgatory.size' entry."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "BEST_EFFORT",
+      "message": "WEIGHTED: Weighted sum uses raw sample sums normalized by the fullest selected series in the rate window. Datadog's submission cadence and graph buckets are unavailable; unequal cadence, sparse series and resource churn can change the result. Window=$__rate_interval; denominator=max sample count across all selected raw series.",
+      "remark": "WEIGHTED",
+      "severity": "warning",
+      "sourceId": "dashboards/kafka_dashboard.json",
+      "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[1].query",
+      "sourceText": "sum:kafka.request.fetch_request_purgatory.size{$env} by {env}.weighted()",
+      "suggestedAction": "Verify the source and target numerically on representative telemetry; no global error bound is guaranteed."
+    },
+    {
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'kafka.request.fetch_request_purgatory.size' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/kafka_dashboard.json",
+      "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[1].query",
+      "sourceText": "sum:kafka.request.fetch_request_purgatory.size{$env} by {env}.weighted()",
+      "suggestedAction": "Review the 'kafka.request.fetch_request_purgatory.size' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$env' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/kafka_dashboard.json",
+      "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[1].query",
+      "sourceText": "sum:kafka.request.fetch_request_purgatory.size{$env} by {env}.weighted()",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
+    },
+    {
+      "code": "MISSING_LABEL_MAPPING",
+      "message": "No label mapping for group-by tag 'env' on metric 'kafka.request.fetch_request_purgatory.size'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[1].query",
       "sourceText": "sum:kafka.request.fetch_request_purgatory.size{$env} by {env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed label mapping for 'env' to the 'kafka.request.fetch_request_purgatory.size' entry."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1164,13 +1249,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'kafka.producer.bytes_out'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[1].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.producer.bytes_out{$env} by {topic,env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'kafka.producer.bytes_out' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1245,22 +1330,22 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'kafka.producer.request_rate'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[2].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.producer.request_rate{$env} by {host}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'kafka.producer.request_rate' to the mapping file."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'kafka.producer.response_rate'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[2].definition.requests[0].queries[1].query",
       "sourceText": "sum:kafka.producer.response_rate{$env} by {host}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'kafka.producer.response_rate' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1319,13 +1404,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'kafka.producer.request_latency_avg'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[3].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.producer.request_latency_avg{$env} by {env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'kafka.producer.request_latency_avg' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1384,13 +1469,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'kafka.producer.io_wait'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[4].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.producer.io_wait{$env} by {env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'kafka.producer.io_wait' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1671,13 +1756,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'kafka.consumer.bytes_in'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[6].definition.widgets[2].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.consumer.bytes_in{$env,$consumer_group} by {consumer_group,env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'kafka.consumer.bytes_in' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1736,13 +1821,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'kafka.consumer.messages_in'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[6].definition.widgets[3].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.consumer.messages_in{$env,$consumer_group} by {client-id,env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'kafka.consumer.messages_in' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1801,13 +1886,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'kafka.consumer.fetch_rate'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[6].definition.widgets[4].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.consumer.fetch_rate{$env,$consumer_group} by {env,consumer_group}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'kafka.consumer.fetch_rate' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -2747,22 +2832,22 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'jvm.gc.major_collection_count'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[9].definition.widgets[1].definition.requests[0].queries[0].query",
       "sourceText": "sum:jvm.gc.major_collection_count{$env} by {type,env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'jvm.gc.major_collection_count' to the mapping file."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'jvm.gc.minor_collection_count'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[9].definition.widgets[1].definition.requests[0].queries[1].query",
       "sourceText": "sum:jvm.gc.minor_collection_count{$env} by {type,env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'jvm.gc.minor_collection_count' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -2837,22 +2922,22 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'jvm.gc.major_collection_time'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[9].definition.widgets[2].definition.requests[0].queries[0].query",
       "sourceText": "sum:jvm.gc.major_collection_time{$env} by {type,env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'jvm.gc.major_collection_time' to the mapping file."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'jvm.gc.minor_collection_time'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[9].definition.widgets[2].definition.requests[0].queries[1].query",
       "sourceText": "sum:jvm.gc.minor_collection_time{$env} by {type,env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'jvm.gc.minor_collection_time' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -3280,13 +3365,23 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
-      "severity": "error",
+      "code": "BEST_EFFORT",
+      "message": "WEIGHTED: Weighted sum uses raw sample sums normalized by the fullest selected series in the rate window. Datadog's submission cadence and graph buckets are unavailable; unequal cadence, sparse series and resource churn can change the result. Window=$__rate_interval; denominator=max sample count across all selected raw series.",
+      "remark": "WEIGHTED",
+      "severity": "warning",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[3].definition.widgets[0].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.replication.offline_partitions_count{*}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Verify the source and target numerically on representative telemetry; no global error bound is guaranteed."
+    },
+    {
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'kafka.replication.offline_partitions_count' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/kafka_kraft_dashboard.json",
+      "sourcePath": "widgets[3].definition.widgets[0].definition.requests[0].queries[0].query",
+      "sourceText": "sum:kafka.replication.offline_partitions_count{*}.weighted()",
+      "suggestedAction": "Review the 'kafka.replication.offline_partitions_count' entry against its ref and set 'reviewed'."
     },
     {
       "code": "OPTION_IGNORED",
@@ -3337,13 +3432,32 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
-      "severity": "error",
+      "code": "BEST_EFFORT",
+      "message": "WEIGHTED: Weighted sum uses raw sample sums normalized by the fullest selected series in the rate window. Datadog's submission cadence and graph buckets are unavailable; unequal cadence, sparse series and resource churn can change the result. Window=$__rate_interval; denominator=max sample count across all selected raw series.",
+      "remark": "WEIGHTED",
+      "severity": "warning",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[3].definition.widgets[1].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.replication.under_replicated_partitions{$env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Verify the source and target numerically on representative telemetry; no global error bound is guaranteed."
+    },
+    {
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'kafka.replication.under_replicated_partitions' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/kafka_kraft_dashboard.json",
+      "sourcePath": "widgets[3].definition.widgets[1].definition.requests[0].queries[0].query",
+      "sourceText": "sum:kafka.replication.under_replicated_partitions{$env}.weighted()",
+      "suggestedAction": "Review the 'kafka.replication.under_replicated_partitions' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$env' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/kafka_kraft_dashboard.json",
+      "sourcePath": "widgets[3].definition.widgets[1].definition.requests[0].queries[0].query",
+      "sourceText": "sum:kafka.replication.under_replicated_partitions{$env}.weighted()",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
     },
     {
       "code": "OPTION_IGNORED",
@@ -3877,21 +3991,21 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "message": "'.weighted()' requires a 'gauge' metric mapping; expressions and other metric kinds lack the raw series semantics required by this implementation.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[2].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.net.bytes_in.rate{$env} by {env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Use a reviewed mapping of the documented metric kind or migrate manually."
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "message": "'.weighted()' requires a 'gauge' metric mapping; expressions and other metric kinds lack the raw series semantics required by this implementation.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[2].definition.requests[0].queries[1].query",
       "sourceText": "sum:kafka.net.bytes_out.rate{$env} by {env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Use a reviewed mapping of the documented metric kind or migrate manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -3966,22 +4080,78 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "BEST_EFFORT",
+      "message": "WEIGHTED: Weighted sum uses raw sample sums normalized by the fullest selected series in the rate window. Datadog's submission cadence and graph buckets are unavailable; unequal cadence, sparse series and resource churn can change the result. Window=$__rate_interval; denominator=max sample count across all selected raw series.",
+      "remark": "WEIGHTED",
+      "severity": "warning",
+      "sourceId": "dashboards/kafka_kraft_dashboard.json",
+      "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[0].query",
+      "sourceText": "sum:kafka.request.producer_request_purgatory.size{$env} by {env}.weighted()",
+      "suggestedAction": "Verify the source and target numerically on representative telemetry; no global error bound is guaranteed."
+    },
+    {
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'kafka.request.producer_request_purgatory.size' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/kafka_kraft_dashboard.json",
+      "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[0].query",
+      "sourceText": "sum:kafka.request.producer_request_purgatory.size{$env} by {env}.weighted()",
+      "suggestedAction": "Review the 'kafka.request.producer_request_purgatory.size' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$env' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/kafka_kraft_dashboard.json",
+      "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[0].query",
+      "sourceText": "sum:kafka.request.producer_request_purgatory.size{$env} by {env}.weighted()",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
+    },
+    {
+      "code": "MISSING_LABEL_MAPPING",
+      "message": "No label mapping for group-by tag 'env' on metric 'kafka.request.producer_request_purgatory.size'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.request.producer_request_purgatory.size{$env} by {env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed label mapping for 'env' to the 'kafka.request.producer_request_purgatory.size' entry."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "BEST_EFFORT",
+      "message": "WEIGHTED: Weighted sum uses raw sample sums normalized by the fullest selected series in the rate window. Datadog's submission cadence and graph buckets are unavailable; unequal cadence, sparse series and resource churn can change the result. Window=$__rate_interval; denominator=max sample count across all selected raw series.",
+      "remark": "WEIGHTED",
+      "severity": "warning",
+      "sourceId": "dashboards/kafka_kraft_dashboard.json",
+      "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[1].query",
+      "sourceText": "sum:kafka.request.fetch_request_purgatory.size{$env} by {env}.weighted()",
+      "suggestedAction": "Verify the source and target numerically on representative telemetry; no global error bound is guaranteed."
+    },
+    {
+      "code": "UNREVIEWED_MAPPING",
+      "message": "Mapping for 'kafka.request.fetch_request_purgatory.size' has not been reviewed by a human.",
+      "severity": "warning",
+      "sourceId": "dashboards/kafka_kraft_dashboard.json",
+      "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[1].query",
+      "sourceText": "sum:kafka.request.fetch_request_purgatory.size{$env} by {env}.weighted()",
+      "suggestedAction": "Review the 'kafka.request.fetch_request_purgatory.size' entry against its ref and set 'reviewed'."
+    },
+    {
+      "code": "TEMPLATE_VARIABLE_DROPPED",
+      "message": "Template variable '$env' (default '*') dropped; the converted panel shows all series.",
+      "severity": "warning",
+      "sourceId": "dashboards/kafka_kraft_dashboard.json",
+      "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[1].query",
+      "sourceText": "sum:kafka.request.fetch_request_purgatory.size{$env} by {env}.weighted()",
+      "suggestedAction": "Add a label mapping for the variable's prefix tag to filter by it."
+    },
+    {
+      "code": "MISSING_LABEL_MAPPING",
+      "message": "No label mapping for group-by tag 'env' on metric 'kafka.request.fetch_request_purgatory.size'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[1].query",
       "sourceText": "sum:kafka.request.fetch_request_purgatory.size{$env} by {env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed label mapping for 'env' to the 'kafka.request.fetch_request_purgatory.size' entry."
     },
     {
       "code": "OPTION_IGNORED",
@@ -4210,13 +4380,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'kafka.producer.bytes_out'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[1].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.producer.bytes_out{$env} by {topic,env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'kafka.producer.bytes_out' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -4291,22 +4461,22 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'kafka.producer.request_rate'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[2].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.producer.request_rate{$env} by {host}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'kafka.producer.request_rate' to the mapping file."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'kafka.producer.response_rate'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[2].definition.requests[0].queries[1].query",
       "sourceText": "sum:kafka.producer.response_rate{$env} by {host}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'kafka.producer.response_rate' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -4365,13 +4535,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'kafka.producer.request_latency_avg'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[3].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.producer.request_latency_avg{$env} by {env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'kafka.producer.request_latency_avg' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -4430,13 +4600,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'kafka.producer.io_wait'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[4].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.producer.io_wait{$env} by {env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'kafka.producer.io_wait' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -4717,13 +4887,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'kafka.consumer.bytes_in'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[6].definition.widgets[2].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.consumer.bytes_in{$env,$consumer_group} by {consumer_group,env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'kafka.consumer.bytes_in' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -4782,13 +4952,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'kafka.consumer.messages_in'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[6].definition.widgets[3].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.consumer.messages_in{$env,$consumer_group} by {client-id,env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'kafka.consumer.messages_in' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -4847,13 +5017,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'kafka.consumer.fetch_rate'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[6].definition.widgets[4].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.consumer.fetch_rate{$env,$consumer_group} by {env,consumer_group}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'kafka.consumer.fetch_rate' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -6227,22 +6397,22 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'jvm.gc.major_collection_count'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[9].definition.widgets[1].definition.requests[0].queries[0].query",
       "sourceText": "sum:jvm.gc.major_collection_count{$env} by {type,env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'jvm.gc.major_collection_count' to the mapping file."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'jvm.gc.minor_collection_count'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[9].definition.widgets[1].definition.requests[0].queries[1].query",
       "sourceText": "sum:jvm.gc.minor_collection_count{$env} by {type,env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'jvm.gc.minor_collection_count' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -6317,22 +6487,22 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'jvm.gc.major_collection_time'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[9].definition.widgets[2].definition.requests[0].queries[0].query",
       "sourceText": "sum:jvm.gc.major_collection_time{$env} by {type,env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'jvm.gc.major_collection_time' to the mapping file."
     },
     {
-      "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'jvm.gc.minor_collection_time'.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[9].definition.widgets[2].definition.requests[0].queries[1].query",
       "sourceText": "sum:jvm.gc.minor_collection_time{$env} by {type,env}.weighted()",
-      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+      "suggestedAction": "Add a reviewed entry for 'jvm.gc.minor_collection_time' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",
@@ -6619,6 +6789,9 @@
     {
       "kind": "dashboard",
       "outcome": "partial",
+      "remarks": [
+        "WEIGHTED"
+      ],
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "",
       "title": "Kafka, Zookeeper and Kafka Consumer Overview"
@@ -6660,14 +6833,20 @@
     },
     {
       "kind": "widget",
-      "outcome": "blocked",
+      "outcome": "best_effort",
+      "remarks": [
+        "WEIGHTED"
+      ],
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[3].definition.widgets[0]",
       "title": "Offline Partitions"
     },
     {
       "kind": "widget",
-      "outcome": "blocked",
+      "outcome": "best_effort",
+      "remarks": [
+        "WEIGHTED"
+      ],
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[3].definition.widgets[1]",
       "title": "Under Replicated Partitions"
@@ -6948,6 +7127,9 @@
     {
       "kind": "dashboard",
       "outcome": "partial",
+      "remarks": [
+        "WEIGHTED"
+      ],
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "",
       "title": "Kafka KRaft Overview"
@@ -6989,14 +7171,20 @@
     },
     {
       "kind": "widget",
-      "outcome": "blocked",
+      "outcome": "best_effort",
+      "remarks": [
+        "WEIGHTED"
+      ],
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[3].definition.widgets[0]",
       "title": "Offline Partitions"
     },
     {
       "kind": "widget",
-      "outcome": "blocked",
+      "outcome": "best_effort",
+      "remarks": [
+        "WEIGHTED"
+      ],
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[3].definition.widgets[1]",
       "title": "Under Replicated Partitions"
@@ -7354,6 +7542,7 @@
     "dashboards": {
       "approximated": 0,
       "assumed": 0,
+      "best_effort": 0,
       "blocked": 0,
       "partial": 2,
       "translated": 0
@@ -7361,6 +7550,7 @@
     "monitors": {
       "approximated": 1,
       "assumed": 0,
+      "best_effort": 0,
       "blocked": 2,
       "partial": 0,
       "translated": 0
@@ -7369,7 +7559,8 @@
     "widgets": {
       "approximated": 0,
       "assumed": 0,
-      "blocked": 78,
+      "best_effort": 4,
+      "blocked": 74,
       "partial": 0,
       "translated": 20
     }

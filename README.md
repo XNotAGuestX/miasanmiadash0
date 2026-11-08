@@ -11,6 +11,13 @@ A deterministic CLI that migrates Datadog dashboards and metric monitors to Dash
 
 See [STATUS.md](docs/STATUS.md) for details and [DEMO.md](docs/DEMO.md) for the demo runbook.
 
+Metric monitors support classic arithmetic and evaluation delay, producing disabled Dash0
+checks and Prometheus rules from one condition. See [alert conversion](docs/ALERT_CONVERSION.md).
+Bounded `.weighted()`, `.rollup()` and `.as_rate()` conversions produce the distinct
+`best_effort` category with visible limitations; unsupported combinations still block.
+See [function grammar](docs/FUNCTION_CONVERSION.md), [remark categories](docs/REMARKS.md)
+and [empirical verification](docs/LIVE_EXTENSIONS.md).
+
 ## Install and test
 
 Needs Python ≥ 3.13 and [uv](https://docs.astral.sh/uv/). Everything runs through one entry point, `uv run migrator <command>`:
@@ -45,6 +52,10 @@ See [LIVE_COMPARE.md](docs/LIVE_COMPARE.md) for configuration, evidence, resumpt
 The real two-vendor run passed 4/6 cases at 3%; two Postgres connection cases differed by
 3.28% and remain failed. See [recorded evidence](docs/STATUS.md#live-shared-sample-comparison-2026-11-08).
 Imported checks remain disabled.
+
+For broader coverage, the [28-case infrastructure suite](docs/LIVE_COMPARE.md#reuse-a-running-stream)
+includes Kafka, host and Docker plus approved assumed/approximated cases. Start a retained
+stream once; subsequent suites reuse its real history without another collection wait.
 
 ## Convert (offline)
 

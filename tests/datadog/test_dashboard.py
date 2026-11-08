@@ -122,19 +122,20 @@ def test_blocks_unsupported_widgets_with_exact_codes() -> None:
     assert errors_by_widget(c) == {
         "widgets[0]": ["UNSUPPORTED_QUERY_FUNCTION"],
         "widgets[1]": ["UNSUPPORTED_DATA_SOURCE"],
-        "widgets[4]": ["UNSUPPORTED_QUERY_FUNCTION"],
     }
     # Plan 05 Task 5 deliberately changed widget 2 (`query1 * 100`) from blocked to translated.
     # Widget 3 (`time: {"live_span": "1h"}`) converts since TIMEPIN was approved (docs/REMARKS.md).
+    # Widget 4 is now an explicitly tagged trailing-window rollup approximation.
     assert [i.outcome for i in c.items] == [
         "partial",
         "blocked",
         "blocked",
         "translated",
         "approximated",
-        "blocked",
+        "best_effort",
     ]
     assert queries_of(c, "widget-2") == [{"query": f"({CONN}) * 100"}]
+    assert c.items[-1].remarks == ("ROLLUP",)
 
 
 def test_widget_time_pin_is_approximated_with_its_remark() -> None:
