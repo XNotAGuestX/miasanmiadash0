@@ -16,10 +16,12 @@ skipped and keeps blocking as MISSING_METRIC_MAPPING:
   rate/count or per-second gauge -> rate, other gauge -> gauge) fits the OTel type:
   gauge kind <- OTel gauge or non-monotonic sum; rate kind <- OTel monotonic sum
 - the Datadog name is not already mapped or listed as a gap in another mapping file
+- the catalog has no conflicts and the units have an explicit, compatible scale rule
 
 Filters become matchers (attribute dots -> underscores, as Dash0 exposes attributes in PromQL
-and as the existing mapping files do). `× N` becomes `scale: N`. Labels: `host -> host_name`,
-the convention of the existing host-level mapping files.
+and as the existing mapping files do). A `× N` transform must agree with UNIT_SCALES;
+when the table omits it, that explicit unit rule supplies the scale. Unknown or incompatible
+units are skipped. Labels: `host -> host_name`, the convention of existing host mappings.
 
 Usage:
   uv run scripts/generate_vendor_mappings.py          # write mappings/datadog/vendor-table.json
@@ -31,6 +33,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import math
 import re
 import sys
 from collections import defaultdict
@@ -48,6 +51,51 @@ OUT = MAPPINGS / "vendor-table.json"
 LABELS = {"host": "host_name"}
 _LABEL = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 _SCALE = re.compile(r"× (\S+)")
+
+# Target sample -> Datadog value, after rate() for monotonic sums. Physical factors use
+# the pinned metadata's units (SI nano/micro/milli, IEC mebi); named count pairs come
+# from the vendor rows and the pinned receiver definitions. A bare OTel "1" is a count
+# only for these explicit source units, never for byte/time/CPU quantities.
+# No fallback for empty units, unfamiliar spellings or incompatible dimensions.
+UNIT_SCALES: dict[tuple[str, str], float] = {
+    ("byte", "By"): 1.0,
+    ("byte", "{bytes}"): 1.0,
+    ("mebibyte", "By"): 1.0 / 1024**2,
+    ("core", "{cpu}"): 1.0,
+    ("nanocore", "{cpu}"): 1e9,
+    ("second", "s"): 1.0,
+    ("second", "{seconds}"): 1.0,
+    ("second", "{ms}"): 0.001,
+    ("millisecond", "ms"): 1.0,
+    ("millisecond", "s"): 1000.0,
+    ("microsecond", "us"): 1.0,
+    ("percent", "%"): 1.0,
+    ("fraction", "%"): 0.01,
+    ("fraction", "1"): 1.0,
+    ("block", "{blks_read}"): 1.0,
+    ("buffer", "{buffers}"): 1.0,
+    ("connection", "{connections}"): 1.0,
+    ("fault", "{faults}"): 1.0,
+    ("file", "{files}"): 1.0,
+    ("hit", "{blks_hit}"): 1.0,
+    ("lock", "{deadlock}"): 1.0,
+    ("message", "{messages}"): 1.0,
+    ("process", "{processes}"): 1.0,
+    ("read", "{operations}"): 1.0,
+    ("record", "{ record }"): 1.0,
+    ("request", "{request}"): 1.0,
+    ("request", "{requests}"): 1.0,
+    ("stage", "{ stage }"): 1.0,
+    ("table", "{table}"): 1.0,
+    ("task", "{ task }"): 1.0,
+    ("thread", "{workers}"): 1.0,
+    ("write", "{operations}"): 1.0,
+}
+for _count_unit in (
+    "block", "connection", "error", "file", "hit", "miss", "operation", "page",
+    "query", "read", "row", "table", "thread", "wait", "write",
+):
+    UNIT_SCALES[(_count_unit, "1")] = 1.0
 
 
 def datadog_types() -> dict[str, dict[str, str]]:
@@ -116,13 +164,18 @@ def _entry(
     otel, flt, transform = json.loads(next(iter(candidates)))
     if transform and not _SCALE.fullmatch(transform):
         return f"transform not supported: {transform}", None
-    scale = float(_SCALE.fullmatch(transform).group(1)) if transform else 1.0  # type: ignore[union-attr]
+    try:
+        scale = float(_SCALE.fullmatch(transform).group(1)) if transform else 1.0  # type: ignore[union-attr]
+    except ValueError:
+        return f"transform not numeric: {transform}", None
     matchers = {k.replace(".", "_"): v for k, v in sorted(flt.items())}
     if not all(_LABEL.fullmatch(k) for k in matchers):
         return "filter attribute is not a label name", None
     o = catalog.get(otel)
     if o is None:
         return f"{otel} not in the OTel catalog", None
+    if o.get("conflicts"):
+        return f"{otel} has conflicting OTel definitions: {'; '.join(o['conflicts'])}", None
     dd = types.get(name)
     kind = expected_kind(dd) if dd else None
     if kind is None:
@@ -139,6 +192,14 @@ def _entry(
     source_unit = dd.get("unit_name", "") + (
         f"/{dd['per_unit_name']}" if dd.get("per_unit_name") else ""
     )
+    if dd.get("per_unit_name") not in (None, "", "second"):
+        return f"Datadog per-unit not supported: {dd['per_unit_name']}", None
+    unit_scale = UNIT_SCALES.get((dd.get("unit_name", ""), o["unit"]))
+    if unit_scale is None:
+        return f"unit pair not supported: {source_unit or '-'} <- {o['unit'] or '-'}", None
+    if transform and not math.isclose(scale, unit_scale, rel_tol=1e-12, abs_tol=0.0):
+        return f"table scale {scale:g} conflicts with unit scale {unit_scale:g}", None
+    scale = unit_scale
     filt = ", ".join(f"{k}: {v}" for k, v in sorted(flt.items()))
     ref = (
         f"Generated by scripts/generate_vendor_mappings.py. Vendor: fixtures/datadog/"
@@ -150,6 +211,8 @@ def _entry(
         f"{o['type']}{' monotonic' if o['monotonic'] else ''}, unit {o['unit'] or '-'} "
         f"({', '.join(o['sources'])}). Not checked against Dash0 data."
     )
+    if not transform and scale != 1:
+        ref += f" vendor deviation: table omits scale; explicit unit rule requires {scale:g}."
     entry: dict[str, Any] = {
         "kind": kind,
         "target": {"name": otel, "type": o["type"]},
