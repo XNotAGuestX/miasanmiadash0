@@ -172,6 +172,30 @@ def test_abs_formula_translates_and_query_abs_stays_blocked() -> None:
     assert (d.code, d.message) == ("UNSUPPORTED_QUERY_FUNCTION", "Function 'abs' is not supported.")
 
 
+def test_week_before_formula_translates_to_offset() -> None:
+    c = compile_body(
+        body(
+            ts(new_req("avg:postgresql.connections{*}", formulas=["query1 - week_before(query1)"]))
+        )
+    )
+    assert c.dashboard is not None and validate_dashboard(c.dashboard) == []
+    shifted = CONN[:-1] + " offset 1w)"
+    assert queries_of(c, "widget-0") == [{"query": f"({CONN}) - ({shifted})"}]
+    # Diagnostics of the shifted compile are not repeated.
+    assert [d.code for d in c.diagnostics].count("DEFAULT_AGGREGATOR_APPLIED") == 0
+
+
+def test_empty_widget_time_is_ignored_and_live_span_blocks() -> None:
+    c = compile_body(body(ts(new_req("avg:postgresql.connections{*}"), time={})))
+    assert c.items[1].outcome == "translated"
+    [d] = [d for d in c.diagnostics if d.source_path.endswith(".time")]
+    assert (d.code, d.severity) == ("OPTION_IGNORED", "info")
+    c = compile_body(body(ts(new_req("avg:postgresql.connections{*}"), time={"live_span": "1w"})))
+    assert c.items[1].outcome == "blocked"
+    [d] = [d for d in c.diagnostics if d.severity == "error"]
+    assert (d.code, d.message) == ("UNSUPPORTED_WIDGET", "Widget option 'time' is not supported.")
+
+
 def test_formula_uses_only_referenced_queries() -> None:
     c = compile_body(
         body(

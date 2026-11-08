@@ -903,6 +903,15 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'redis.replication.delay'.",
+      "severity": "error",
+      "sourceId": "dashboards/overview.json",
+      "sourcePath": "widgets[2].definition.widgets[4].definition.requests[0].queries[0].query",
+      "sourceText": "avg:redis.replication.delay{$host,$scope}",
+      "suggestedAction": "Add a reviewed entry for 'redis.replication.delay' to the mapping file."
+    },
+    {
       "code": "OPTION_IGNORED",
       "message": "Query option 'semantic_mode' is ignored.",
       "severity": "info",
@@ -927,12 +936,12 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_WIDGET",
-      "message": "Widget option 'time' is not supported.",
-      "severity": "error",
+      "code": "OPTION_IGNORED",
+      "message": "Widget option 'time' is empty and is ignored.",
+      "severity": "info",
       "sourceId": "dashboards/overview.json",
       "sourcePath": "widgets[2].definition.widgets[4].definition.time",
-      "suggestedAction": "Migrate this widget manually or remove the option in the source."
+      "suggestedAction": "No action needed."
     },
     {
       "code": "OPTION_IGNORED",
@@ -2244,12 +2253,12 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_WIDGET",
-      "message": "Widget option 'time' is not supported.",
-      "severity": "error",
+      "code": "OPTION_IGNORED",
+      "message": "Widget option 'time' is empty and is ignored.",
+      "severity": "info",
       "sourceId": "dashboards/overview.json",
       "sourcePath": "widgets[4].definition.widgets[4].definition.time",
-      "suggestedAction": "Migrate this widget manually or remove the option in the source."
+      "suggestedAction": "No action needed."
     },
     {
       "code": "OPTION_IGNORED",

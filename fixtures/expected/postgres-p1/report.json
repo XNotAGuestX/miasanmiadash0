@@ -2305,6 +2305,15 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'postgresql.seq_scans'.",
+      "severity": "error",
+      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
+      "sourcePath": "widgets[6].definition.widgets[2].definition.requests[0].queries[0].query",
+      "sourceText": "sum:postgresql.seq_scans{$scope,$db,$table,$host}",
+      "suggestedAction": "Add a reviewed entry for 'postgresql.seq_scans' to the mapping file."
+    },
+    {
       "code": "OPTION_IGNORED",
       "message": "Query option 'semantic_mode' is ignored.",
       "severity": "info",
@@ -2337,21 +2346,21 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 11.",
-      "severity": "error",
-      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
-      "sourcePath": "widgets[6].definition.widgets[2].definition.requests[1].formulas[0].formula",
-      "sourceText": "week_before(query1)",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
-    },
-    {
       "code": "OPTION_IGNORED",
       "message": "Request option 'on_right_yaxis' is ignored.",
       "severity": "info",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[6].definition.widgets[2].definition.requests[1].on_right_yaxis",
       "suggestedAction": "No action needed unless the option matters for this panel."
+    },
+    {
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'postgresql.seq_scans'.",
+      "severity": "error",
+      "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
+      "sourcePath": "widgets[6].definition.widgets[2].definition.requests[1].queries[0].query",
+      "sourceText": "sum:postgresql.seq_scans{$scope,$db,$table,$host}",
+      "suggestedAction": "Add a reviewed entry for 'postgresql.seq_scans' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",

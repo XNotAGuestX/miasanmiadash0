@@ -45,8 +45,11 @@ PANEL_PLUGIN = {"timeseries": "TimeSeriesChart", "query_value": "StatChart", "no
 # trailing ones (`.rollup()`, `.as_count()`) in plan 03 check 1, functions in formulas in plan 05
 # Task 5. A function may only move into this allowlist through its own issue with an exact test,
 # whatever Agent0 proposes. `abs` (#119) converts in formulas only (formula.py); in a query string
-# it still blocks through WRAPPING_FN.
-ALLOWED_FUNCTIONS: frozenset[str] = frozenset({"abs"})
+# it still blocks through WRAPPING_FN. The timeshift functions convert in formulas only, too
+# (formula.py, PromQL `offset`).
+ALLOWED_FUNCTIONS: frozenset[str] = frozenset(
+    {"abs", "hour_before", "day_before", "week_before", "month_before", "timeshift"}
+)
 AGGREGATORS = {"avg", "sum", "min", "max"}
 AGGREGATOR = re.compile(r"^(avg|sum|min|max):")
 LEADING_WORD = re.compile(r"\s*([A-Za-z_][A-Za-z0-9_]*):")
@@ -298,7 +301,9 @@ def build(key: str) -> dict:
             wtype = wdef.get("type")
             reqs = by_widget.get(path, [])
             supported = wtype in PANEL_PLUGIN
-            bad_keys = sorted(BLOCKING_WIDGET_KEYS & set(wdef)) if supported else []
+            # An empty `time: {}` carries no override; the converter ignores it.
+            keys = {k for k in wdef if not (k == "time" and wdef[k] == {})}
+            bad_keys = sorted(BLOCKING_WIDGET_KEYS & keys) if supported else []
             translated = supported and not bad_keys and all(r["expected"]["outcome"] == "translated" for r in reqs)
             if wtype == "note":
                 translated = True

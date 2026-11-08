@@ -2052,6 +2052,24 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'nginx.server_zone.responses.4xx'.",
+      "severity": "error",
+      "sourceId": "dashboards/plus_overview.json",
+      "sourcePath": "widgets[4].definition.widgets[1].definition.requests[0].queries[0].query",
+      "sourceText": "sum:nginx.server_zone.responses.4xx{$host} by {host}",
+      "suggestedAction": "Add a reviewed entry for 'nginx.server_zone.responses.4xx' to the mapping file."
+    },
+    {
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'nginx.server_zone.responses.5xx'.",
+      "severity": "error",
+      "sourceId": "dashboards/plus_overview.json",
+      "sourcePath": "widgets[4].definition.widgets[1].definition.requests[0].queries[1].query",
+      "sourceText": "sum:nginx.server_zone.responses.5xx{$host} by {host}",
+      "suggestedAction": "Add a reviewed entry for 'nginx.server_zone.responses.5xx' to the mapping file."
+    },
+    {
       "code": "OPTION_IGNORED",
       "message": "Request option 'style' is ignored.",
       "severity": "info",
@@ -2068,12 +2086,12 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_WIDGET",
-      "message": "Widget option 'time' is not supported.",
-      "severity": "error",
+      "code": "OPTION_IGNORED",
+      "message": "Widget option 'time' is empty and is ignored.",
+      "severity": "info",
       "sourceId": "dashboards/plus_overview.json",
       "sourcePath": "widgets[4].definition.widgets[1].definition.time",
-      "suggestedAction": "Migrate this widget manually or remove the option in the source."
+      "suggestedAction": "No action needed."
     },
     {
       "code": "OPTION_IGNORED",

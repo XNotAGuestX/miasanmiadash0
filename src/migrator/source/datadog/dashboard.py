@@ -24,6 +24,7 @@ from migrator.source.datadog.formula import (
     parse_formula,
     references,
     render_formula,
+    shifted,
 )
 from migrator.source.datadog.mapping import DatadogMapping
 from migrator.source.datadog.model import ParseOk, VariableFilter
@@ -250,6 +251,19 @@ def _check_keys(
     for key in sorted(obj):
         if key in silent:
             continue
+        if key == "time" and what == "Widget" and obj[key] == {}:
+            # An empty widget time object sets no override, so the widget follows the
+            # dashboard time range, as every Perses panel does (Perses has no per-panel time
+            # range: https://perses.dev/docs/perses/latest/api/dashboard/). A non-empty
+            # `time` (for example `live_span`) still blocks.
+            c.add(
+                "OPTION_IGNORED",
+                "info",
+                f"{path}.{key}",
+                "Widget option 'time' is empty and is ignored.",
+                "No action needed.",
+            )
+            continue
         if key in ignored:
             c.add(
                 "OPTION_IGNORED",
@@ -397,6 +411,7 @@ def _compile_requests(
     out: list[PersesQuery] = []
     for req in requests:
         compiled: dict[str, RenderedQuery] = {}
+        parsed_ok: dict[str, ParseOk] = {}
         needed = [n for d in req.displayed for n in d.query_names]
         for name in dict.fromkeys(needed):
             qpath, text, _ = req.queries[name]
@@ -416,14 +431,34 @@ def _compile_requests(
             c.items.extend(result.diagnostics)
             if isinstance(result, CompiledOk):
                 compiled[name] = RenderedQuery(result.promql, result.group_labels)
+                parsed_ok[name] = parsed
+        # Timeshifted references compile again with an offset. Their other diagnostics
+        # repeat the unshifted compile's, so only a new blocking error is reported.
+        shifts: dict[tuple[str, int], RenderedQuery] = {}
+        pairs = [p for d in req.displayed if d.formula is not None for p in shifted(d.formula)]
+        for name, offset in dict.fromkeys(pairs):
+            if name not in compiled:
+                continue
+            qpath, text, _ = req.queries[name]
+            result = compile_metric_query(
+                parsed_ok[name].query,
+                ctx.mapping,
+                QueryContext(ctx.source_id, qpath, text, ctx.variables, ctx.promoted, offset),
+            )
+            if isinstance(result, CompiledOk):
+                shifts[(name, offset)] = RenderedQuery(result.promql, result.group_labels)
+            else:
+                c.items.append(result.diagnostics[-1])
         for disp in req.displayed:
             if any(n not in compiled for n in disp.query_names):
+                continue
+            if disp.formula is not None and any(p not in shifts for p in shifted(disp.formula)):
                 continue
             if disp.formula is None:
                 q = compiled[disp.query_names[0]]
                 out.append(_query(q.promql, q.group_labels))
                 continue
-            rendered = render_formula(disp.formula, compiled)
+            rendered = render_formula(disp.formula, compiled, shifts)
             if not rendered.ok:
                 c.error(
                     "UNSUPPORTED_FORMULA",
