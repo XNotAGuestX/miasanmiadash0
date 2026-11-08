@@ -452,9 +452,7 @@ widgets:
   expected:
     outcome: blocked
     errors:
-    - UNSUPPORTED_WIDGET
-    notes:
-    - 'widget option(s) time block the widget (converter, PR #85)'
+    - MISSING_METRIC_MAPPING
 - source_path: widgets[5].definition.widgets[0]
   type: query_value
   milestone: p2

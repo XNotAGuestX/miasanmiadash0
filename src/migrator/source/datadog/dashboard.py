@@ -251,6 +251,19 @@ def _check_keys(
     for key in sorted(obj):
         if key in silent:
             continue
+        if key == "time" and what == "Widget" and obj[key] == {}:
+            # An empty widget time object sets no override, so the widget follows the
+            # dashboard time range, as every Perses panel does (Perses has no per-panel time
+            # range: https://perses.dev/docs/perses/latest/api/dashboard/). A non-empty
+            # `time` (for example `live_span`) still blocks.
+            c.add(
+                "OPTION_IGNORED",
+                "info",
+                f"{path}.{key}",
+                "Widget option 'time' is empty and is ignored.",
+                "No action needed.",
+            )
+            continue
         if key in ignored:
             c.add(
                 "OPTION_IGNORED",

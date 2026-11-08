@@ -7,7 +7,7 @@ A deterministic CLI that migrates Datadog dashboards and metric monitors to Dash
 **State (2026-11-07):**
 - `convert` works offline and is covered by golden tests.
 - `publish` has run live against Dash0: the Postgres check rule and both dashboards were imported and read back (plan 07 Task 5).
-- `fetch` is implemented but has only been tested against a fake API; the live run waits on a Datadog account (B3).
+- `fetch` is implemented but its asset-fetch round trip has only been tested against a fake API.
 
 See [STATUS.md](docs/STATUS.md) for details and [DEMO.md](docs/DEMO.md) for the demo runbook.
 
@@ -22,6 +22,29 @@ uv run migrator test -k parse    # pytest; extra args pass through
 uv run migrator typecheck    # mypy --strict over src and tests
 uv run migrator lint         # ruff
 ```
+
+## Compare live Datadog and Dash0 values
+
+The on-demand harness reuses the full OpenTelemetry Demo and its load generator, sends
+shared samples to both vendors, publishes converted demo assets, verifies read-back and
+compares each matched series within a configurable tolerance (default 3%). Workload profiles,
+comparison suites and the Dash0 dataset are independently selectable.
+
+```sh
+uv run scripts/live_compare.py \
+  --dataset-config scripts/live/datasets/otel-demo.yaml \
+  --tests scripts/live/suites/default.yaml \
+  --datadog-semantic-mode combined \
+  --dash0-dataset migration-demo --out out/live/demo-01 --dry-run
+```
+
+The script loads the repository `.env` automatically. Configure `DD_API_KEY` for ingestion,
+`DATADOG_PAT` (or `DD_BEARER_TOKEN`) for queries and `DASH0_AUTH_TOKEN`, then remove `--dry-run`.
+Dash0 endpoints default to the project's EU West region and can be overridden.
+See [LIVE_COMPARE.md](docs/LIVE_COMPARE.md) for configuration, evidence, resumption and cleanup.
+The real two-vendor run passed 4/6 cases at 3%; two Postgres connection cases differed by
+3.28% and remain failed. See [recorded evidence](docs/STATUS.md#live-shared-sample-comparison-2026-11-08).
+Imported checks remain disabled.
 
 ## Convert (offline)
 
@@ -74,7 +97,7 @@ DASH0_AUTH_TOKEN=... docker compose -f scripts/review/docker-compose.yaml up -d
 uv run scripts/review/load_local.py /tmp/pg-out    # prints each dashboard's URL
 ```
 
-See [scripts/review/README.md](scripts/review/README.md).
+Or in one step, reading the token from `.env`: `scripts/review/up.sh` (converts every integration, loads it and prints each URL; Ctrl-C stops it). See [scripts/review/README.md](scripts/review/README.md).
 
 ## Publish to Dash0
 
