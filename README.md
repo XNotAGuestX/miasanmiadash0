@@ -74,7 +74,7 @@ DASH0_AUTH_TOKEN=... docker compose -f scripts/review/docker-compose.yaml up -d
 uv run scripts/review/load_local.py /tmp/pg-out    # prints each dashboard's URL
 ```
 
-See [scripts/review/README.md](scripts/review/README.md).
+Or in one step, reading the token from `.env`: `scripts/review/up.sh` (converts every integration, loads it and prints each URL; Ctrl-C stops it). See [scripts/review/README.md](scripts/review/README.md).
 
 ## Publish to Dash0
 
