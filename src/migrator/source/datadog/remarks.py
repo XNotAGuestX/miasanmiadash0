@@ -48,6 +48,7 @@ _FELIX = Approval("Felix", "2026-11-08")
 # Current-session instruction explicitly requests weighted/custom-PromQL and other useful
 # deterministic approximations, tagged best_effort and checked empirically case by case.
 _FUNCTIONS = Approval("Felix (explicit best-effort function request, #163/#164)", "2026-11-08")
+_PROMLABEL = Approval("Felix (explicit Prometheus label mapping request, #185)", "2026-11-08")
 
 REMARKS: dict[str, Remark] = {
     "WEIGHTED": Remark(
@@ -161,6 +162,25 @@ REMARKS: dict[str, Remark] = {
         ),
         evidence="see the mapping entry's ref",
         approved=None,
+    ),
+    # OpenMetrics checks (#185): Datadog scrapes a Prometheus endpoint and tags each sample
+    # with its labels (renamed by the check's rename_labels). Collected with the OTel
+    # Prometheus receiver, Dash0 keeps the raw Prometheus name and labels; the scrape target
+    # is `instance`, there is no `host_name` (checked live in Dash0, issue #185).
+    "PROMLABEL": Remark(
+        category="assumed",
+        summary=(
+            "The Datadog metric is assumed to be the Prometheus series its OpenMetrics check "
+            "scrapes, collected by the OTel Prometheus receiver under the name and labels seen "
+            "in the check's test exposition. Datadog tags are those labels (after the check's "
+            "rename_labels); host is the scrape target instance."
+        ),
+        evidence=(
+            "https://docs.datadoghq.com/developers/custom_checks/prometheus/ "
+            "https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/"
+            "receiver/prometheusreceiver"
+        ),
+        approved=_PROMLABEL,
     ),
     "SEMANTIC": Remark(
         category="assumed",

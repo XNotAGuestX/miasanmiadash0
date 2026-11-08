@@ -33,4 +33,8 @@ fetch nginx/assets/monitors/worker_crashes.json nginx/monitors/worker_crashes.js
 for svc in $(python3 -c "import json; print(' '.join(json.load(open('$D/metadata-blobs.json'))))"); do
   fetch "$svc/metadata.csv" "$svc/metadata.csv"
 done
+# OpenMetrics checks' check.py/metrics.py (#185); paths and blob SHAs in openmetrics-blobs.json.
+for path in $(python3 -c "import json; print(' '.join(json.load(open('$D/openmetrics-blobs.json'))))"); do
+  fetch "$path" "${path%%/*}/checks/${path##*/}"
+done
 fetch LICENSE LICENSE
