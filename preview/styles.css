@@ -1022,3 +1022,20 @@ button:disabled { cursor: wait; opacity: 0.6; }
 }
 .tour-btn.is-on .tour-dot { animation: jv-blink 0.9s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .tour-dot { animation: none !important; } }
+.tour-btn:disabled { cursor: default; color: var(--ink-2); }
+/* The tour can't be interrupted: this layer takes every click while it runs. */
+.tour-shield { position: fixed; inset: 0; z-index: 30; background: transparent; cursor: default; }
+.tour-shield[hidden] { display: none; }
+
+/* A ring around the dot says "talk to me": always there, and it reaches out gently while
+   Jarvis waits. It tightens on hover and hides while the tour locks the dot. */
+.jv-dot::before, .jv-dot::after {
+  content: ""; position: absolute; inset: 3px; border-radius: 50%; pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--jv) 55%, transparent);
+  transition: inset 300ms var(--ease), border-color 300ms;
+}
+.jv-dot::after { border-color: color-mix(in srgb, var(--jv) 45%, transparent); opacity: 0; }
+.jv[data-state="passive"] .jv-dot::after, .jv[data-state="idle"] .jv-dot::after { animation: jv-invite 3.2s var(--ease) infinite; }
+.jv-dot:hover::before { inset: 0; border-color: var(--jv); }
+@keyframes jv-invite { 0% { transform: scale(1); opacity: 0.8; } 60%, 100% { transform: scale(1.45); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .jv-dot::after { animation: none !important; } }

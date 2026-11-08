@@ -252,7 +252,14 @@
     raf = requestAnimationFrame(loop);
   }
 
-  async function start() {
+  // firstMessage: what the agent opens with (the agent's first message is "{{first_message}}").
+  // context: a note for the agent about where the user is (it informs, never prompts a reply).
+  // setNext() presets both for the next start without arguments, e.g. a click on the dot.
+  const FIRST = "Any questions about your migration? Just ask.";
+  let next = null;
+  async function start(opts) {
+    const { firstMessage = FIRST, context = "" } = opts || next || {};
+    next = null;
     const mine = ++attempt;
     say("");
     setState("connecting");
@@ -272,7 +279,7 @@
       const c = await sdk.Conversation.startSession({
         signedUrl: session.signedUrl,
         connectionType: "websocket",
-        dynamicVariables: { migration_summary: JSON.stringify(summary()) },
+        dynamicVariables: { migration_summary: JSON.stringify(summary()), first_message: firstMessage },
         clientTools: tools,
         onModeChange: (m) => { if (conv) setState(pick(m, "mode") === "speaking" ? "speaking" : "listening"); },
         onStatusChange: (s) => { if (pick(s, "status") === "disconnected") stopped(); },
@@ -283,6 +290,7 @@
       conv = c;
       setState("listening");
       meter();
+      if (context) { try { c.sendContextualUpdate(context); } catch { /* older SDK: the summary still applies */ } }
     } catch (err) {
       if (mine !== attempt) return;
       setState("passive");
@@ -302,9 +310,25 @@
   }
   const live = () => Boolean(conv) || root.dataset.state === "connecting";
 
-  dot.addEventListener("click", () => (live() ? end() : start()));
+  // Run fn once the agent has been quiet for a moment (it may still be finishing a sentence
+  // when it calls a tool); at most maxMs later.
+  function afterSpeaking(fn, maxMs = 8000) {
+    const t0 = performance.now();
+    let quietSince = 0;
+    const tick = () => {
+      const now = performance.now();
+      if (root.dataset.state === "speaking") quietSince = 0;
+      else quietSince = quietSince || now;
+      if ((quietSince && now - quietSince > 1000) || now - t0 > maxMs) fn();
+      else setTimeout(tick, 100);
+    };
+    setTimeout(tick, 300);
+  }
+
+  let locked = false;                                        // during the tour the dot does nothing
+  dot.addEventListener("click", () => { if (!locked) live() ? end() : start(); });
   document.addEventListener("keydown", (e) => {
-    if (e.key !== "Escape") return;
+    if (e.key !== "Escape" || locked) return;
     if (!sheet.hidden) closeSheet();
     else if (live()) end();
   });
@@ -312,7 +336,9 @@
 
   // Hooks for the guided demo (demo.js) and the console.
   window.Jarvis = {
-    tools, summary, say, closeSheet, live, end, fail,
+    tools, summary, say, closeSheet, live, end, fail, start, afterSpeaking,
+    setNext: (opts) => { next = opts; },
+    lock: (on) => { locked = on; },
     state: (s) => { if (!conv) setState(s); },
     level: (v) => (v == null ? root.style.removeProperty("--lvl") : root.style.setProperty("--lvl", v.toFixed(3))),
     touch(el, ms = 900) {                                  // a soft focus ring where Jarvis "clicks"

@@ -1,15 +1,16 @@
-// Guided tour: Jarvis walks through the whole tool from the start screen to "All set."
+// Jarvis on entry and the guided tour.
+//
+//   Entry       the live agent asks whether you want a tour (as soon as the browser allows sound,
+//               otherwise on your first click or key press). "Yes": it calls start_tour and the
+//               tour runs. "No": it calls stay_passive and waits until you click the dot.
+//   Tour        the recorded voice-over (voice/line-N.m4a) on a fixed plan that stretches if a
+//               line runs long. It cannot be interrupted: clicks and keys are blocked until it
+//               ends. Then the live agent takes over and answers questions.
+//   Start tour  (header) starts the tour directly.
+//   ?demo=1     the tour for recording a video: silent and exactly 60 s (&voice=1 adds the voice
+//               where the browser allows autoplay). DEMO_SCRIPT.md has the lines and times.
+//
 // The run is real: the "Online shop checkout" sample through the local converter.
-//
-//   Start tour (header)  Jarvis speaks every line in the ElevenLabs agent's voice. The plan
-//                        stretches if a line runs long, so he never clicks mid-sentence.
-//   ?demo=1              silent, exactly 60 s, for recording a video; the voice-over is laid
-//                        over afterwards (DEMO_SCRIPT.md has the same lines and times).
-//   D restarts the silent recording tour · Esc or any click stops a tour.
-//
-// Outside these: on the first visit the silent tour runs once by itself (browsers block sound
-// before a click); afterwards Jarvis stays passive and greets you on later visits. Clicking the
-// dot starts a real conversation with the agent.
 (() => {
   "use strict";
 
@@ -17,48 +18,50 @@
   if (!J) return;                                           // copilot.js needs the local backend
   const $ = (sel) => document.querySelector(sel);
   const params = new URLSearchParams(location.search);
-  const KEY = "migrate-jarvis-seen";
-  const store = {
-    get() { try { return localStorage.getItem(KEY); } catch { return "1"; } },   // no storage: never auto-run
-    set() { try { localStorage.setItem(KEY, String(Date.now())); } catch { /* storage unavailable */ } },
-  };
 
-  // The voice-over. Times are seconds from the start of the tour; DEMO_SCRIPT.md mirrors this table.
+  // The voice-over. Times are seconds from the start of the tour, fitted to the recorded take
+  // (voice/line-N.m4a, 15 % faster than the ElevenLabs export). DEMO_SCRIPT.md mirrors this table.
   const LINES = [
-    { at: 0.6, end: 4.6, text: "Hi, I'm Jarvis. Let's move your Datadog setup to Dash0." },
-    { at: 5.2, end: 9.6, text: "We'll start with this online shop: a checkout dashboard and its alert." },
-    { at: 11.0, end: 17.8, text: "Now every query is translated by fixed rules. No guessing: the same input always gives the same result." },
-    { at: 19.2, end: 25.0, text: "Done. Four widgets moved one to one, two need a quick review, and three are blocked." },
-    { at: 25.6, end: 31.4, text: "This one is blocked: its error metric has no mapping yet. Here's exactly what to add." },
-    { at: 32.2, end: 38.8, text: "Stuck? Ask AI drafts a suggestion for any blocked item. You review it, nothing is applied automatically." },
-    { at: 41.0, end: 44.6, text: "And that's it. Your dashboards are ready." },
-    { at: 45.8, end: 51.8, text: "Forty-four percent moved one to one. Everything else is clearly marked. Nothing is hidden." },
-    { at: 52.8, end: 58.8, text: "Download your files, fix the three flagged items, then publish. I'm right here if you need me." },
+    { at: 0.6, end: 5.49, text: "Hi, I'm Jarvis. Let's move your Datadog setup to Dash0." },
+    { at: 6.0, end: 10.44, text: "We'll start with this online shop: a checkout dashboard and its alert." },
+    { at: 11.6, end: 17.84, text: "Now every query is translated by fixed rules. No guessing: the same input always gives the same result." },
+    { at: 20.0, end: 26.31, text: "Done. Four widgets moved one to one, two need a quick review, and three are blocked." },
+    { at: 26.8, end: 32.13, text: "This one is blocked: its error metric has no mapping yet. Here's exactly what to add." },
+    { at: 32.9, end: 40.36, text: "Stuck? Ask AI drafts a suggestion for any blocked item. You review it, nothing is applied automatically." },
+    { at: 42.2, end: 44.88, text: "And that's it. Your dashboards are ready." },
+    { at: 46.0, end: 52.08, text: "Forty-four percent moved one to one. Everything else is clearly marked. Nothing is hidden." },
+    { at: 53.0, end: 58.85, text: "Download your files, fix the three flagged items, then publish. I'm right here if you need me." },
   ];
-  const GREETING = "Welcome back. Tap me whenever you want to talk it through.";
+  const ASK = "Hi, I'm Jarvis, an ElevenLabs voice agent. Want a quick tour of the tool?";
+  const ENTRY = "The user has just opened the Migrate tool. You asked whether they want a guided tour. "
+    + "If yes, say something short like 'Great, here we go.' and call start_tour. If no, say something "
+    + "short like 'No problem, tap me whenever you need me.' and call stay_passive.";
+  const HANDOFF = "The user has just watched your guided tour of the Migrate tool (the 'Online shop checkout' "
+    + "sample) and is now on the 'All set.' screen. Answer their questions about this migration.";
   const SAMPLE = '[data-sample="checkout_dashboard.json checkout_error_rate_monitor.json"]';
   const TOTAL = 60;
 
   // What Jarvis does on screen, on the same clock.
   const ACTIONS = [
     { at: 0.0, run: () => J.state("idle") },
-    { at: 5.0, run: () => J.touch($(SAMPLE)) },
-    { at: 5.6, run: () => $(SAMPLE).click() },
-    { at: 10.0, run: () => J.touch($("#start-btn")) },
-    { at: 10.4, run: () => { $("#start-btn").click(); J.state("working"); } },
-    { at: 18.9, run: () => { J.state("idle"); J.touch($("#category-summary"), 1600); }, results: true },
-    { at: 25.3, run: () => J.tools.highlight_issue({ issue_id: "Checkout error rate (%)" }) },
+    { at: 5.7, run: () => J.touch($(SAMPLE)) },
+    { at: 6.4, run: () => $(SAMPLE).click() },
+    { at: 10.8, run: () => J.touch($("#start-btn")) },
+    { at: 11.2, run: () => { $("#start-btn").click(); J.state("working"); } },
+    // The real run takes about 8.3 s after Convert.
+    { at: 19.8, run: () => { J.state("idle"); J.touch($("#category-summary"), 1600); }, results: true },
+    { at: 26.5, run: () => J.tools.highlight_issue({ issue_id: "Checkout error rate (%)" }) },
     // Ask AI is only introduced: Jarvis points at it but never clicks (a click would call Agent0).
-    { at: 31.4, run: () => askAi()?.scrollIntoView({ behavior: "smooth", block: "center" }) },
-    { at: 32.0, run: () => J.touch(askAi(), 3000) },
-    { at: 35.4, run: () => J.touch(askAi(), 3000) },
-    { at: 39.2, run: () => $("#finish-btn").scrollIntoView({ behavior: "smooth", block: "center" }) },
-    { at: 39.8, run: () => J.touch($("#finish-btn")) },
-    { at: 40.3, run: () => $("#finish-btn").click() },
-    { at: 45.0, run: () => J.touch($("#done .orb")) },
-    { at: 45.4, run: () => $("#done .orb").click() },
-    { at: 52.0, run: () => J.touch($('#done [data-dview="end"]')) },
-    { at: 52.4, run: () => $('#done [data-dview="end"]').click() },
+    { at: 32.25, run: () => askAi()?.scrollIntoView({ behavior: "smooth", block: "center" }) },
+    { at: 32.7, run: () => J.touch(askAi(), 3000) },
+    { at: 36.4, run: () => J.touch(askAi(), 3000) },
+    { at: 40.6, run: () => $("#finish-btn").scrollIntoView({ behavior: "smooth", block: "center" }) },
+    { at: 41.1, run: () => J.touch($("#finish-btn")) },
+    { at: 41.5, run: () => $("#finish-btn").click() },
+    { at: 45.1, run: () => J.touch($("#done .orb")) },
+    { at: 45.5, run: () => $("#done .orb").click() },
+    { at: 52.2, run: () => J.touch($('#done [data-dview="end"]')) },
+    { at: 52.6, run: () => $('#done [data-dview="end"]').click() },
     { at: 59.2, run: () => J.state("passive") },
   ];
 
@@ -76,7 +79,16 @@
     ctx.resume();
     return ctx;
   }
+  // The recorded take first (voice/line-N.m4a); without it, the backend voices each line.
   async function loadVoice(run) {
+    try {
+      const recorded = await Promise.all(LINES.map(async (_, i) => {
+        const res = await fetch(`voice/line-${i + 1}.m4a`, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return ctx.decodeAudioData(await res.arrayBuffer());
+      }));
+      return run.live ? recorded : null;
+    } catch { /* fall back to the agent's voice from the backend */ }
     const buffers = await Promise.all(LINES.map(async (l) => {
       const res = await fetch("/api/copilot/speech", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: l.text }),
@@ -109,9 +121,9 @@
   /* ---------- The tour ---------- */
   async function play({ voice = false } = {}) {
     stop();
-    const run = { live: true, timers: [], sources: [], shift: 0, speakingUntil: 0 };
+    const run = { live: true, timers: [], sources: [], shift: 0, speakingUntil: 0, lineEnd: Infinity };
     tour = run;
-    store.set();
+    shield(true);
     syncButton();
     J.closeSheet();
     let buffers = null;
@@ -134,9 +146,10 @@
     for (const step of steps) {
       await wait(run, t0 + step.at * 1000 + run.shift - performance.now());
       if (!run.live) return;
-      // Never act while Jarvis is still talking: stretch the rest of the plan instead.
+      // A step planned after the current line's end waits until Jarvis has finished it:
+      // the rest of the plan stretches instead. Steps planned during a line run on time.
       const over = run.speakingUntil - performance.now();
-      if (over > 0) {
+      if (over > 0 && step.at >= run.lineEnd) {
         run.shift += over + 250;
         await wait(run, over + 250);
         if (!run.live) return;
@@ -149,10 +162,27 @@
       }
       try { await step.go(); } catch (err) { console.warn("[demo] step failed", step.at, err); }
     }
-    await wait(run, t0 + TOTAL * 1000 + run.shift - performance.now());
-    if (run.live) console.info(`[demo] finished at ${((performance.now() - t0) / 1000).toFixed(2)} s`);
+    // After the spoken tour (Start tour), Jarvis stays on the line: the live agent takes over and
+    // answers questions. The silent and the recording tours just end.
+    const handoff = Boolean(buffers) && !recording;
+    if (!handoff) await wait(run, t0 + TOTAL * 1000 + run.shift - performance.now());
+    if (!run.live) return;
+    console.info(`[demo] finished at ${((performance.now() - t0) / 1000).toFixed(2)} s`);
     tour = null;
+    shield(false);
     syncButton();
+    if (handoff) J.start({ context: HANDOFF });
+  }
+
+  // While the tour runs nothing can interrupt it: a transparent layer takes every click
+  // (the tour's own clicks are programmatic), the dot is locked and keys are ignored.
+  const layer = document.createElement("div");
+  layer.className = "tour-shield";
+  layer.hidden = true;
+  document.body.appendChild(layer);
+  function shield(on) {
+    layer.hidden = !on;
+    J.lock(on);
   }
 
   function speak(l, buffer, run) {
@@ -163,6 +193,7 @@
     if (buffer) {
       playLine(buffer, run);
       run.speakingUntil = performance.now() + ms;
+      run.lineEnd = l.end;
     }
     run.timers.push(setTimeout(() => { if (run.live) J.state(prev); }, ms));
   }
@@ -173,6 +204,7 @@
     tour.timers.forEach(clearTimeout);
     tour.sources.forEach((s) => { try { s.stop(); } catch { /* already ended */ } });
     tour = null;
+    shield(false);
     J.level(null);
     J.say("");
     J.state("passive");
@@ -180,41 +212,67 @@
   }
 
   function syncButton() {
-    $(".tour-txt", tourBtn).textContent = tour ? "Stop tour" : "Start tour";
+    $(".tour-txt", tourBtn).textContent = tour ? "Tour running" : "Start tour";
     tourBtn.classList.toggle("is-on", Boolean(tour));
-    tourBtn.setAttribute("aria-pressed", String(Boolean(tour)));
+    tourBtn.disabled = Boolean(tour);
   }
 
-  function greet() {
-    J.state("speaking");
-    J.say(GREETING);
-    setTimeout(() => { if (!tour && !J.live()) J.state("passive"); }, 3800);
+  async function startTour() {
+    if (tour) return;
+    if (J.live()) await J.end();
+    unlockAudio();
+    play({ voice: true });
+  }
+
+  /* ---------- The agent decides: tour or not ---------- */
+  // Tool results go back to the agent; the session ends once it has finished its sentence.
+  J.tools.start_tour = async () => {
+    J.afterSpeaking(startTour);
+    return "The tour starts now. Say nothing more.";
+  };
+  J.tools.stay_passive = async () => {
+    J.afterSpeaking(() => J.end());
+    return "Okay. The user can tap the dot later. Say nothing more.";
+  };
+
+  // Ask on entry. Sound needs a user gesture first, unless the browser already allows it.
+  function soundAllowed() {
+    if (navigator.userActivation?.hasBeenActive) return true;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext, probe = new AC();
+      const ok = probe.state === "running";
+      probe.close();
+      return ok;
+    } catch { return false; }
+  }
+  function welcome() {
+    const ask = { firstMessage: ASK, context: ENTRY };
+    if (soundAllowed()) { J.start(ask); return; }
+    J.setNext(ask);                                          // a click on the dot asks too
+    const first = (e) => {
+      removeEventListener("pointerdown", first, true);
+      removeEventListener("keydown", first, true);
+      if (tour || J.live() || e.target.closest?.(".jv-dot, #tour-btn")) return;
+      J.start(ask);
+    };
+    addEventListener("pointerdown", first, true);
+    addEventListener("keydown", first, true);
   }
 
   /* ---------- Controls ---------- */
-  tourBtn.hidden = false;
-  tourBtn.addEventListener("click", () => {
-    if (tour) { stop(); return; }
-    if (J.live()) J.end();
-    unlockAudio();
-    play({ voice: true });
-  });
-  // A real click or key press takes over from the tour (clicking the dot then starts a conversation).
-  addEventListener("pointerdown", (e) => {
-    if (e.isTrusted && tour && !e.target.closest("#tour-btn")) stop();
-  }, true);
+  const recording = params.get("demo") === "1";
+  tourBtn.hidden = recording;                               // keep the header clean on camera
+  tourBtn.addEventListener("click", () => { J.setNext(null); startTour(); });
   addEventListener("keydown", (e) => {
+    if (tour) { e.preventDefault(); e.stopPropagation(); return; }   // the tour can't be interrupted
     if (e.metaKey || e.ctrlKey || e.altKey || /input|textarea/i.test(e.target.tagName)) return;
-    if (e.target.closest?.("#tour-btn") && (e.key === "Enter" || e.key === " ")) return;
-    if (e.key.toLowerCase() === "d") { location.search = "?demo=1"; return; }
-    if (tour) stop();
-  });
+    if (e.key.toLowerCase() === "d" && !J.live()) location.search = "?demo=1";
+  }, true);
 
-  const onStart = $("#start").classList.contains("is-active");
   setTimeout(() => {
-    if (params.get("demo") === "1") play();
-    else if (!store.get() && onStart) play();
-    else greet();
+    // ?demo=1&voice=1 also plays the recorded lines (needs a browser that allows autoplay).
+    if (recording) { if (params.get("voice") === "1") unlockAudio(); play({ voice: params.get("voice") === "1" }); }
+    else welcome();
   }, 900);
 
   window.JarvisDemo = { play, stop, LINES, ACTIONS, TOTAL };
