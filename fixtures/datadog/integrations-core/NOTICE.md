@@ -25,3 +25,12 @@ Copied unmodified from each integration's assets/dashboards and assets/monitors 
 - postgres/monitors/replication_delay.json
 - redisdb/dashboards/overview.json
 - redisdb/monitors/high_mem.json
+
+Copied unmodified from each integration's root folder:
+
+- docker_daemon/metadata.csv
+- kafka/metadata.csv
+- kafka_consumer/metadata.csv
+- nginx/metadata.csv
+- postgres/metadata.csv
+- redisdb/metadata.csv
