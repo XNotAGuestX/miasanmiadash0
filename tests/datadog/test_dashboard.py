@@ -184,10 +184,47 @@ def test_uses_source_layout_when_every_widget_has_one() -> None:
     grids = c.dashboard["spec"]["layouts"]
     assert len(grids) == 1  # the group's only child is blocked, so it has no grid
     assert [(i["x"], i["y"], i["width"], i["height"]) for i in grids[0]["spec"]["items"]] == [
-        (0, 0, 8, 2),
-        (8, 0, 16, 2),
+        (0, 0, 8, 6),
+        (8, 0, 16, 6),
     ]
     assert c.items[-1].source_path == "widgets[2].definition.widgets[0]"
+
+
+def test_source_layout_scales_rows_by_three() -> None:
+    """Datadog cells are square; one Datadog row becomes three Perses rows (issue #109)."""
+    top = ts({"q": "avg:postgresql.connections{*}"})
+    top["layout"] = {"x": 0, "y": 0, "width": 12, "height": 1}
+    below = ts({"q": "max:postgresql.connections{*}"})
+    below["layout"] = {"x": 3, "y": 2, "width": 6, "height": 2}
+    c = compile_body({**body(top, below), "layout_type": "ordered"})
+    assert _positions(c) == [(0, 0, 24, 3), (6, 6, 12, 6)]
+
+
+OVERVIEW_GOLDEN = Path("fixtures/expected/postgres-p1/dashboards/postgres-overview.json")
+
+
+def _overlap(a: dict[str, Any], b: dict[str, Any]) -> bool:
+    return bool(
+        a["x"] < b["x"] + b["width"]
+        and b["x"] < a["x"] + a["width"]
+        and a["y"] < b["y"] + b["height"]
+        and b["y"] < a["y"] + a["height"]
+    )
+
+
+def test_overview_golden_charts_are_readable_and_do_not_overlap() -> None:
+    dash = json.loads(OVERVIEW_GOLDEN.read_text())
+    panels = dash["spec"]["panels"]
+    charts = 0
+    for grid in dash["spec"]["layouts"]:
+        items = grid["spec"]["items"]
+        for i, item in enumerate(items):
+            key = item["content"]["$ref"].removeprefix("#/spec/panels/")
+            if panels[key]["spec"]["plugin"]["kind"] != "Markdown":
+                charts += 1
+                assert item["height"] >= 4, key
+            assert not any(_overlap(item, other) for other in items[i + 1 :]), key
+    assert charts == 5
 
 
 def _laid_out(x: int, width: int, layout_type: str) -> dict[str, Any]:
