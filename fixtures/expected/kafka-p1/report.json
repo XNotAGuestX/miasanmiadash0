@@ -235,12 +235,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[3].definition.widgets[0].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.replication.offline_partitions_count{*}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -292,12 +292,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[3].definition.widgets[1].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.replication.under_replicated_partitions{$env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -831,21 +831,21 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[2].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.net.bytes_in.rate{$env} by {env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[2].definition.requests[0].queries[1].query",
       "sourceText": "sum:kafka.net.bytes_out.rate{$env} by {env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -921,21 +921,21 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.request.producer_request_purgatory.size{$env} by {env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[1].query",
       "sourceText": "sum:kafka.request.fetch_request_purgatory.size{$env} by {env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1165,12 +1165,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[1].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.producer.bytes_out{$env} by {topic,env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1237,15 +1237,6 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 3.",
-      "severity": "error",
-      "sourceId": "dashboards/kafka_dashboard.json",
-      "sourcePath": "widgets[5].definition.widgets[2].definition.requests[0].formulas[0].formula",
-      "sourceText": "abs(query1)",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
-    },
-    {
       "code": "OPTION_IGNORED",
       "message": "Formula option 'alias' is ignored.",
       "severity": "info",
@@ -1254,13 +1245,22 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 3.",
+      "code": "UNSUPPORTED_QUERY_FUNCTION",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
-      "sourcePath": "widgets[5].definition.widgets[2].definition.requests[0].formulas[1].formula",
-      "sourceText": "abs(query2)",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
+      "sourcePath": "widgets[5].definition.widgets[2].definition.requests[0].queries[0].query",
+      "sourceText": "sum:kafka.producer.request_rate{$env} by {host}.weighted()",
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+    },
+    {
+      "code": "UNSUPPORTED_QUERY_FUNCTION",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "severity": "error",
+      "sourceId": "dashboards/kafka_dashboard.json",
+      "sourcePath": "widgets[5].definition.widgets[2].definition.requests[0].queries[1].query",
+      "sourceText": "sum:kafka.producer.response_rate{$env} by {host}.weighted()",
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1320,12 +1320,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[3].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.producer.request_latency_avg{$env} by {env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1385,12 +1385,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[4].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.producer.io_wait{$env} by {env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1672,12 +1672,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[6].definition.widgets[2].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.consumer.bytes_in{$env,$consumer_group} by {consumer_group,env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1736,13 +1736,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 3.",
+      "code": "UNSUPPORTED_QUERY_FUNCTION",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
-      "sourcePath": "widgets[6].definition.widgets[3].definition.requests[0].formulas[0].formula",
-      "sourceText": "abs(query1)",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
+      "sourcePath": "widgets[6].definition.widgets[3].definition.requests[0].queries[0].query",
+      "sourceText": "sum:kafka.consumer.messages_in{$env,$consumer_group} by {client-id,env}.weighted()",
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1802,12 +1802,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[6].definition.widgets[4].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.consumer.fetch_rate{$env,$consumer_group} by {env,consumer_group}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1955,12 +1955,12 @@
     },
     {
       "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 3.",
+      "message": "Function 'top' is not supported: Datadog ranks each series once over its points (https://docs.datadoghq.com/dashboards/functions/rank/#top); PromQL topk ranks at every step, and the docs leave the ranked window open.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[7].definition.widgets[1].definition.requests[0].formulas[0].formula",
       "sourceText": "top(query1, 10, 'max', 'desc')",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
+      "suggestedAction": "Remove top() to convert all series unranked, or migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -2206,12 +2206,12 @@
     },
     {
       "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 3.",
+      "message": "Function 'top' is not supported: Datadog ranks each series once over its points (https://docs.datadoghq.com/dashboards/functions/rank/#top); PromQL topk ranks at every step, and the docs leave the ranked window open.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[7].definition.widgets[4].definition.requests[0].formulas[0].formula",
       "sourceText": "top(query1, 10, 'mean', 'desc')",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
+      "suggestedAction": "Remove top() to convert all series unranked, or migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -2748,21 +2748,21 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[9].definition.widgets[1].definition.requests[0].queries[0].query",
       "sourceText": "sum:jvm.gc.major_collection_count{$env} by {type,env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[9].definition.widgets[1].definition.requests[0].queries[1].query",
       "sourceText": "sum:jvm.gc.minor_collection_count{$env} by {type,env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -2838,21 +2838,21 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[9].definition.widgets[2].definition.requests[0].queries[0].query",
       "sourceText": "sum:jvm.gc.major_collection_time{$env} by {type,env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[9].definition.widgets[2].definition.requests[0].queries[1].query",
       "sourceText": "sum:jvm.gc.minor_collection_time{$env} by {type,env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -3281,12 +3281,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[3].definition.widgets[0].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.replication.offline_partitions_count{*}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -3338,12 +3338,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[3].definition.widgets[1].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.replication.under_replicated_partitions{$env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -3877,21 +3877,21 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[2].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.net.bytes_in.rate{$env} by {env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[2].definition.requests[0].queries[1].query",
       "sourceText": "sum:kafka.net.bytes_out.rate{$env} by {env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -3967,21 +3967,21 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.request.producer_request_purgatory.size{$env} by {env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[4].definition.widgets[3].definition.requests[0].queries[1].query",
       "sourceText": "sum:kafka.request.fetch_request_purgatory.size{$env} by {env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -4211,12 +4211,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[1].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.producer.bytes_out{$env} by {topic,env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -4283,15 +4283,6 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 3.",
-      "severity": "error",
-      "sourceId": "dashboards/kafka_kraft_dashboard.json",
-      "sourcePath": "widgets[5].definition.widgets[2].definition.requests[0].formulas[0].formula",
-      "sourceText": "abs(query1)",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
-    },
-    {
       "code": "OPTION_IGNORED",
       "message": "Formula option 'alias' is ignored.",
       "severity": "info",
@@ -4300,13 +4291,22 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 3.",
+      "code": "UNSUPPORTED_QUERY_FUNCTION",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
-      "sourcePath": "widgets[5].definition.widgets[2].definition.requests[0].formulas[1].formula",
-      "sourceText": "abs(query2)",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
+      "sourcePath": "widgets[5].definition.widgets[2].definition.requests[0].queries[0].query",
+      "sourceText": "sum:kafka.producer.request_rate{$env} by {host}.weighted()",
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
+    },
+    {
+      "code": "UNSUPPORTED_QUERY_FUNCTION",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
+      "severity": "error",
+      "sourceId": "dashboards/kafka_kraft_dashboard.json",
+      "sourcePath": "widgets[5].definition.widgets[2].definition.requests[0].queries[1].query",
+      "sourceText": "sum:kafka.producer.response_rate{$env} by {host}.weighted()",
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -4366,12 +4366,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[3].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.producer.request_latency_avg{$env} by {env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -4431,12 +4431,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[5].definition.widgets[4].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.producer.io_wait{$env} by {env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -4718,12 +4718,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[6].definition.widgets[2].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.consumer.bytes_in{$env,$consumer_group} by {consumer_group,env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -4782,13 +4782,13 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 3.",
+      "code": "UNSUPPORTED_QUERY_FUNCTION",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
-      "sourcePath": "widgets[6].definition.widgets[3].definition.requests[0].formulas[0].formula",
-      "sourceText": "abs(query1)",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
+      "sourcePath": "widgets[6].definition.widgets[3].definition.requests[0].queries[0].query",
+      "sourceText": "sum:kafka.consumer.messages_in{$env,$consumer_group} by {client-id,env}.weighted()",
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -4848,12 +4848,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[6].definition.widgets[4].definition.requests[0].queries[0].query",
       "sourceText": "sum:kafka.consumer.fetch_rate{$env,$consumer_group} by {env,consumer_group}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -5001,12 +5001,12 @@
     },
     {
       "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 3.",
+      "message": "Function 'top' is not supported: Datadog ranks each series once over its points (https://docs.datadoghq.com/dashboards/functions/rank/#top); PromQL topk ranks at every step, and the docs leave the ranked window open.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[7].definition.widgets[1].definition.requests[0].formulas[0].formula",
       "sourceText": "top(query1, 10, 'max', 'desc')",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
+      "suggestedAction": "Remove top() to convert all series unranked, or migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -5252,12 +5252,12 @@
     },
     {
       "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 3.",
+      "message": "Function 'top' is not supported: Datadog ranks each series once over its points (https://docs.datadoghq.com/dashboards/functions/rank/#top); PromQL topk ranks at every step, and the docs leave the ranked window open.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[7].definition.widgets[4].definition.requests[0].formulas[0].formula",
       "sourceText": "top(query1, 10, 'mean', 'desc')",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
+      "suggestedAction": "Remove top() to convert all series unranked, or migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -6228,21 +6228,21 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[9].definition.widgets[1].definition.requests[0].queries[0].query",
       "sourceText": "sum:jvm.gc.major_collection_count{$env} by {type,env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[9].definition.widgets[1].definition.requests[0].queries[1].query",
       "sourceText": "sum:jvm.gc.minor_collection_count{$env} by {type,env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
@@ -6318,21 +6318,21 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[9].definition.widgets[2].definition.requests[0].queries[0].query",
       "sourceText": "sum:jvm.gc.major_collection_time{$env} by {type,env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.weighted()' is not supported.",
+      "message": "Query function '.weighted()' is not supported: Datadog weights each series by the metric's submission interval from its Metrics Catalog, which the query does not carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/).",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[9].definition.widgets[2].definition.requests[0].queries[1].query",
       "sourceText": "sum:jvm.gc.minor_collection_time{$env} by {type,env}.weighted()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag values churn."
     },
     {
       "code": "OPTION_IGNORED",
