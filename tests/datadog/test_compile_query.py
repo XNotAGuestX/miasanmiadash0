@@ -78,6 +78,45 @@ def test_blocking_checks() -> None:
         assert r.diagnostics[-1].severity == "error"
 
 
+ROLLUP_BLOCK = (
+    "Query function '.rollup()' is blocked: Datadog aligns rollup buckets to UNIX time and "
+    "picks the default interval per graph (https://docs.datadoghq.com/dashboards/functions/"
+    "rollup/); a PromQL '<agg>_over_time' window per dashboard step does not reproduce them.",
+    "Migrate this widget manually, or remove '.rollup()' from the source query if the default "
+    "time aggregation is acceptable.",
+)
+FILL_BLOCK = (
+    "Query function '.fill()' is blocked: PromQL has no equivalent of Datadog's gap "
+    "interpolation (methods linear, last, zero, null; gap limit in seconds; "
+    "https://docs.datadoghq.com/dashboards/functions/interpolation/#fill).",
+    "Migrate this widget manually, or remove '.fill()' from the source query if unfilled gaps "
+    "are acceptable.",
+)
+
+
+def test_rollup_and_fill_block_every_argument_form_with_a_documented_reason() -> None:
+    # #120: documented forms, the pinned dashboards' forms (`.rollup(max)`, `.rollup(10)`,
+    # `.fill(0)`, `.fill(60)`) and a chain all block; nothing is dropped or translated.
+    cases = {
+        "rollup(avg)": ROLLUP_BLOCK,
+        "rollup(max)": ROLLUP_BLOCK,
+        "rollup(sum, 120)": ROLLUP_BLOCK,
+        "rollup(10)": ROLLUP_BLOCK,
+        "rollup(max).fill(zero)": ROLLUP_BLOCK,
+        "fill(zero)": FILL_BLOCK,
+        "fill(last, 300)": FILL_BLOCK,
+        "fill(null)": FILL_BLOCK,
+        "fill(0)": FILL_BLOCK,
+        "fill(60)": FILL_BLOCK,
+    }
+    for call, (message, action) in cases.items():
+        r = run(f"avg:postgresql.connections{{*}} by {{db}}.{call}")
+        assert isinstance(r, CompiledError), call
+        (d,) = r.diagnostics
+        assert (d.code, d.severity) == ("UNSUPPORTED_QUERY_FUNCTION", "error"), call
+        assert (d.message, d.suggested_action) == (message, action), call
+
+
 LOAD = entry(target={"name": "system.cpu.load_average.1m", "type": "gauge"}, labels={})
 LOAD_SEL = '{otel_metric_name="system.cpu.load_average.1m", otel_metric_type="gauge"}'
 

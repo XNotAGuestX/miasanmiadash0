@@ -42,6 +42,33 @@ from migrator.target import Diagnostic, DiagnosticCode, Severity
 RATE_INTERVAL = "$__rate_interval"
 DEFAULT_AGGREGATOR: SpaceAggregator = "avg"  # Datadog's space aggregation without `agg:`
 DEFAULT_AGGREGATOR_DOC = "https://docs.datadoghq.com/dashboards/querying/#aggregation-method"
+ROLLUP_DOC = "https://docs.datadoghq.com/dashboards/functions/rollup/"
+FILL_DOC = "https://docs.datadoghq.com/dashboards/functions/interpolation/#fill"
+
+# Functions that block with a documented reason (#120): name -> (message, suggested action).
+# `.rollup(<AGGREGATOR>, <INTERVAL>)` (ROLLUP_DOC): "The start and end of rollup intervals are
+# aligned to UNIX time", and "The default rollup time interval varies depending on how the data is
+# visualized." `<agg>_over_time(x[<range>])` is a window ending at each Perses step instead, so the
+# buckets differ; a fixed `<INTERVAL>` range would also break the `$__rate_interval`-only rule.
+# `.fill(<METHOD>, <LIMIT>)` (FILL_DOC): "Interpolate missing metric values" with `linear`, `last`,
+# `zero` or `null`, "LIMIT [optional, default=300, maximum=600]" seconds. PromQL has no gap
+# interpolation, and a numeric method (`.fill(0)` in the pinned dashboards) is undocumented.
+# Every argument form of both blocks.
+_FUNCTION_BLOCKS: dict[str, tuple[str, str]] = {
+    "rollup": (
+        "Query function '.rollup()' is blocked: Datadog aligns rollup buckets to UNIX time and "
+        f"picks the default interval per graph ({ROLLUP_DOC}); a PromQL '<agg>_over_time' window "
+        "per dashboard step does not reproduce them.",
+        "Migrate this widget manually, or remove '.rollup()' from the source query if the "
+        "default time aggregation is acceptable.",
+    ),
+    "fill": (
+        "Query function '.fill()' is blocked: PromQL has no equivalent of Datadog's gap "
+        f"interpolation (methods linear, last, zero, null; gap limit in seconds; {FILL_DOC}).",
+        "Migrate this widget manually, or remove '.fill()' from the source query if unfilled "
+        "gaps are acceptable.",
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -108,11 +135,14 @@ def compile_metric_query(
 
     if q.functions:
         name = q.functions[0].name
-        return d.block(
-            "UNSUPPORTED_QUERY_FUNCTION",
-            f"Query function '.{name}()' is not supported.",
-            "Remove the function from the source query or migrate this widget manually.",
+        message, action = _FUNCTION_BLOCKS.get(
+            name,
+            (
+                f"Query function '.{name}()' is not supported.",
+                "Remove the function from the source query or migrate this widget manually.",
+            ),
         )
+        return d.block("UNSUPPORTED_QUERY_FUNCTION", message, action)
     aggregator = q.aggregator
     if aggregator is None:
         aggregator = DEFAULT_AGGREGATOR
