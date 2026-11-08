@@ -24,7 +24,9 @@ cases:
     expected:
       ok: true
       query:
-        filters: [{kind: tag, key: env, value: demo}, {kind: tag, key: host, value: db-1}]
+        filters:
+          - {kind: tag, key: env, value: demo, negated: false, alternatives: []}
+          - {kind: tag, key: host, value: db-1, negated: false, alternatives: []}
   - id: trailing-functions-parsed
     query: "sum:x{*}.rollup(max, 60).as_count()"
     expected:
@@ -34,15 +36,27 @@ cases:
   - id: wrapping-function-rejected
     query: "anomalies(avg:x{*}, 'basic', 2)"
     expected: {ok: false, code: UNSUPPORTED_QUERY_FUNCTION, offset: 0, message: "Function 'anomalies' is not supported."}
-  - id: negation-rejected
+  - id: negation-parsed  # #178
     query: "avg:x{!env:prod}"
-    expected: {ok: false, code: UNSUPPORTED_QUERY_SYNTAX, offset: 6}
-  - id: boolean-filter-rejected
+    expected:
+      ok: true
+      query:
+        filters: [{kind: tag, key: env, value: prod, negated: true, alternatives: []}]
+  - id: same-key-or-parsed  # #178
     query: "avg:x{env:a OR env:b}"
-    expected: {ok: false, code: UNSUPPORTED_QUERY_SYNTAX, offset: 11}
-  - id: wildcard-value-rejected
+    expected:
+      ok: true
+      query:
+        filters: [{kind: tag, key: env, value: a, negated: false, alternatives: [b]}]
+  - id: wildcard-value-parsed  # #178
     query: "avg:x{host:db-*}"
-    expected: {ok: false, code: UNSUPPORTED_QUERY_SYNTAX, offset: 14}
+    expected:
+      ok: true
+      query:
+        filters: [{kind: tag, key: host, value: db-*, negated: false, alternatives: []}]
+  - id: cross-key-or-rejected  # #178
+    query: "avg:x{env:a OR host:b}"
+    expected: {ok: false, code: UNSUPPORTED_QUERY_SYNTAX}
   - id: trailing-input-rejected
     query: "avg:x{*} / 2"
     expected: {ok: false, code: UNSUPPORTED_QUERY_SYNTAX, offset: 8}

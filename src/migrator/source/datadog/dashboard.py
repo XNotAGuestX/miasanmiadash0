@@ -53,8 +53,22 @@ _INDEX = re.compile(r"\[(\d+)\]")
 # https://docs.datadoghq.com/dashboards/widgets/timeseries/
 _LIVE_SPANS = frozenset(
     {
-        "1m", "5m", "10m", "15m", "30m", "1h", "4h", "1d", "2d", "1w",
-        "1mo", "3mo", "6mo", "week_to_date", "month_to_date", "1y",
+        "1m",
+        "5m",
+        "10m",
+        "15m",
+        "30m",
+        "1h",
+        "4h",
+        "1d",
+        "2d",
+        "1w",
+        "1mo",
+        "3mo",
+        "6mo",
+        "week_to_date",
+        "month_to_date",
+        "1y",
     }
 )
 
@@ -197,6 +211,52 @@ def read_template_variables(body: dict[str, Any]) -> list[TemplateVariable]:
     return out
 
 
+# Legacy `q` requests (#178). Datadog's legacy request string lists one or more series
+# separated by top-level commas, and a series may combine metric queries with arithmetic
+# (`100 * sum:a{*} / sum:b{*}`). Each series becomes a formula over named sub-queries, so
+# it compiles through the same formula path as `queries`/`formulas` requests.
+_LEGACY_QUERY = re.compile(
+    r"(?<![\w.])(?:[A-Za-z0-9_]+:)?[A-Za-z_][\w.]*\{[^{}]*\}"
+    r"(?:\s*by\s*\{[^{}]*\})?(?:\.[A-Za-z_]\w*\([^()]*\))*"
+)
+_LEGACY_NAME = re.compile(r"\bq(\d+)\b")
+
+
+def _top_level_split(text: str) -> list[str]:
+    parts, depth, start = [], 0, 0
+    for i, ch in enumerate(text):
+        depth += 1 if ch in "({" else -1 if ch in ")}" else 0
+        if ch == "," and depth == 0:
+            parts.append(text[start:i])
+            start = i + 1
+    parts.append(text[start:])
+    return [p.strip() for p in parts]
+
+
+def legacy_series(text: str) -> list[tuple[str, list[str]]] | None:
+    """(formula text over `q<k>` names, sub-query texts) per series of a legacy request, or
+    None when the request is one plain query or does not split into supported series."""
+    series = _top_level_split(text)
+    if len(series) == 1 and parse_metric_query(text).ok:
+        return None
+    out: list[tuple[str, list[str]]] = []
+    for part in series:
+        found = list(_LEGACY_QUERY.finditer(part))
+        if not found:
+            return None
+        texts: list[str] = []
+        formula, pos = "", 0
+        for m in found:
+            formula += part[pos : m.start()] + f"q{len(texts)}"
+            texts.append(m.group(0))
+            pos = m.end()
+        formula += part[pos:]
+        if not parse_formula(formula).ok:
+            return None
+        out.append((formula, texts))
+    return out
+
+
 def _all_query_strings(widgets: Any) -> list[str]:
     found: list[str] = []
     if not isinstance(widgets, list):
@@ -212,7 +272,8 @@ def _all_query_strings(widgets: Any) -> list[str]:
             if not isinstance(r, dict):
                 continue
             if isinstance(r.get("q"), str):
-                found.append(r["q"])
+                split = legacy_series(r["q"])
+                found.extend([q for _, qs in split for q in qs] if split else [r["q"]])
             queries = r.get("queries")
             for q in queries if isinstance(queries, list) else []:
                 if isinstance(q, dict) and isinstance(q.get("query"), str):
@@ -377,12 +438,34 @@ def _read_request(req: Any, path: str, wtype: str, c: _Collector) -> _Request | 
         if not isinstance(req["q"], str) or "formulas" in req:
             c.error("UNSUPPORTED_WIDGET", f"{path}.q", "Legacy request is malformed.", "Fix it.")
             return None
-        name = "q"
-        return _Request(
-            queries={name: (f"{path}.q", req["q"], req)},
-            displayed=[_Displayed(None, "", "", [name])],
-            aggregators={name: req.get("aggregator")},
-        )
+        split = legacy_series(req["q"])
+        if split is None:
+            name = "q"
+            return _Request(
+                queries={name: (f"{path}.q", req["q"], req)},
+                displayed=[_Displayed(None, "", "", [name])],
+                aggregators={name: req.get("aggregator")},
+            )
+        legacy = _Request(queries={}, displayed=[], aggregators={})
+        for i, (formula_text, texts) in enumerate(split):
+            for k, sub_text in enumerate(texts):
+                legacy.queries[f"s{i}q{k}"] = (f"{path}.q", sub_text, req)
+                legacy.aggregators[f"s{i}q{k}"] = req.get("aggregator")
+            if formula_text.strip() == "q0":
+                legacy.displayed.append(_Displayed(None, "", "", [f"s{i}q0"]))
+                continue
+            renamed = _LEGACY_NAME.sub(f"s{i}q" + r"\1", formula_text)
+            parsed_formula = parse_formula(renamed)
+            assert parsed_formula.ok  # legacy_series parsed the same shape
+            legacy.displayed.append(
+                _Displayed(
+                    parsed_formula.formula,
+                    f"{path}.q",
+                    req["q"],
+                    references(parsed_formula.formula),
+                )
+            )
+        return legacy
     queries: dict[str, tuple[str, str, dict[str, Any]]] = {}
     aggregators: dict[str, Any] = {}
     raw_queries = req["queries"]

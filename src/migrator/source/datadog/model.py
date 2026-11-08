@@ -16,9 +16,18 @@ ParseErrorCode = Literal["UNSUPPORTED_QUERY_SYNTAX", "UNSUPPORTED_QUERY_FUNCTION
 
 @dataclass(frozen=True)
 class TagFilter:
+    """`key:value`. `*` in a value is a glob. `alternatives` are further values of the same key
+    joined by OR; `negated` is `!key:value` or `NOT (...)` and excludes all of them."""
+
     key: str
     value: str
     kind: Literal["tag"] = "tag"
+    negated: bool = False
+    alternatives: tuple[str, ...] = ()
+
+    @property
+    def values(self) -> tuple[str, ...]:
+        return (self.value, *self.alternatives)
 
 
 @dataclass(frozen=True)
