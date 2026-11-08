@@ -390,8 +390,11 @@
     const nu = items.filter((it) => it.status === "unsupported").length;
     $("#callout").classList.toggle("is-hidden", nu === 0);
     $("#callout-txt").textContent = `${nu} item${nu === 1 ? " is" : "s are"} blocked. See diagnostics for the reason.`;
-    $("#category-summary").innerHTML = Object.entries(OUTCOME).map(([outcome, label]) =>
-      `<span class="outcome o-${outcome}">${label}: ${items.filter((it) => it.outcome === outcome).length}</span>`).join("");
+    $("#category-summary").innerHTML = Object.entries(OUTCOME).map(([outcome, label]) => {
+      const k = items.filter((it) => it.outcome === outcome).length;
+      return `<span class="outcome o-${outcome}${k ? "" : " is-zero"}"><i aria-hidden="true"></i><b>${k}</b> ${label}</span>`;
+    }).join("");
+    $("#category-summary").hidden = !items.some((it) => it.outcome);
     const extra = $$(".item.is-extra", board).length;
     if (extra) listFor("converted").insertAdjacentHTML("afterend",
       `<button class="link-btn more-btn" type="button" data-more="${extra}" aria-expanded="false">Show all ${extra + SHOW_FIRST} <span class="arrow" aria-hidden="true">↓</span></button>`);
@@ -441,13 +444,13 @@
       const diagnostics = it.diagnostics.filter((d) => d.severity === "error").map((d) => `<li><strong>${esc(d.code)}</strong><p>${esc(d.message)}</p><p>${esc(d.suggestedAction || "")}</p></li>`).join("");
       return `<p class="why">${esc(it.parent)} · ${esc(it.source.kind)}</p>
         <code>${esc(it.source.id)} ${esc(it.source.path)}</code>
-        ${it.warningNames.length ? `<div class="category-summary" aria-label="Warnings">${it.warningNames.map((name) => `<span class="outcome">${esc(name)}</span>`).join("")}</div>` : ""}
+        ${it.warningNames.length ? `<div class="warn-tags" aria-label="Warnings">${it.warningNames.map((name) => `<span class="outcome">${esc(name)}</span>`).join("")}</div>` : ""}
         ${diagnostics ? `<ul class="diagnostics">${diagnostics}</ul>` : ""}
         ${it.outcome === "blocked" && window.MigrateBackend.mode === "api" ? `
           <p class="why">Ask Agent0 to recommend a conversion for this item. Sends this source item and the checked-in mappings to Agent0.</p>
-          <button class="btn btn-small" type="button" data-ai-help="${it.id}" ${aiBusy || !window.MigrateBackend.ai.available || window.MigrateBackend.ai.remaining === 0 ? "disabled" : ""}>Ask AI</button>
+          <button class="ai-btn" type="button" data-ai-help="${it.id}" ${aiBusy || !window.MigrateBackend.ai.available || window.MigrateBackend.ai.remaining === 0 ? "disabled" : ""}>${STAR}Ask AI</button>
           <div id="ai-result-${it.id}" aria-live="polite">${it.aiError ? `<p class="why">${esc(it.aiError)}</p>` : ""}${it.aiRecommendation ? `<p class="why">AI recommendation · Not validated or applied</p><pre class="ai-recommendation">${esc(it.aiRecommendation)}</pre>` : ""}</div>` : ""}
-        ${it.status === "review" ? '<p class="why">Numeric comparison unavailable: this offline run has no Datadog or Dash0 measurements.</p>' : ""}`;
+        ${it.status === "review" ? '<p class="manual-note">Numeric comparison unavailable: this offline run has no Datadog or Dash0 measurements.</p>' : ""}`;
     }
     const out = [`<p class="why">${esc(it.why)}</p>`];
     if (it.action) out.push(`<p class="why">${esc(it.action)}</p>`);

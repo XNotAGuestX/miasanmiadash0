@@ -557,26 +557,80 @@ code {
 
 /* Local backend: ordinary file input and the compiler's actual outcome categories. */
 [hidden] { display: none !important; }
-.upload { margin-top: 1.5rem; display: grid; gap: 0.65rem; }
-.upload input { max-width: 100%; color: var(--ink); }
-.category-summary { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
-.outcome { font: 0.68rem/1.3 var(--mono); padding: 0.3rem 0.45rem; border: 1px solid currentColor; }
-.o-translated { color: var(--ok); }
-:is(.o-approximated, .o-assumed, .o-best_effort, .o-partial) { color: var(--warn); }
-.o-blocked { color: var(--bad); }
-.item-btn:has(.outcome) { display: grid; grid-template-columns: 22px minmax(0, 1fr) 10px; gap: 0.4rem 0.65rem; }
-.item-btn:has(.outcome) .badge { grid-column: 1; grid-row: 1 / span 2; }
-.item-btn:has(.outcome) .name { grid-column: 2; }
-.item-btn .outcome { grid-column: 2; justify-self: start; }
-.item-btn:has(.outcome) .plus { grid-column: 3; grid-row: 1 / span 2; }
-.diagnostics { padding-left: 1rem; margin: 0; font-size: 0.85rem; overflow-wrap: anywhere; }
-.diagnostics li + li { margin-top: 1rem; }
-.diagnostics p { margin: 0.4rem 0; }
+/* Real mode uses the mock's look: hairline rows, mono labels, legend-style counts. */
+/* File picker: a hairline row under the start row, with the same rise-in. */
+.upload {
+  margin-top: clamp(18px, 2.6vh, 26px); padding-top: clamp(16px, 2.4vh, 22px); border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.75rem 1.6rem;
+  animation: rise 800ms var(--ease) 260ms both;
+}
+.upload label { font: 450 0.72rem/1 var(--mono); letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink); }
+.upload input { max-width: 100%; min-width: 0; color: var(--ink-2); font: 0.78rem/1.4 var(--mono); }
+.upload input::file-selector-button {
+  margin-right: 1rem; padding: 0.7rem 1rem; border: 1px solid var(--line-2); border-radius: 0;
+  background: transparent; color: var(--ink); cursor: pointer;
+  font: 450 0.68rem/1 var(--mono); letter-spacing: 0.07em; text-transform: uppercase;
+  transition: border-color 200ms var(--ease), color 200ms var(--ease);
+}
+.upload input:hover::file-selector-button { border-color: var(--signal); color: var(--signal); }
+.upload .why { grid-column: 1 / -1; color: var(--ink-3); font-size: 0.85rem; }
+
+/* Results heading: run notes as quiet meta lines, counts like the dial legend. */
+.run-head #download-results { flex: none; margin-bottom: 0.35rem; }
+#run-note, #ai-quota { color: var(--ink-3); font-size: 0.85rem; max-width: 62rem; }
+#run-note:empty { display: none; }
+#ai-quota { margin-top: 0.3rem; }
+.o-translated { --c: var(--ok); }
+:is(.o-approximated, .o-assumed, .o-best_effort, .o-partial) { --c: var(--warn); }
+.o-blocked { --c: var(--bad); }
+.category-summary {
+  display: flex; flex-wrap: wrap; gap: 0.6rem 1.6rem; margin: clamp(18px, 2.6vh, 26px) 0 clamp(20px, 3vh, 28px);
+  font: 400 0.72rem/1 var(--mono); letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-3);
+}
+.category-summary .outcome { display: inline-flex; align-items: center; gap: 0.5rem; }
+.category-summary i { width: 7px; height: 7px; background: var(--c, var(--ink-3)); }
+.category-summary b { color: var(--ink); font-weight: 400; font-variant-numeric: tabular-nums; }
+.category-summary .is-zero { opacity: 0.5; }
+
+/* Rows stay one line, as in the mock: the outcome is a small tag before the plus. */
+.item-btn .outcome {
+  flex: none; padding: 0.24rem 0.45rem; color: var(--c, var(--ink-2));
+  font: 0.6rem/1 var(--mono); letter-spacing: 0.07em; text-transform: uppercase;
+  border: 1px solid color-mix(in srgb, var(--c, var(--ink-2)) 45%, transparent);
+}
+
+/* Real drawers: warning names as tags, diagnostics like the mock's manual note. */
+.warn-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.warn-tags .outcome {
+  padding: 0.24rem 0.45rem; color: var(--ink-2); border: 1px solid var(--line-2);
+  font: 0.6rem/1 var(--mono); letter-spacing: 0.07em; text-transform: uppercase;
+}
+.diagnostics { list-style: none; padding: 0; margin: 0; width: 100%; display: grid; gap: 1rem; overflow-wrap: anywhere; }
+.diagnostics li { display: grid; gap: 0.4rem; }
+.diagnostics strong {
+  display: flex; align-items: center; gap: 0.55rem; color: var(--bad); font-weight: 400;
+  font: 450 0.66rem/1.3 var(--mono); letter-spacing: 0.07em; text-transform: uppercase;
+}
+.diagnostics strong::before { content: ""; width: 6px; height: 6px; flex: none; background: var(--bad); }
+.diagnostics p { margin: 0; color: var(--ink-2); font-size: 0.92rem; line-height: 1.45; }
+.diagnostics p + p { color: var(--ink); }
+.diagnostics p:empty { display: none; }
+.drawer-body .manual-note { align-items: baseline; color: var(--ink-2); }
+.drawer-body .manual-note::before { transform: translateY(-1px); }
+.ai-btn:disabled { box-shadow: none; transform: none; }
+.ai-btn:disabled::before { opacity: 0; animation: none; }
 button:disabled { cursor: wait; opacity: 0.6; }
 #consult-btn:disabled { cursor: default; }
 #download-results { text-decoration: none; }
 #limitations { max-width: 40rem; }
-.ai-recommendation { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; margin: 0; font: 0.75rem/1.5 var(--mono); }
+.ai-recommendation {
+  white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; margin: 0; padding: 0.7rem 0.8rem; font: 0.75rem/1.55 var(--mono);
+  background: color-mix(in srgb, var(--paper-2) 85%, transparent); border: 1px solid var(--line); border-left: 2px solid var(--signal);
+}
+@media (max-width: 760px) {
+  .upload { grid-template-columns: minmax(0, 1fr); }
+  .run-head { flex-wrap: wrap; align-items: flex-start; }
+}
 
 /* ---------- Loading screen: dial and step box as one centred two-column group ---------- */
 .run-wrap {
