@@ -2,6 +2,15 @@
 
 ## Highest priority: deterministic conversion
 
+**User-authorized exception (Felix, 2026-11-08):** the local UI may send a failed
+(`blocked`) widget or monitor to Agent0 only after the user explicitly clicks Ask AI
+for that item. Limit this to three recommendation calls per local backend session;
+then prompt the user to contact sales at sandy@dash0.com. Recommendations are separate,
+unverified drafts: never run automatically, change compiler outcomes/artifacts,
+approve mappings, or publish them. This narrow exception supersedes the blanket AI
+prohibition below only for this user-requested recommendation endpoint. All automatic
+conversion and CLI paths retain every deterministic, LLM-free rule below.
+
 **Deterministic conversion is of utmost importance and comes before every other project objective, including MVP speed, feature coverage, and demo polish. No LLM shall be involved in translation from any source to Perses.** This also applies to query translation into PromQL and alert translation into Dash0 check rules.
 
 The entire conversion path must use explicit parsers, reviewed mapping tables, deterministic rules, and schema validation. No local or hosted model, model-based mapping inference, agent call, optional AI mode, repair step, or LLM fallback may participate. Unsupported or ambiguous input must produce a diagnostic and be blocked from automatic conversion; never ask a model to fill the gap. With the same input, mapping, configuration, and compiler version, conversion must produce the same target artifacts and diagnostics.

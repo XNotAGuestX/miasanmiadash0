@@ -147,6 +147,17 @@ behavior differences. See [LIVE_COMPARE.md](../LIVE_COMPARE.md#reuse-a-running-s
 
 ## Open decisions and blockers
 
+- **Local demo backend** ([#177](https://github.com/XNotAGuestX/thinchackdash/issues/177)):
+  Felix additionally authorized explicit Agent0 recommendations for blocked items
+  only: three calls per local server session, then contact sales at sandy@dash0.com.
+  Recommendations never run automatically or change compiler output. Tests for this
+  addition are deferred at Felix's explicit request.
+  minimal `backend/` HTTP adapter stacked on frontend PR #174, explicitly requested by
+  Felix. Upload JSON or run the pinned demo through the existing offline converter;
+  show exact row categories and diagnostics. Dashboard failures remain hidden as
+  requested. Publishing, numeric comparison and streamed progress are unavailable;
+  see [the mismatch list](../../backend/README.md#frontendbackend-mismatches).
+
 - **A1** target vocabulary = names and labels as found in Dash0. *Assumed default.*
 - **A2** alert output = Prometheus rule group + Dash0 check rule. *Assumed default.*
 - **A3** monitor strictness = approximate and warn on a reviewed allowlist, block the rest. *Assumed default.*
