@@ -19,6 +19,14 @@
 
 ## Waves
 
+General-input follow-up [#167](https://github.com/XNotAGuestX/thinchackdash/issues/167), branch
+`167-general-inputs`, implements items 1 + 2 + 5 from Felix's current request: reject runs with
+no recognized assets, return exit 2 with visible warnings for skipped files, and inspect exact
+metric-name mapping coverage before compilation. The report and terminal list missing names,
+their source locations and unparsed queries. Mixed-integration dashboards use the complete
+supplied mapping table independently of filenames. No target option or bundle extraction is
+added. SourceProvider methods and translation semantics remain unchanged.
+
 Current-session extension tracks (2026-11-08): [#162](https://github.com/XNotAGuestX/thinchackdash/issues/162) broadens metric-monitor arithmetic, [#163](https://github.com/XNotAGuestX/thinchackdash/issues/163) adds high-impact deterministic function approximations, [#164](https://github.com/XNotAGuestX/thinchackdash/issues/164) propagates the distinct `best_effort` category, and [#165](https://github.com/XNotAGuestX/thinchackdash/issues/165) verifies cases empirically against the retained shared telemetry stream. These tracks run in parallel under Felix's explicit request. Approximate functions carry tags and never bypass missing mappings or other unsupported semantics. Merge remains subject to Felix's review.
 
 Implementation is consolidated on `164-best-effort-outcomes` for one final review: **971 tests passed / 621 skipped**, lint and strict typing passed, and one real extension comparison passed **8/8** with full coverage. Four more pinned Kafka panels and one Redis arithmetic monitor now convert. The review also carries #159's retained-stream implementation as a dependency. No additional review/test cycles are planned after these passing checks; the next action is Felix's concrete review/merge. Details and limitations: [STATUS.md](../STATUS.md), [LIVE_EXTENSIONS.md](../LIVE_EXTENSIONS.md).

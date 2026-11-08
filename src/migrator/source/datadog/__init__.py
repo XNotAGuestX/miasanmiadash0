@@ -15,6 +15,7 @@ from migrator.source.asset import (
 )
 from migrator.source.datadog.api import fetch_datadog_assets
 from migrator.source.datadog.assets import recognize_assets
+from migrator.source.datadog.coverage import inspect_mapping_coverage
 from migrator.source.datadog.dashboard import compile_dashboard
 from migrator.source.datadog.mapping import parse_mappings
 from migrator.source.datadog.monitor import compile_monitor
@@ -46,7 +47,7 @@ class DatadogProvider:
         parsed = parse_mappings([(m.source_id, m.raw) for m in mappings])
         if not parsed.ok:
             raise InputError("invalid mapping: " + "; ".join(parsed.errors))
-        result = CompileResult()
+        result = CompileResult(mapping_coverage=inspect_mapping_coverage(assets, parsed.mapping))
         dashboards = sorted((a for a in assets if a.kind == "dashboard"), key=lambda a: a.source_id)
         slugs = assign_slugs([a.title for a in dashboards])
         for asset, slug in zip(dashboards, slugs, strict=True):

@@ -76,6 +76,45 @@ class Diagnostic:
 
 
 @dataclass(frozen=True)
+class SourceLocation:
+    source_id: str
+    source_path: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {"sourceId": self.source_id, "sourcePath": self.source_path}
+
+
+@dataclass(frozen=True)
+class MetricCoverage:
+    metric: str
+    mapped: bool
+    locations: tuple[SourceLocation, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "metric": self.metric,
+            "mapped": self.mapped,
+            "locations": [location.to_dict() for location in self.locations],
+        }
+
+
+@dataclass(frozen=True)
+class MappingCoverage:
+    """Metric-name presence only; not proof that a query can be translated."""
+
+    parsed_queries: int
+    metrics: tuple[MetricCoverage, ...]
+    unparsed_queries: tuple[Diagnostic, ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "parsedQueries": self.parsed_queries,
+            "metrics": [metric.to_dict() for metric in self.metrics],
+            "unparsedQueries": [diagnostic.to_dict() for diagnostic in self.unparsed_queries],
+        }
+
+
+@dataclass(frozen=True)
 class ItemResult:
     source_id: str
     source_path: str
@@ -256,6 +295,7 @@ class CompileResult:
     rules: list[RuleArtifact] = field(default_factory=list)
     items: list[ItemResult] = field(default_factory=list)
     diagnostics: list[Diagnostic] = field(default_factory=list)
+    mapping_coverage: MappingCoverage | None = None
 
 
 @dataclass

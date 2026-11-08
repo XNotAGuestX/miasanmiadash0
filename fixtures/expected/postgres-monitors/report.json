@@ -81,6 +81,32 @@
       "sourceId": "postgres.json"
     }
   ],
+  "mappingCoverage": {
+    "metrics": [
+      {
+        "locations": [
+          {
+            "sourceId": "monitors/percent_usage_connections.json",
+            "sourcePath": "definition.query"
+          }
+        ],
+        "mapped": true,
+        "metric": "postgresql.percent_usage_connections"
+      }
+    ],
+    "parsedQueries": 1,
+    "unparsedQueries": [
+      {
+        "code": "UNSUPPORTED_QUERY_FUNCTION",
+        "message": "Function 'anomalies' is not supported: Datadog's anomaly algorithms and bounds are not documented precisely enough to reproduce in PromQL (https://docs.datadoghq.com/monitors/types/anomaly/).",
+        "severity": "error",
+        "sourceId": "monitors/replication_delay.json",
+        "sourcePath": "definition.query",
+        "sourceText": "avg(last_1h):anomalies(avg:postgresql.replication_delay{*}, 'basic', 2, direction='above', alert_window='last_15m', interval=20, count_default_zero='true') >= 1",
+        "suggestedAction": "Mapping coverage is unknown for this query; use the supported grammar."
+      }
+    ]
+  },
   "provider": "datadog",
   "reportVersion": 1,
   "summary": {

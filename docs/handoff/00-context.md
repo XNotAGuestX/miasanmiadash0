@@ -176,6 +176,7 @@ tests/scripts/                    # pytest: dev-time scripts (build_expected rul
 | Code | Severity | Plan |
 |---|---|---|
 | `UNSUPPORTED_ASSET_KIND` | warning | 01 |
+| `NO_SUPPORTED_ASSETS` | error (exit 1, before output) | #167; no recognized inputs |
 | `DUPLICATE_SOURCE_ID` | error (exit 1) | 01 |
 | `INVALID_JSON` | error (exit 1) | 01 |
 | `UNSUPPORTED_QUERY_SYNTAX` | error | 02 |
@@ -207,8 +208,16 @@ tests/scripts/                    # pytest: dev-time scripts (build_expected rul
 
 **Validation levels** in the report: `syntax`, `schema`, `api` and `semantics`, each `passed | failed | not_run`. `convert` never sets `api` or `semantics`.
 
+**Mapping coverage** (`report.json.mappingCoverage`, #167) is produced by the source provider
+before asset compilation. It contains `parsedQueries` (fully parsed query strings), `metrics`
+(sorted exact names, `mapped` presence and original `sourceId`/`sourcePath` locations) and
+`unparsedQueries` (parser diagnostics). Monitor arithmetic includes every parsed metric leaf;
+dashboard inspection includes legacy and new metric queries, groups and unsupported widgets.
+Unparsed queries are never inspected by prefix or inferred from filenames. Coverage proves
+only mapping-name presence, independently of compiler outcomes and validation levels.
+
 **Exit codes:**
 
 - `0`: every item translated.
-- `2`: the run finished with a partial or blocked item.
-- `1`: bad arguments, an unreadable input, an invalid mapping, an unknown `--source`, a duplicate source ID, or an API failure.
+- `2`: the run finished with a non-translated item or a skipped input file.
+- `1`: bad arguments, an unreadable input, no recognized assets, an invalid mapping, an unknown `--source`, a duplicate source ID, or an API failure.
