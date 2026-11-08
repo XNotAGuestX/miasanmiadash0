@@ -37,3 +37,6 @@ private-input/
 
 # Local run artifacts (test report, convert output)
 out/
+
+# Cached voice lines for the local copilot tour (ElevenLabs audio)
+.copilot-voice/
