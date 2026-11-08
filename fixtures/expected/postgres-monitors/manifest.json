@@ -4,17 +4,25 @@
     {
       "eligible": true,
       "kind": "check-rule",
-      "outcome": "translated",
+      "outcome": "approximated",
       "path": "check-rules/postgres-number-of-connections-is-approaching-connection-limit-o.json",
-      "sha256": "d1990e6572157320f661cdb0b7d07d364c6a703b8b57e976bccc50b35ba3b0b1",
+      "remarks": [
+        "NEWHOST",
+        "FULLWINDOW"
+      ],
+      "sha256": "b1a5b21c6cde7fa18b537a352db8f05dedeac5603d4881f5f9e7a999e4b21352",
       "sourceId": "monitors/percent_usage_connections.json"
     },
     {
       "eligible": true,
       "kind": "prometheus-rule",
-      "outcome": "translated",
+      "outcome": "approximated",
       "path": "rules/postgres-number-of-connections-is-approaching-connection-limit-o.prometheus.json",
-      "sha256": "193a3aa444533b58abeb546f088d233e9409799c95bd2319c9481fba8487753e",
+      "remarks": [
+        "NEWHOST",
+        "FULLWINDOW"
+      ],
+      "sha256": "520641f05ce642b89b1c13b6e06d74920ccdf8577187e2301dbb59bf57a007c7",
       "sourceId": "monitors/percent_usage_connections.json"
     },
     {

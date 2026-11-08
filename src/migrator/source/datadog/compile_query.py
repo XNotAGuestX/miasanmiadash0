@@ -37,6 +37,7 @@ from migrator.source.datadog.mapping import (
     RateMapping,
 )
 from migrator.source.datadog.model import MetricQuery, SpaceAggregator, TagFilter
+from migrator.source.datadog.remarks import approved
 from migrator.target import Diagnostic, DiagnosticCode, Severity
 
 RATE_INTERVAL = "$__rate_interval"
@@ -110,7 +111,14 @@ class _Diags:
         self.ctx = ctx
         self.items: list[Diagnostic] = []
 
-    def add(self, code: DiagnosticCode, severity: Severity, message: str, action: str) -> None:
+    def add(
+        self,
+        code: DiagnosticCode,
+        severity: Severity,
+        message: str,
+        action: str,
+        remark: str | None = None,
+    ) -> None:
         self.items.append(
             Diagnostic(
                 code=code,
@@ -120,6 +128,7 @@ class _Diags:
                 message=message,
                 suggested_action=action,
                 source_text=self.ctx.source_text,
+                remark=remark,
             )
         )
 
@@ -181,10 +190,34 @@ def compile_metric_query(
         )
     entry = mapping.metrics.get(q.metric)
     if entry is None:
+        gap = mapping.gaps.get(q.metric)
+        if gap is not None:
+            return d.block(
+                "MISSING_METRIC_MAPPING",
+                f"No mapping for metric '{q.metric}' (gap {gap.tag}: {gap.reason})",
+                "Migrate this widget manually; the gap is recorded in the mapping file.",
+            )
         return d.block(
             "MISSING_METRIC_MAPPING",
             f"No mapping for metric '{q.metric}'.",
             f"Add a reviewed entry for '{q.metric}' to the mapping file.",
+        )
+    if entry.assumption is not None:
+        tag = entry.assumption
+        remark = approved(tag)
+        if remark is None:
+            return d.block(
+                "MISSING_METRIC_MAPPING",
+                f"The mapping for '{q.metric}' relies on assumption {tag}, which awaits manual "
+                "approval.",
+                f"Approve {tag} in src/migrator/source/datadog/remarks.py, or migrate manually.",
+            )
+        d.add(
+            "ASSUMED",
+            "warning",
+            f"{tag}: {remark.summary}",
+            f"Check the '{q.metric}' mapping entry's ref for the assumption.",
+            remark=tag,
         )
     if entry.reviewed is None:
         d.add(

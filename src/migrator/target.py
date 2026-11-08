@@ -33,16 +33,16 @@ DiagnosticCode = Literal[
     "DEFAULT_AGGREGATOR_APPLIED",
     "UNSUPPORTED_MONITOR_TYPE",
     "UNSUPPORTED_MONITOR_OPTION",
-    "MONITOR_OPTION_APPROXIMATED",
     "THRESHOLD_MISMATCH",
     "NOTIFICATION_NOT_MIGRATED",
     "TEXT_TRUNCATED",
     "APPROXIMATED",
+    "ASSUMED",
     "IMPORT_FAILED",
     "IMPORT_RESULT_UNKNOWN",
 ]
 
-Outcome = Literal["translated", "approximated", "partial", "blocked"]
+Outcome = Literal["translated", "approximated", "assumed", "partial", "blocked"]
 ItemKind = Literal["dashboard", "widget", "monitor"]
 Level = Literal["passed", "failed", "not_run"]
 
@@ -56,6 +56,7 @@ class Diagnostic:
     message: str
     suggested_action: str
     source_text: str | None = None
+    remark: str | None = None  # remark tag on APPROXIMATED / ASSUMED diagnostics
 
     def to_dict(self) -> dict[str, Any]:
         out: dict[str, Any] = {
@@ -68,6 +69,8 @@ class Diagnostic:
         }
         if self.source_text is not None:
             out["sourceText"] = self.source_text
+        if self.remark is not None:
+            out["remark"] = self.remark
         return out
 
 
@@ -78,15 +81,31 @@ class ItemResult:
     kind: ItemKind
     title: str
     outcome: Outcome
+    remarks: tuple[str, ...] = ()  # remark tags of a converted item, first-occurrence order
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        out: dict[str, Any] = {
             "sourceId": self.source_id,
             "sourcePath": self.source_path,
             "kind": self.kind,
             "title": self.title,
             "outcome": self.outcome,
         }
+        if self.remarks:
+            out["remarks"] = list(self.remarks)
+        return out
+
+
+def remark_outcome(diagnostics: list[Diagnostic]) -> tuple[Outcome, tuple[str, ...]]:
+    """Outcome and tags of a converted item from its diagnostics: `assumed` beats
+    `approximated` beats `translated`."""
+    tags = tuple(dict.fromkeys(d.remark for d in diagnostics if d.remark is not None))
+    codes = {d.code for d in diagnostics}
+    if "ASSUMED" in codes:
+        return "assumed", tags
+    if "APPROXIMATED" in codes:
+        return "approximated", tags
+    return "translated", tags
 
 
 # --- Perses (JSON-shaped; emitted as-is) -------------------------------------------

@@ -65,6 +65,15 @@ class _Selected:
     sha256: str
     name: str
     body: dict[str, Any]
+    outcome: str = "translated"
+    remarks: tuple[str, ...] = ()
+
+    def label(self) -> str:
+        """`[approximated: TIMEPIN]`, `[partial]`; empty for translated items."""
+        if self.outcome == "translated":
+            return ""
+        tags = f": {' '.join(self.remarks)}" if self.remarks else ""
+        return f"  [{self.outcome}{tags}]"
 
 
 def _read_json(path: Path, what: str) -> Any:
@@ -127,7 +136,8 @@ def _load_selected(
         name = str(body["spec"]["display"]["name"])
     else:
         name = str(body["name"])
-    return _Selected(rel, kind, entry["sha256"], name, body)
+    remarks = tuple(entry.get("remarks") or ())
+    return _Selected(rel, kind, entry["sha256"], name, body, entry["outcome"], remarks)
 
 
 def _with_prefix(item: _Selected, prefix: str | None) -> _Selected:
@@ -148,7 +158,7 @@ def _with_prefix(item: _Selected, prefix: str | None) -> _Selected:
         raise InputError(
             f"{item.path} with --name-prefix failed validation: " + "; ".join(problems)
         )
-    return _Selected(item.path, item.kind, item.sha256, name, body)
+    return _Selected(item.path, item.kind, item.sha256, name, body, item.outcome, item.remarks)
 
 
 def _plan(root: Path, allow_partial: bool) -> tuple[list[_Selected], list[str]]:
@@ -166,6 +176,10 @@ def _plan(root: Path, allow_partial: bool) -> tuple[list[_Selected], list[str]]:
         else:
             excluded.append(f"SKIP {entry['path']}  (outcome {outcome})")
     excluded += [f"SKIP {item}  (blocked in convert)" for item in _blocked_items(root)]
+    # Remark categories publish as their own groups after the exact translations
+    # (docs/REMARKS.md); each line names the category and its tags.
+    order: dict[str, int] = {o: n for n, o in enumerate(CONVERTED)}
+    selected.sort(key=lambda item: order.get(item.outcome, len(order)))
     return selected, excluded
 
 
@@ -204,7 +218,7 @@ def run_publish(
         if opts.dry_run:
             lines.append(
                 f"DRY-RUN POST {cfg.api_url}/api/import/{item.kind}?dataset={cfg.dataset}"
-                f"  {item.name}  ({decision})"
+                f"  {item.name}  ({decision}){item.label()}"
             )
             continue
         if decision == "skip-unchanged":
@@ -240,7 +254,7 @@ def run_publish(
         receipts = record_receipt(receipts, receipt)
         save_receipts(root, receipts)  # after every asset, so a crash keeps what happened
         if isinstance(outcome, Imported):
-            lines.append(f"IMPORTED {item.path}  id={outcome.id}")
+            lines.append(f"IMPORTED {item.path}  id={outcome.id}{item.label()}")
             continue
         failed = True
         if isinstance(outcome, Failed):

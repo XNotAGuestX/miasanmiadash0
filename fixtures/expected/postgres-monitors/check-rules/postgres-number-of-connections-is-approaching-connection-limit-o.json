@@ -7,7 +7,9 @@
   "expression": "avg_over_time((avg (sum by (service_instance_id) (max by (service_instance_id, postgresql_database_name) ({otel_metric_name=\"postgresql.backends\", otel_metric_type=\"sum\"})) / on (service_instance_id) max by (service_instance_id) ({otel_metric_name=\"postgresql.connection.max\", otel_metric_type=\"gauge\"})))[15m:1m]) > $__threshold",
   "for": "0s",
   "interval": "1m",
-  "labels": {},
+  "labels": {
+    "migration_remarks": "NEWHOST,FULLWINDOW"
+  },
   "name": "[Postgres] Number of connections is approaching connection limit on {{host.name}}",
   "thresholds": {
     "degraded": 0.8,

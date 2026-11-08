@@ -12,7 +12,6 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from migrator.source.asset import CompileOptions, SourceAsset
-from migrator.source.datadog.approximations import APPROXIMATIONS, approved
 from migrator.source.datadog.compile_query import (
     CompiledOk,
     QueryContext,
@@ -29,6 +28,7 @@ from migrator.source.datadog.formula import (
 from migrator.source.datadog.mapping import DatadogMapping
 from migrator.source.datadog.model import ParseOk, VariableFilter
 from migrator.source.datadog.parse_query import parse_metric_query, top_block
+from migrator.source.datadog.remarks import REMARKS, approved, describe
 from migrator.target import (
     Diagnostic,
     DiagnosticCode,
@@ -40,6 +40,7 @@ from migrator.target import (
     PersesPanel,
     PersesQuery,
     Severity,
+    remark_outcome,
 )
 from migrator.validation import check_promql_syntax, validate_dashboard
 
@@ -129,9 +130,10 @@ class _Collector:
         message: str,
         action: str,
         source_text: str | None = None,
+        remark: str | None = None,
     ) -> None:
         self.items.append(
-            Diagnostic(code, severity, self.source_id, path, message, action, source_text)
+            Diagnostic(code, severity, self.source_id, path, message, action, source_text, remark)
         )
 
     def error(
@@ -265,8 +267,15 @@ def _check_keys(
                 "No action needed.",
             )
             continue
-        if key == "time" and what == "Widget" and obj[key] == {"live_span": DASHBOARD_DURATION}:
-            _time_pin(f"{path}.{key}", c)
+        value = obj[key]
+        if (
+            key == "time"
+            and what == "Widget"
+            and isinstance(value, dict)
+            and list(value) == ["live_span"]
+            and isinstance(value["live_span"], str)
+        ):
+            _time_pin(f"{path}.{key}", value["live_span"], c)
             continue
         if key in ignored:
             c.add(
@@ -285,19 +294,27 @@ def _check_keys(
             )
 
 
-def _time_pin(path: str, c: _Collector) -> None:
-    """A widget pinned to the dashboard's own default range: approximated once approved."""
-    reason = "WIDGET_TIME_PIN"
-    entry = approved(reason)
+def _time_pin(path: str, span: str, c: _Collector) -> None:
+    """A widget pinned to its own time frame (`live_span`): TIMEPIN once approved."""
+    tag = "TIMEPIN"
+    entry = approved(tag)
+    default = " (the dashboard default)" if span == DASHBOARD_DURATION else ""
     if entry is not None:
-        c.add("APPROXIMATED", "warning", path, f"{reason}: {entry.remark}", "Check the panel.")
+        c.add(
+            "APPROXIMATED",
+            "warning",
+            path,
+            f"{tag}: Datadog showed the last {span}{default}. {entry.summary}",
+            "Check the panel; set the dashboard time range if the pinned frame matters.",
+            remark=tag,
+        )
         return
     c.error(
         "UNSUPPORTED_WIDGET",
         path,
         "Widget option 'time' is not supported.",
-        f"Approximation {reason} ({APPROXIMATIONS[reason].remark}) awaits manual approval in "
-        "src/migrator/source/datadog/approximations.py; until then, migrate this widget manually.",
+        f"Remark {tag} ({REMARKS[tag].summary}) awaits manual approval in "
+        "src/migrator/source/datadog/remarks.py; until then, migrate this widget manually.",
     )
 
 
@@ -474,8 +491,8 @@ def _compile_requests(
 def _compile_widget(
     widget: Any, path: str, ctx: _Ctx
 ) -> tuple[PersesPanel | None, str, list[Diagnostic]]:
-    """The panel (None when blocked), its title, and diagnostics. The widget is approximated
-    when its diagnostics include an APPROXIMATED warning."""
+    """The panel (None when blocked), its title, and diagnostics. A converted widget's remark
+    tags (APPROXIMATED / ASSUMED diagnostics) go into the panel description."""
     c = _Collector(ctx.source_id)
     definition = widget.get("definition") if isinstance(widget, dict) else None
     if not isinstance(definition, dict):
@@ -520,7 +537,11 @@ def _compile_widget(
     queries = _compile_requests(requests, ctx, c)
     if queries is None:
         return None, title, c.items
-    return _panel(title, plugin, queries), title, c.items
+    return _panel(title, plugin, queries, _tags(c.items)), title, c.items
+
+
+def _tags(diagnostics: list[Diagnostic]) -> list[str]:
+    return list(dict.fromkeys(d.remark for d in diagnostics if d.remark is not None))
 
 
 def _stat_calculation(requests: list[_Request], dpath: str, c: _Collector) -> str:
@@ -552,11 +573,15 @@ def _stat_calculation(requests: list[_Request], dpath: str, c: _Collector) -> st
     return calc
 
 
-def _panel(title: str, plugin: dict[str, Any], queries: list[PersesQuery]) -> PersesPanel:
+def _panel(
+    title: str, plugin: dict[str, Any], queries: list[PersesQuery], tags: list[str] | None = None
+) -> PersesPanel:
+    # Dash0 shows the panel description "in the panel header next to the name"
+    # (https://www.dash0.com/docs/dash0/dashboards/configure-panels), so remark tags stay visible.
     return {
         "kind": "Panel",
         "spec": {
-            "display": {"name": title, "description": ""},
+            "display": {"name": title, "description": describe(tags or [])},
             "plugin": {"kind": plugin["kind"], "spec": plugin["spec"]},
             "queries": queries,
         },
@@ -659,10 +684,10 @@ class _Builder:
         panel, title, diags = _compile_widget(widget, path, self.ctx)
         self.c.items.extend(diags)
         outcome: Outcome = "blocked"
+        tags: tuple[str, ...] = ()
         if panel is not None:
-            approx = any(d.code == "APPROXIMATED" for d in diags)
-            outcome = "approximated" if approx else "translated"
-        self.items.append(ItemResult(self.ctx.source_id, path, "widget", title, outcome))
+            outcome, tags = remark_outcome(diags)
+        self.items.append(ItemResult(self.ctx.source_id, path, "widget", title, outcome, tags))
         self.anchors.append(path)
         if panel is not None:
             self.panels[key] = panel
@@ -755,11 +780,13 @@ def compile_dashboard(
             "Add widgets to the source dashboard or migrate it manually.",
         )
 
-    translated = sum(1 for it in b.items if it.outcome in ("translated", "approximated"))
-    approximated = any(it.outcome == "approximated" for it in b.items)
+    converted = [it for it in b.items if it.outcome != "blocked"]
+    translated = len(converted)
+    tags = tuple(dict.fromkeys(t for it in converted for t in it.remarks))
     outcome: Outcome
     if translated and translated == len(b.items):
-        outcome = "approximated" if approximated else "translated"
+        outcomes = {it.outcome for it in converted}
+        outcome = next((o for o in ("assumed", "approximated") if o in outcomes), "translated")
     elif translated:
         outcome = "partial"
     else:
@@ -773,7 +800,7 @@ def compile_dashboard(
             "spec": {
                 "display": {
                     "name": str(body.get("title") or ""),
-                    "description": str(body.get("description") or ""),
+                    "description": _description(str(body.get("description") or ""), tags),
                 },
                 "duration": DASHBOARD_DURATION,
                 "variables": out_variables,
@@ -791,10 +818,18 @@ def compile_dashboard(
             )
             dashboard, outcome = None, "blocked"
 
-    items = [ItemResult(sid, "", "dashboard", asset.title, outcome), *b.items]
+    items = [ItemResult(sid, "", "dashboard", asset.title, outcome, tags), *b.items]
     return DashboardCompilation(
         dashboard=dashboard, items=items, diagnostics=_ordered(c.items, b.anchors)
     )
+
+
+def _description(source: str, tags: tuple[str, ...]) -> str:
+    """The source description plus one line naming the remark tags of converted panels."""
+    if not tags:
+        return source
+    note = f"Migration remarks: {' '.join(tags)} (see panel descriptions)."
+    return f"{source}\n\n{note}" if source else note
 
 
 def _path_key(path: str) -> tuple[str | int, ...]:

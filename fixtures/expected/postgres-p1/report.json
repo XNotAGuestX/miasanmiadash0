@@ -3035,12 +3035,14 @@
   "summary": {
     "dashboards": {
       "approximated": 0,
+      "assumed": 0,
       "blocked": 0,
       "partial": 2,
       "translated": 0
     },
     "monitors": {
       "approximated": 0,
+      "assumed": 0,
       "blocked": 0,
       "partial": 0,
       "translated": 0
@@ -3048,6 +3050,7 @@
     "skippedFiles": 0,
     "widgets": {
       "approximated": 0,
+      "assumed": 0,
       "blocked": 23,
       "partial": 0,
       "translated": 16

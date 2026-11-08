@@ -81,5 +81,5 @@ def test_outcomes(run: tuple[int, Path]) -> None:
     assert monitors == {
         "monitors/broker_produce_latency.json": "blocked",  # on_missing_data
         "monitors/kafka_high_producer_request_rate.json": "blocked",  # anomalies()
-        "monitors/kafka_offline_partition.json": "translated",
+        "monitors/kafka_offline_partition.json": "approximated",
     }

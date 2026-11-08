@@ -6,9 +6,10 @@ from typing import Any, Literal
 
 from migrator.target import ItemResult, Outcome
 
-OUTCOMES: tuple[Outcome, ...] = ("translated", "approximated", "partial", "blocked")
-# Outcomes whose artifacts are converted and eligible to publish without a flag.
-CONVERTED: tuple[Outcome, ...] = ("translated", "approximated")
+OUTCOMES: tuple[Outcome, ...] = ("translated", "approximated", "assumed", "partial", "blocked")
+# Converted outcomes: eligible to publish without a flag. The remark categories (approximated,
+# assumed) are published as their own groups and carry their tags (docs/REMARKS.md).
+CONVERTED: tuple[Outcome, ...] = ("translated", "approximated", "assumed")
 ManifestKind = Literal["dashboard", "prometheus-rule", "check-rule", "source"]
 
 
@@ -33,9 +34,14 @@ def exit_code_for(items: list[ItemResult]) -> Literal[0, 2]:
 
 
 def manifest_entry(
-    path: str, kind: ManifestKind, source_id: str, digest: str, outcome: Outcome | None
+    path: str,
+    kind: ManifestKind,
+    source_id: str,
+    digest: str,
+    outcome: Outcome | None,
+    remarks: tuple[str, ...] = (),
 ) -> dict[str, Any]:
-    return {
+    entry: dict[str, Any] = {
         "path": path,
         "kind": kind,
         "sourceId": source_id,
@@ -43,6 +49,9 @@ def manifest_entry(
         "outcome": outcome,
         "eligible": outcome in CONVERTED,
     }
+    if remarks:
+        entry["remarks"] = list(remarks)
+    return entry
 
 
 def format_summary(report: dict[str, Any], slugs: dict[str, str]) -> str:
@@ -57,14 +66,18 @@ def format_summary(report: dict[str, Any], slugs: dict[str, str]) -> str:
                 w for w in items if w["kind"] == "widget" and w["sourceId"] == item["sourceId"]
             ]
             done = sum(1 for w in widgets if w["outcome"] in CONVERTED)
-            approx = sum(1 for w in widgets if w["outcome"] == "approximated")
-            detail = f"{done}/{len(widgets)} widgets" + (
-                f", {approx} approximated" if approx else ""
-            )
+            detail = f"{done}/{len(widgets)} widgets"
+            for category in ("approximated", "assumed"):
+                n = sum(1 for w in widgets if w["outcome"] == category)
+                if n:
+                    detail += f", {n} {category}"
+            if item.get("remarks"):
+                detail += f" [{' '.join(item['remarks'])}]"
             name = slugs.get(item["sourceId"], item["sourceId"])
             dashboards.append((outcome, name, detail))
         elif item["kind"] == "monitor":
-            monitors.append((outcome, item["sourceId"], ""))
+            tags = f"[{' '.join(item['remarks'])}]" if item.get("remarks") else ""
+            monitors.append((outcome, item["sourceId"], tags))
 
     lines: list[str] = []
     for title, section in (("Dashboards", dashboards), ("Monitors", monitors)):

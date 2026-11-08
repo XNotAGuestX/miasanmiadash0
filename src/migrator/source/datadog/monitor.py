@@ -32,6 +32,7 @@ from migrator.source.datadog.model import (
     WindowUnit,
 )
 from migrator.source.datadog.parse_query import parse_metric_query
+from migrator.source.datadog.remarks import approved
 from migrator.target import (
     Diagnostic,
     DiagnosticCode,
@@ -40,6 +41,7 @@ from migrator.target import (
     PrometheusRuleGroup,
     RuleArtifact,
     Severity,
+    remark_outcome,
 )
 from migrator.validation import validate_check_rule, validate_prometheus_rule_group
 
@@ -152,8 +154,30 @@ def evaluate_monitor_options(options: Mapping[str, Any], *, source_id: str) -> O
     different options block the monitor; diagnostics are sorted by source path."""
     diags: list[Diagnostic] = []
 
-    def add(code: DiagnosticCode, severity: Severity, path: str, message: str, action: str) -> None:
-        diags.append(Diagnostic(code, severity, source_id, path, message, action))
+    def add(
+        code: DiagnosticCode,
+        severity: Severity,
+        path: str,
+        message: str,
+        action: str,
+        remark: str | None = None,
+    ) -> None:
+        diags.append(Diagnostic(code, severity, source_id, path, message, action, None, remark))
+
+    def approximate(path: str, tag: str, detail: str) -> None:
+        """An option the target lacks: APPROXIMATED with its remark tag once approved."""
+        remark = approved(tag)
+        if remark is None:
+            block(path, f"{detail} Remark {tag} awaits manual approval in remarks.py.")
+            return
+        add(
+            "APPROXIMATED",
+            "warning",
+            path,
+            f"{tag}: {detail} {remark.summary}",
+            "Check that this difference is acceptable for the alert.",
+            remark=tag,
+        )
 
     def block(path: str, message: str) -> None:
         add(
@@ -189,24 +213,12 @@ def evaluate_monitor_options(options: Mapping[str, Any], *, source_id: str) -> O
                 block(path, "Monitor has no critical threshold.")
         elif key == "require_full_window":
             if value is True:
-                add(
-                    "MONITOR_OPTION_APPROXIMATED",
-                    "warning",
-                    path,
-                    "Dash0 evaluates partial windows.",
-                    "Check that early evaluations of a new series are acceptable.",
-                )
+                approximate(path, "FULLWINDOW", "require_full_window is true.")
             elif value is not False:
                 block(path, "require_full_window must be true or false.")
         elif key == "new_host_delay":
             if _is_number(value) and value > 0:
-                add(
-                    "MONITOR_OPTION_APPROXIMATED",
-                    "warning",
-                    path,
-                    "No new-host grace period in Dash0.",
-                    "Expect alerts from new hosts right after they start reporting.",
-                )
+                approximate(path, "NEWHOST", f"new_host_delay is {value} s.")
             elif not (value is None or _is_zero(value)):
                 block(path, "new_host_delay must be null or a non-negative number.")
         elif key == "include_tags":
@@ -248,6 +260,7 @@ MAX_WINDOW_MINUTES = 7 * 24 * 60
 # A monitor's rate() uses this fixed range instead: four times the 1m evaluation
 # step, so each step sees several samples at scrape intervals up to about 1m.
 MONITOR_RATE_RANGE = "5m"
+REMARKS_LABEL = "migration_remarks"  # comma-separated remark tags of a converted monitor
 # Any other $variable left in a compiled query (none is expected for monitors).
 _DASHBOARD_VARIABLE = re.compile(r"\$(?:__)?[A-Za-z_]\w*")
 _UNIT_MINUTES: dict[str, int] = {"m": 1, "h": 60, "d": 24 * 60}
@@ -497,6 +510,11 @@ def compile_monitor(asset: SourceAsset, slug: str, mapping: DatadogMapping) -> M
                 "Shorten the text in Datadog if the cut part matters.",
             )
 
+    # Remark tags go on both artifacts as a label (Dash0 merges check-rule labels into each
+    # failed check: https://www.dash0.com/docs/dash0/monitoring/alerting/route-alert-check-notifications).
+    outcome, tags = remark_outcome(diags)
+    remark_labels = {REMARKS_LABEL: ",".join(tags)} if tags else {}
+
     window = f"{monitor.window.amount}{monitor.window.unit}"
     over_time = _TIME_FUNCTIONS[monitor.time_aggregator]
     condition = f"{over_time}(({promql})[{window}:{CHECK_INTERVAL}])"
@@ -510,7 +528,7 @@ def compile_monitor(asset: SourceAsset, slug: str, mapping: DatadogMapping) -> M
         {
             "alert": slug,
             "expr": f"{condition} {monitor.comparator} {_format_threshold(value)}",
-            "labels": {"severity": severity},
+            "labels": {"severity": severity, **remark_labels},
             "annotations": dict(annotations),
         }
         for severity, value in levels
@@ -529,7 +547,7 @@ def compile_monitor(asset: SourceAsset, slug: str, mapping: DatadogMapping) -> M
         "interval": CHECK_INTERVAL,
         "for": "0s",
         "enabled": False,
-        "labels": {},
+        "labels": dict(remark_labels),
         "annotations": dict(annotations),
     }
 
@@ -546,7 +564,7 @@ def compile_monitor(asset: SourceAsset, slug: str, mapping: DatadogMapping) -> M
         )
         return blocked()
 
-    item = ItemResult(sid, "", "monitor", asset.title, "translated")
+    item = ItemResult(sid, "", "monitor", asset.title, outcome, tags)
     return MonitorCompilation(
         rule=RuleArtifact(slug, sid, group, check_rule), item=item, diagnostics=_by_path(diags)
     )

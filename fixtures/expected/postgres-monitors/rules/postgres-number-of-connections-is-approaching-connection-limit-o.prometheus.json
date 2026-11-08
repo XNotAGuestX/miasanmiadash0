@@ -12,6 +12,7 @@
           },
           "expr": "avg_over_time((avg (sum by (service_instance_id) (max by (service_instance_id, postgresql_database_name) ({otel_metric_name=\"postgresql.backends\", otel_metric_type=\"sum\"})) / on (service_instance_id) max by (service_instance_id) ({otel_metric_name=\"postgresql.connection.max\", otel_metric_type=\"gauge\"})))[15m:1m]) > 0.8",
           "labels": {
+            "migration_remarks": "NEWHOST,FULLWINDOW",
             "severity": "warning"
           }
         },
@@ -23,6 +24,7 @@
           },
           "expr": "avg_over_time((avg (sum by (service_instance_id) (max by (service_instance_id, postgresql_database_name) ({otel_metric_name=\"postgresql.backends\", otel_metric_type=\"sum\"})) / on (service_instance_id) max by (service_instance_id) ({otel_metric_name=\"postgresql.connection.max\", otel_metric_type=\"gauge\"})))[15m:1m]) > 0.9",
           "labels": {
+            "migration_remarks": "NEWHOST,FULLWINDOW",
             "severity": "critical"
           }
         }

@@ -260,6 +260,7 @@ def test_approximated_items_are_converted_and_eligible() -> None:
     assert summarize(items, 0)["widgets"] == {
         "translated": 0,
         "approximated": 1,
+        "assumed": 0,
         "partial": 0,
         "blocked": 0,
     }

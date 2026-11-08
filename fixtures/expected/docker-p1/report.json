@@ -47,7 +47,7 @@
       "severity": "error",
       "sourceId": "dashboards/docker_dashboard.json",
       "sourcePath": "widgets[0].definition.time",
-      "suggestedAction": "Approximation WIDGET_TIME_PIN (Widget time pin dropped: it equals the dashboard default range, so the default view is identical, but the panel follows the time picker where Datadog's widget would not.) awaits manual approval in src/migrator/source/datadog/approximations.py; until then, migrate this widget manually."
+      "suggestedAction": "Remark TIMEPIN (Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.) awaits manual approval in src/migrator/source/datadog/remarks.py; until then, migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -127,7 +127,7 @@
       "severity": "error",
       "sourceId": "dashboards/docker_dashboard.json",
       "sourcePath": "widgets[4].definition.time",
-      "suggestedAction": "Migrate this widget manually or remove the option in the source."
+      "suggestedAction": "Remark TIMEPIN (Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.) awaits manual approval in src/migrator/source/datadog/remarks.py; until then, migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -183,7 +183,7 @@
       "severity": "error",
       "sourceId": "dashboards/docker_dashboard.json",
       "sourcePath": "widgets[5].definition.time",
-      "suggestedAction": "Migrate this widget manually or remove the option in the source."
+      "suggestedAction": "Remark TIMEPIN (Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.) awaits manual approval in src/migrator/source/datadog/remarks.py; until then, migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -255,7 +255,7 @@
       "severity": "error",
       "sourceId": "dashboards/docker_dashboard.json",
       "sourcePath": "widgets[7].definition.time",
-      "suggestedAction": "Approximation WIDGET_TIME_PIN (Widget time pin dropped: it equals the dashboard default range, so the default view is identical, but the panel follows the time picker where Datadog's widget would not.) awaits manual approval in src/migrator/source/datadog/approximations.py; until then, migrate this widget manually."
+      "suggestedAction": "Remark TIMEPIN (Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.) awaits manual approval in src/migrator/source/datadog/remarks.py; until then, migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -311,7 +311,7 @@
       "severity": "error",
       "sourceId": "dashboards/docker_dashboard.json",
       "sourcePath": "widgets[8].definition.time",
-      "suggestedAction": "Approximation WIDGET_TIME_PIN (Widget time pin dropped: it equals the dashboard default range, so the default view is identical, but the panel follows the time picker where Datadog's widget would not.) awaits manual approval in src/migrator/source/datadog/approximations.py; until then, migrate this widget manually."
+      "suggestedAction": "Remark TIMEPIN (Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.) awaits manual approval in src/migrator/source/datadog/remarks.py; until then, migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -399,7 +399,7 @@
       "severity": "error",
       "sourceId": "dashboards/docker_dashboard.json",
       "sourcePath": "widgets[11].definition.time",
-      "suggestedAction": "Migrate this widget manually or remove the option in the source."
+      "suggestedAction": "Remark TIMEPIN (Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.) awaits manual approval in src/migrator/source/datadog/remarks.py; until then, migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -463,7 +463,7 @@
       "severity": "error",
       "sourceId": "dashboards/docker_dashboard.json",
       "sourcePath": "widgets[12].definition.time",
-      "suggestedAction": "Approximation WIDGET_TIME_PIN (Widget time pin dropped: it equals the dashboard default range, so the default view is identical, but the panel follows the time picker where Datadog's widget would not.) awaits manual approval in src/migrator/source/datadog/approximations.py; until then, migrate this widget manually."
+      "suggestedAction": "Remark TIMEPIN (Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.) awaits manual approval in src/migrator/source/datadog/remarks.py; until then, migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -567,7 +567,7 @@
       "severity": "error",
       "sourceId": "dashboards/docker_dashboard.json",
       "sourcePath": "widgets[14].definition.time",
-      "suggestedAction": "Approximation WIDGET_TIME_PIN (Widget time pin dropped: it equals the dashboard default range, so the default view is identical, but the panel follows the time picker where Datadog's widget would not.) awaits manual approval in src/migrator/source/datadog/approximations.py; until then, migrate this widget manually."
+      "suggestedAction": "Remark TIMEPIN (Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.) awaits manual approval in src/migrator/source/datadog/remarks.py; until then, migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -727,7 +727,7 @@
       "severity": "error",
       "sourceId": "dashboards/docker_dashboard.json",
       "sourcePath": "widgets[18].definition.time",
-      "suggestedAction": "Approximation WIDGET_TIME_PIN (Widget time pin dropped: it equals the dashboard default range, so the default view is identical, but the panel follows the time picker where Datadog's widget would not.) awaits manual approval in src/migrator/source/datadog/approximations.py; until then, migrate this widget manually."
+      "suggestedAction": "Remark TIMEPIN (Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.) awaits manual approval in src/migrator/source/datadog/remarks.py; until then, migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -839,7 +839,7 @@
       "severity": "error",
       "sourceId": "dashboards/docker_dashboard.json",
       "sourcePath": "widgets[20].definition.time",
-      "suggestedAction": "Approximation WIDGET_TIME_PIN (Widget time pin dropped: it equals the dashboard default range, so the default view is identical, but the panel follows the time picker where Datadog's widget would not.) awaits manual approval in src/migrator/source/datadog/approximations.py; until then, migrate this widget manually."
+      "suggestedAction": "Remark TIMEPIN (Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.) awaits manual approval in src/migrator/source/datadog/remarks.py; until then, migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -903,7 +903,7 @@
       "severity": "error",
       "sourceId": "dashboards/docker_dashboard.json",
       "sourcePath": "widgets[21].definition.time",
-      "suggestedAction": "Approximation WIDGET_TIME_PIN (Widget time pin dropped: it equals the dashboard default range, so the default view is identical, but the panel follows the time picker where Datadog's widget would not.) awaits manual approval in src/migrator/source/datadog/approximations.py; until then, migrate this widget manually."
+      "suggestedAction": "Remark TIMEPIN (Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.) awaits manual approval in src/migrator/source/datadog/remarks.py; until then, migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1015,7 +1015,7 @@
       "severity": "error",
       "sourceId": "dashboards/docker_dashboard.json",
       "sourcePath": "widgets[23].definition.time",
-      "suggestedAction": "Approximation WIDGET_TIME_PIN (Widget time pin dropped: it equals the dashboard default range, so the default view is identical, but the panel follows the time picker where Datadog's widget would not.) awaits manual approval in src/migrator/source/datadog/approximations.py; until then, migrate this widget manually."
+      "suggestedAction": "Remark TIMEPIN (Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.) awaits manual approval in src/migrator/source/datadog/remarks.py; until then, migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1079,7 +1079,7 @@
       "severity": "error",
       "sourceId": "dashboards/docker_dashboard.json",
       "sourcePath": "widgets[24].definition.time",
-      "suggestedAction": "Approximation WIDGET_TIME_PIN (Widget time pin dropped: it equals the dashboard default range, so the default view is identical, but the panel follows the time picker where Datadog's widget would not.) awaits manual approval in src/migrator/source/datadog/approximations.py; until then, migrate this widget manually."
+      "suggestedAction": "Remark TIMEPIN (Datadog pinned this widget to its own time frame; Perses and Dash0 panels have no per-panel time range, so it follows the dashboard time picker.) awaits manual approval in src/migrator/source/datadog/remarks.py; until then, migrate this widget manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -1339,12 +1339,14 @@
   "summary": {
     "dashboards": {
       "approximated": 0,
+      "assumed": 0,
       "blocked": 0,
       "partial": 1,
       "translated": 0
     },
     "monitors": {
       "approximated": 0,
+      "assumed": 0,
       "blocked": 0,
       "partial": 0,
       "translated": 0
@@ -1352,6 +1354,7 @@
     "skippedFiles": 0,
     "widgets": {
       "approximated": 0,
+      "assumed": 0,
       "blocked": 23,
       "partial": 0,
       "translated": 5

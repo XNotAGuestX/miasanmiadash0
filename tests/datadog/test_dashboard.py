@@ -7,14 +7,14 @@ from typing import Any
 import pytest
 
 from migrator.source.asset import CompileOptions, SourceAsset
-from migrator.source.datadog import approximations
+from migrator.source.datadog import remarks
 from migrator.source.datadog.compile_query import TemplateVariable
 from migrator.source.datadog.dashboard import (
     DashboardCompilation,
     compile_dashboard,
     read_template_variables,
 )
-from migrator.source.datadog.mapping import DatadogMapping
+from migrator.source.datadog.mapping import DatadogMapping, parse_mapping
 from migrator.validation import validate_dashboard
 from tests.datadog.helpers import entry, mapping
 
@@ -622,36 +622,52 @@ def test_other_wrapping_functions_keep_the_generic_message() -> None:
     )
 
 
-def _approve_time_pin(monkeypatch: pytest.MonkeyPatch) -> None:
-    entry = approximations.APPROXIMATIONS["WIDGET_TIME_PIN"]
-    approved = dataclasses.replace(entry, approved=approximations.Approval("test", "2026-11-08"))
-    monkeypatch.setitem(approximations.APPROXIMATIONS, "WIDGET_TIME_PIN", approved)
+def _approve(monkeypatch: pytest.MonkeyPatch, tag: str) -> None:
+    entry = remarks.REMARKS[tag]
+    approved = dataclasses.replace(entry, approved=remarks.Approval("test", "2026-11-08"))
+    monkeypatch.setitem(remarks.REMARKS, tag, approved)
 
 
-def test_time_pin_blocks_until_the_approximation_is_approved() -> None:
-    assert approximations.APPROXIMATIONS["WIDGET_TIME_PIN"].approved is None
+def test_time_pin_blocks_until_the_remark_is_approved() -> None:
+    assert remarks.REMARKS["TIMEPIN"].approved is None
     c = compile_body(body(ts(new_req("avg:postgresql.connections{*}"), time={"live_span": "1h"})))
     assert [i.outcome for i in c.items] == ["blocked", "blocked"]
     [d] = [d for d in c.diagnostics if d.severity == "error"]
     assert (d.code, d.message) == ("UNSUPPORTED_WIDGET", "Widget option 'time' is not supported.")
-    assert "WIDGET_TIME_PIN" in d.suggested_action
+    assert "TIMEPIN" in d.suggested_action
     assert "awaits manual approval" in d.suggested_action
 
 
-def test_approved_time_pin_converts_with_a_remark(monkeypatch: pytest.MonkeyPatch) -> None:
-    _approve_time_pin(monkeypatch)
-    pinned = ts(new_req("avg:postgresql.connections{*}"), time={"live_span": "1h"})
+def test_approved_time_pin_converts_with_tags_in_report_and_artifact(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _approve(monkeypatch, "TIMEPIN")
+    pinned = ts(new_req("avg:postgresql.connections{*}"), time={"live_span": "1w"})
     c = compile_body(body(pinned, ts(new_req("avg:postgresql.connections{*}"))))
-    assert [i.outcome for i in c.items] == ["approximated", "approximated", "translated"]
+    assert [(i.outcome, i.remarks) for i in c.items] == [
+        ("approximated", ("TIMEPIN",)),
+        ("approximated", ("TIMEPIN",)),
+        ("translated", ()),
+    ]
     assert c.dashboard is not None and validate_dashboard(c.dashboard) == []
     [d] = [d for d in c.diagnostics if d.code == "APPROXIMATED"]
-    assert d.severity == "warning" and d.message.startswith("WIDGET_TIME_PIN: ")
-    assert d.source_path == "widgets[0].definition.time"
+    assert (d.severity, d.remark, d.source_path) == (
+        "warning",
+        "TIMEPIN",
+        "widgets[0].definition.time",
+    )
+    assert "last 1w" in d.message
+    panels = c.dashboard["spec"]["panels"]
+    assert panels["widget-0"]["spec"]["display"]["description"].startswith("[TIMEPIN] ")
+    assert panels["widget-1"]["spec"]["display"]["description"] == ""
+    assert c.dashboard["spec"]["display"]["description"].endswith(
+        "Migration remarks: TIMEPIN (see panel descriptions)."
+    )
 
 
-def test_approved_time_pin_covers_only_the_dashboard_range(monkeypatch: pytest.MonkeyPatch) -> None:
-    _approve_time_pin(monkeypatch)
-    for time in [{"live_span": "1w"}, {"live_span": "1h", "type": "fixed"}]:
+def test_other_time_shapes_still_block(monkeypatch: pytest.MonkeyPatch) -> None:
+    _approve(monkeypatch, "TIMEPIN")
+    for time in [{"live_span": "1h", "type": "fixed"}, {"from": 1, "to": 2}]:
         c = compile_body(body(ts(new_req("avg:postgresql.connections{*}"), time=time)))
         assert c.items[1].outcome == "blocked", time
 
@@ -659,7 +675,37 @@ def test_approved_time_pin_covers_only_the_dashboard_range(monkeypatch: pytest.M
 def test_partial_dashboard_with_an_approximated_widget_stays_partial(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    _approve_time_pin(monkeypatch)
+    _approve(monkeypatch, "TIMEPIN")
     pinned = ts(new_req("avg:postgresql.connections{*}"), time={"live_span": "1h"})
     c = compile_body(body(pinned, ts(new_req("avg:unmapped.metric{*}"))))
     assert [i.outcome for i in c.items] == ["partial", "approximated", "blocked"]
+    assert c.items[0].remarks == ("TIMEPIN",)
+
+
+def test_assumed_mapping_blocks_until_approved_then_wins_over_approximated(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    m = mapping(postgresql__connections=entry(assumption="AGG"))
+    q = new_req("avg:postgresql.connections{*}")
+    c = compile_body(body(ts(q)), m)
+    [d] = [d for d in c.diagnostics if d.severity == "error"]
+    assert d.code == "MISSING_METRIC_MAPPING" and "assumption AGG" in d.message
+    _approve(monkeypatch, "AGG")
+    _approve(monkeypatch, "TIMEPIN")
+    c = compile_body(body(ts(q, time={"live_span": "1h"})), m)
+    assert [(i.outcome, i.remarks) for i in c.items] == [
+        ("assumed", ("TIMEPIN", "AGG")),
+        ("assumed", ("TIMEPIN", "AGG")),
+    ]
+
+
+def test_gap_reason_is_cited_in_the_block() -> None:
+    raw = {"version": 1, "source": "datadog", "metrics": {}}
+    raw["gaps"] = {"unmapped.metric": {"tag": "NOOTEL", "reason": "No OTel receiver emits it."}}
+    parsed = parse_mapping(raw)
+    assert parsed.ok
+    c = compile_body(body(ts(new_req("avg:unmapped.metric{*}"))), parsed.mapping)
+    [d] = [d for d in c.diagnostics if d.severity == "error"]
+    assert d.message == (
+        "No mapping for metric 'unmapped.metric' (gap NOOTEL: No OTel receiver emits it.)"
+    )
