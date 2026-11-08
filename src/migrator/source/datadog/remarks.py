@@ -50,6 +50,7 @@ _FELIX = Approval("Felix", "2026-11-08")
 _FUNCTIONS = Approval("Felix (explicit best-effort function request, #163/#164)", "2026-11-08")
 _ASCOUNT = Approval("Felix (explicit best-effort .as_count() request, #181)", "2026-11-08")
 _PROMLABEL = Approval("Felix (explicit Prometheus label mapping request, #185)", "2026-11-08")
+_OTELTABLE = Approval("Felix (explicit full OTel mapping table request, #188)", "2026-11-08")
 
 REMARKS: dict[str, Remark] = {
     "WEIGHTED": Remark(
@@ -192,6 +193,19 @@ REMARKS: dict[str, Remark] = {
             "receiver/prometheusreceiver"
         ),
         approved=_PROMLABEL,
+    ),
+    # Datadog's OpenTelemetry metrics mapping table names the OTel counterpart, but a fact the
+    # converter needs is not confirmed by the pinned OTel catalog or Datadog metadata (#188).
+    "OTELTABLE": Remark(
+        category="assumed",
+        summary=(
+            "The OTel metric is the counterpart named in Datadog's OpenTelemetry mapping table, "
+            "but the pinned OTel and Datadog metadata do not confirm every fact: the target "
+            "type, the unit scale, an attribute rename, or the choice among several table "
+            "targets. The mapping entry's ref names the unconfirmed fact."
+        ),
+        evidence="https://docs.datadoghq.com/opentelemetry/mapping/metrics_mapping/",
+        approved=_OTELTABLE,
     ),
     "SEMANTIC": Remark(
         category="assumed",

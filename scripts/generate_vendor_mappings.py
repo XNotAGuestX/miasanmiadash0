@@ -8,20 +8,31 @@ Inputs (all pinned in the repo):
   fixtures/otel/catalog.yaml                     OTel type, monotonicity, unit
   fixtures/datadog/integrations-core/*/metadata.csv   Datadog type, unit, per-unit
 
-An entry is written only when every fact is known and consistent; otherwise the metric is
-skipped and keeps blocking as MISSING_METRIC_MAPPING:
+A verified entry (no assumption) is written when every fact is known and consistent:
 - one distinct (otel, filter, transform) for the Datadog name; no attribute-rename transform
 - the OTel metric is in the catalog and is a gauge or a sum (no histogram)
 - the Datadog type is known; its kind (rule of tests/datadog/test_metric_types.py:
   rate/count or per-second gauge -> rate, other gauge -> gauge) fits the OTel type:
   gauge kind <- OTel gauge or non-monotonic sum; rate kind <- OTel monotonic sum
-- the Datadog name is not already mapped or listed as a gap in another mapping file
 - the catalog has no conflicts and the units have an explicit, compatible scale rule
 
+Otherwise the table row is still used (#188): the entry gets `assumption: OTELTABLE`
+(remarks.py) and its `ref` names the unconfirmed fact.
+- Several table targets: the first by (usable catalog type, not only from a deprecated
+  integration, no transform, row key).
+- OTel type and monotonicity come from the catalog; when it lacks the metric or conflicts,
+  from the Datadog kind (rate -> monotonic sum, else gauge). The kind is rate only for a
+  monotonic sum the Datadog type does not mark as a gauge; otherwise gauge (the raw value).
+- Scale: the explicit unit rule, else the table's `× N`, else 1.
+- An attribute-rename transform becomes a label (Datadog tag <- OTel attribute).
+Still skipped, so they keep blocking as MISSING_METRIC_MAPPING: names already mapped or listed
+as a gap in another mapping file (those files take precedence), Datadog names carrying a tag
+filter, multi-value filters (they need a sum over attribute values), OTel histograms, a unit
+rule and table factor that disagree, and non-positive or non-finite factors.
+
 Filters become matchers (attribute dots -> underscores, as Dash0 exposes attributes in PromQL
-and as the existing mapping files do). A `× N` transform must agree with UNIT_SCALES;
-when the table omits it, that explicit unit rule supplies the scale. Unknown or incompatible
-units are skipped. Labels: `host -> host_name`, the convention of existing host mappings.
+and as the existing mapping files do). Labels: `host -> host_name`, the convention of
+existing host mappings.
 
 Usage:
   uv run scripts/generate_vendor_mappings.py          # write mappings/datadog/vendor-table.json
@@ -51,6 +62,8 @@ OUT = MAPPINGS / "vendor-table.json"
 LABELS = {"host": "host_name"}
 _LABEL = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 _SCALE = re.compile(r"× (\S+)")
+_RENAME = re.compile(r"Rename attribute key `([^`]+)` to `([^`]+)`")
+ASSUMPTION = "OTELTABLE"
 
 # Target sample -> Datadog value, after rate() for monotonic sums. Physical factors use
 # the pinned metadata's units (SI nano/micro/milli, IEC mebi); named count pairs come
@@ -133,14 +146,17 @@ def build(
     fetched: str,
 ) -> tuple[dict[str, Any], dict[str, str]]:
     """Mapping file body and, per skipped Datadog name, the reason."""
-    by_name: dict[str, set[str]] = defaultdict(set)
+    by_name: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
     for r in rows:
         key = json.dumps([r["otel"], r.get("filter") or {}, r.get("transform") or ""])
-        by_name[r["datadog"]].add(key)
+        by_name[r["datadog"]][key].add(r.get("integration") or "")
     metrics: dict[str, Any] = {}
     skipped: dict[str, str] = {}
     for name in sorted(by_name):
-        reason, entry = _entry(name, by_name[name], catalog, types, taken, fetched)
+        reason, entry = _entry(name, set(by_name[name]), catalog, types, taken, fetched)
+        if entry is None and name not in taken:
+            why, entry = _assumed_entry(name, by_name[name], catalog, types, fetched, reason)
+            reason = why or reason
         if entry is None:
             skipped[name] = reason
         else:
@@ -159,9 +175,13 @@ def _entry(
 ) -> tuple[str, dict[str, Any] | None]:
     if name in taken:
         return "already in a mapping file", None
+    if "{" in name:
+        return "Datadog name carries a tag filter", None
     if len(candidates) != 1:
         return f"{len(candidates)} distinct table targets", None
     otel, flt, transform = json.loads(next(iter(candidates)))
+    if any(", " in str(v) for v in flt.values()):
+        return "multi-value filter needs a sum over attribute values", None
     if transform and not _SCALE.fullmatch(transform):
         return f"transform not supported: {transform}", None
     try:
@@ -224,6 +244,123 @@ def _entry(
     }
     if matchers:
         entry["matchers"] = matchers
+    return "", entry
+
+
+def _label(attribute: str) -> str:
+    label = re.sub(r"[^a-zA-Z0-9_]", "_", attribute)
+    return label if _LABEL.fullmatch(label) else f"_{label}"
+
+
+def _usable(otel: str, catalog: dict[str, Any]) -> bool:
+    o = catalog.get(otel)
+    return o is not None and not o.get("conflicts") and o["type"] in ("gauge", "sum")
+
+
+def _assumed_entry(
+    name: str,
+    candidates: dict[str, set[str]],
+    catalog: dict[str, Any],
+    types: dict[str, dict[str, str]],
+    fetched: str,
+    unconfirmed: str,
+) -> tuple[str, dict[str, Any] | None]:
+    """An OTELTABLE entry built from the table row, or the reason the name stays blocked."""
+    if "{" in name:
+        return "Datadog name carries a tag filter", None
+
+    def rank(key: str) -> tuple[bool, bool, bool, str]:
+        otel, _, transform = json.loads(key)
+        deprecated = all("deprecated" in i for i in candidates[key])
+        return (not _usable(otel, catalog), deprecated, bool(transform), key)
+
+    key = min(candidates, key=rank)
+    otel, flt, transform = json.loads(key)
+    if any(", " in str(v) for v in flt.values()):
+        return "multi-value filter needs a sum over attribute values", None
+    table_scale: float | None = None
+    rename: tuple[str, str] | None = None
+    if transform:
+        scale_m, rename_m = _SCALE.fullmatch(transform), _RENAME.fullmatch(transform)
+        if scale_m:
+            try:
+                table_scale = float(scale_m.group(1))
+            except ValueError:
+                return f"transform not numeric: {transform}", None
+            if not math.isfinite(table_scale) or table_scale <= 0:
+                return f"transform not a positive factor: {transform}", None
+        elif rename_m:
+            rename = (rename_m.group(1), rename_m.group(2))
+        else:
+            return f"transform not supported: {transform}", None
+    o = catalog.get(otel)
+    dd = types.get(name)
+    dd_kind = expected_kind(dd) if dd else None
+    if o is not None and not o.get("conflicts"):
+        if o["type"] not in ("gauge", "sum"):
+            return f"OTel type {o['type']} not supported", None
+        otype, monotonic, target_unit = o["type"], bool(o["monotonic"]), o["unit"] or ""
+        otel_text = (
+            f"fixtures/otel/catalog.yaml {otype}{' monotonic' if monotonic else ''}, "
+            f"unit {target_unit or '-'} ({', '.join(o['sources'])})"
+        )
+    else:
+        otype = "sum" if dd_kind == "rate" else "gauge"
+        monotonic, target_unit = dd_kind == "rate", ""
+        otel_text = f"type {otype}{' monotonic' if monotonic else ''} from the Datadog kind"
+    kind = "rate" if otype == "sum" and monotonic and dd_kind != "gauge" else "gauge"
+    unit = dd.get("unit_name", "") if dd else ""
+    per_unit = dd.get("per_unit_name", "") if dd else ""
+    source_unit = unit + (f"/{per_unit}" if per_unit else "")
+    unit_scale = UNIT_SCALES.get((unit, target_unit))
+    if (
+        unit_scale is not None
+        and table_scale is not None
+        and not math.isclose(unit_scale, table_scale, rel_tol=1e-12, abs_tol=0.0)
+    ):
+        return f"table scale {table_scale:g} conflicts with unit scale {unit_scale:g}", None
+    if unit_scale is not None:
+        scale, scale_text = unit_scale, "explicit unit rule"
+    elif table_scale is not None:
+        scale, scale_text = table_scale, "table transform"
+    else:
+        scale, scale_text = 1.0, "assumed"
+    filt = ", ".join(f"{k}: {v}" for k, v in sorted(flt.items()))
+    datadog_text = (
+        f"integrations-core {dd['source']} {dd['metric_type']}, unit {source_unit or '-'}"
+        if dd
+        else "not in the pinned metadata.csv files"
+    )
+    chosen = (
+        f" Chosen from {len(candidates)} table targets (usable catalog type, not deprecated, "
+        "no transform, then row key)."
+        if len(candidates) > 1
+        else ""
+    )
+    ref = (
+        f"Generated by scripts/generate_vendor_mappings.py under {ASSUMPTION} (#188). Vendor: "
+        f"fixtures/datadog/otel-mapping.yaml {name} -> {otel}"
+        + (f", filter {filt}" if filt else "")
+        + (f", transform {transform}" if transform else "")
+        + f" (fetched {fetched}). Unconfirmed: {unconfirmed}.{chosen}"
+        + f" Datadog: {datadog_text}. OTel: {otel_text}. Scale {scale:g} ({scale_text})."
+        + " Not checked against Dash0 data."
+    )
+    entry: dict[str, Any] = {
+        "kind": kind,
+        "target": {"name": otel, "type": otype},
+        "sourceUnit": source_unit,
+        "targetUnit": target_unit,
+        "scale": int(scale) if scale.is_integer() else scale,
+        "ref": ref,
+        "reviewed": None,
+        "assumption": ASSUMPTION,
+    }
+    matchers = {_label(k): str(v) for k, v in sorted(flt.items())}
+    if matchers:
+        entry["matchers"] = matchers
+    if rename:
+        entry["labels"] = {**LABELS, _label(rename[1]): _label(rename[0])}
     return "", entry
 
 
