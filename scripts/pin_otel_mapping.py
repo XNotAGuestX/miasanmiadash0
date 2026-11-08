@@ -1,9 +1,9 @@
-"""Pin Datadog's OpenTelemetry Metrics Mapping rows for our services, and report mapping drift.
+"""Pin Datadog's OpenTelemetry Metrics Mapping table, and report mapping drift.
 
 Development-time only (issue #105); the converter never imports this file.
 
-Write mode fetches the page once with urllib (or reads a saved copy), keeps the rows whose
-`datadog` or `otel` name starts with one of PREFIXES, dedupes and sorts them, and writes
+Write mode fetches the page once with urllib (or reads a saved copy), keeps every table row
+(#171; #105 kept only our fixture services' prefixes), dedupes and sorts them, and writes
 fixtures/datadog/otel-mapping.yaml. By default it stores the metric names only: Datadog's
 website terms (https://www.datadoghq.com/legal/terms/) restrict copying site content, so storing
 the filter, transform and integration columns waits for a decision on issue #105
@@ -18,6 +18,7 @@ Usage:
   uv run scripts/pin_otel_mapping.py                                   # download, write the pin
   uv run scripts/pin_otel_mapping.py --from-file page.md --fetched YYYY-MM-DD
   uv run scripts/pin_otel_mapping.py --report [--from-file page.md]
+  uv run scripts/pin_otel_mapping.py --check                           # rebuild == committed pin
 """
 
 from __future__ import annotations
@@ -37,10 +38,11 @@ import yaml
 URL = "https://docs.datadoghq.com/opentelemetry/mapping/metrics_mapping.md"
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "fixtures" / "datadog" / "otel-mapping.yaml"
+# Ignored local copy of the page for --check; the page itself is not committed (#105 terms).
+PAGE_CACHE = ROOT / "out" / "otelmapping" / "metrics_mapping.md"
 MAPPINGS = ROOT / "mappings" / "datadog"
 CASES = ROOT / "fixtures" / "cases"
 
-PREFIXES = ("postgresql.", "redis.", "kafka.", "nginx.", "container.", "docker.", "system.", "jvm.")
 HEADER = ["otel", "datadog", "description", "filter", "transform", "Integration"]
 NAME_COLUMNS = ["datadog", "otel"]
 ALL_COLUMNS = ["datadog", "otel", "filter", "transform", "integration"]
@@ -70,7 +72,7 @@ def _sort_key(row: Row) -> tuple[str, ...]:
 
 
 def parse_table(text: str) -> list[Row]:
-    """Rows of the page's mapping table for PREFIXES, all columns, deduped and sorted."""
+    """Rows of the page's mapping table, all columns, deduped and sorted."""
     lines = [line for line in text.splitlines() if line.startswith("|")]
     if not lines or _cells(lines[0]) != HEADER:
         raise ValueError(f"unexpected table header: {_cells(lines[0]) if lines else None}")
@@ -91,8 +93,6 @@ def parse_table(text: str) -> list[Row]:
             transform and not _TRANSFORM.fullmatch(transform)
         ):
             raise ValueError(f"unrecognized filter or transform cell: {line[:200]}")
-        if not (otel.startswith(PREFIXES) or datadog.startswith(PREFIXES)):
-            continue
         row = {
             "datadog": datadog,
             "otel": otel,
@@ -112,7 +112,6 @@ def render_pin(rows: list[Row], columns: list[str], fetched: str) -> str:
     body = {
         "source": URL,
         "fetched": fetched,
-        "prefixes": list(PREFIXES),
         "columns": columns,
         "rows": sorted(kept.values(), key=_sort_key),
     }
@@ -134,6 +133,28 @@ def fetch(url: str = URL) -> str:
     with urllib.request.urlopen(request, timeout=120) as response:
         text: str = response.read().decode("utf-8")
     return text
+
+
+def check(pin: Path = OUT, page: Path = PAGE_CACHE, get: Any = fetch) -> tuple[bool, str]:
+    """Rebuild the pin twice from the cached page (downloaded once if missing) and compare
+    both with the committed pin. Differences mean nondeterminism or a changed page."""
+    if not page.is_file():
+        page.parent.mkdir(parents=True, exist_ok=True)
+        page.write_text(get(), encoding="utf-8")
+    doc = yaml.safe_load(pin.read_text(encoding="utf-8"))
+    text = page.read_text(encoding="utf-8")
+    first, second = (render_pin(parse_table(text), doc["columns"], doc["fetched"]) for _ in "ab")
+    pairs = {(r["datadog"], r["otel"]) for r in doc["rows"]}
+    summary = f"{len(pairs)} pairs, {len({d for d, _ in pairs})} Datadog names"
+    if first != second:
+        return False, "FAIL: two rebuilds differ (nondeterministic)"
+    if first != pin.read_text(encoding="utf-8"):
+        return (
+            False,
+            f"FAIL: rebuild from {page} differs from {pin.name}; "
+            "delete the page to re-download, or re-pin",
+        )
+    return True, f"OK: rebuilt twice from {page}, identical to {pin.name} ({summary})"
 
 
 # --------------------------------------------------------------------------- comparison
@@ -248,7 +269,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--report", action="store_true", help="compare the mappings with the table; write nothing"
     )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="rebuild the pin from the cached page twice and compare with the committed pin",
+    )
     args = parser.parse_args(argv)
+
+    if args.check:
+        ok, message = check(args.out, args.from_file or PAGE_CACHE)
+        print(message)
+        return 0 if ok else 1
 
     if args.report:
         if args.from_file:
