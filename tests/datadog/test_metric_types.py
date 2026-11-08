@@ -1,8 +1,8 @@
 """Mapping `kind` must fit the Datadog metric type (issue #106).
 
-Datadog types come from the integrations-core `metadata.csv` files pinned by
-`scripts/pin-integrations-core.sh`. Host metrics (`system.*`) come from Agent core
-checks, so `SYSTEM_TYPES` cites their type per metric.
+Datadog types come from every integrations-core `metadata.csv`, pinned by
+`scripts/pin-integrations-core.sh` and listed in `metadata-blobs.json`. Host metrics
+(`system.*`) come from Agent core checks, so `SYSTEM_TYPES` cites their type per metric.
 
 Rule:
 - Datadog `rate` or `count` -> `kind: rate`.
@@ -39,21 +39,12 @@ FIXTURES = ROOT / "fixtures/datadog/integrations-core"
 MAPPINGS = ROOT / "mappings/datadog"
 SHA = "a9b9e42b7e484861ecbd1f5919da7c52a694b74d"
 
-IN_APP_TYPES = (
-    "https://docs.datadoghq.com/metrics/types/#submission-types-and-datadog-in-app-types"
-)
+IN_APP_TYPES = "https://docs.datadoghq.com/metrics/types/#submission-types-and-datadog-in-app-types"
 SYSTEM_DOC = "https://docs.datadoghq.com/integrations/system/#metrics"
 NETWORK_CSV = f"https://github.com/DataDog/integrations-core/blob/{SHA}/network/metadata.csv"
 
-# Git blob SHAs of `<svc>/metadata.csv` at the pinned commit (GitHub contents API).
-UPSTREAM_BLOBS = {
-    "docker_daemon": "1ef28eb2a1f231951d603a0361410557ee5dd52f",
-    "kafka": "3439fcd79daa3f01b184106b99dd7d4142e99c8e",
-    "kafka_consumer": "2985bcac5bde8407bafd0cd7122014f4bb789915",
-    "nginx": "07acfdaa69e6bca1348ce0adbea14f8b9d616466",
-    "postgres": "b3bdef91abc7796447a6be7292c371e463343039",
-    "redisdb": "20c488356336ddc8330ca0272b2a092c8ddd1963",
-}
+# Git blob SHAs of every `<svc>/metadata.csv` at the pinned commit (recursive Git tree, #175).
+UPSTREAM_BLOBS: dict[str, str] = json.loads((FIXTURES / "metadata-blobs.json").read_text())
 
 
 @dataclass(frozen=True)

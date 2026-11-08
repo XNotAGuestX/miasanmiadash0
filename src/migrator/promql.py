@@ -8,7 +8,7 @@ from typing import Literal
 
 _ESCAPES = {"\\": "\\\\", '"': '\\"', "\n": "\\n"}
 
-MatchOp = Literal["=", "=~"]
+MatchOp = Literal["=", "!=", "=~", "!~"]
 
 
 @dataclass(frozen=True)

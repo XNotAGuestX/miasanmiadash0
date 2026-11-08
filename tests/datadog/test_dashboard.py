@@ -740,9 +740,18 @@ def test_approved_time_pin_converts_with_tags_in_report_and_artifact(
 @pytest.mark.parametrize(
     "time",
     [
-        None, False, "1h", [], {"live_span": None}, {"live_span": 1}, {"live_span": []},
-        {"live_span": ""}, {"live_span": "unknown"}, {"live_span": "alert"},
-        {"live_span": "1h", "type": "fixed"}, {"from": 1, "to": 2},
+        None,
+        False,
+        "1h",
+        [],
+        {"live_span": None},
+        {"live_span": 1},
+        {"live_span": []},
+        {"live_span": ""},
+        {"live_span": "unknown"},
+        {"live_span": "alert"},
+        {"live_span": "1h", "type": "fixed"},
+        {"from": 1, "to": 2},
     ],
 )
 def test_other_time_shapes_still_block(
@@ -768,8 +777,8 @@ def test_time_pin_converts_all_supported_widgets_with_remarks(
     baseline = compile_body(body(widget))
     widget["definition"]["time"] = {"live_span": span}
     c = compile_body(body(widget))
-    expected = ("assumed", ("TIMEPIN", "TOPN")) if wtype == "toplist" else (
-        "approximated", ("TIMEPIN",)
+    expected = (
+        ("assumed", ("TIMEPIN", "TOPN")) if wtype == "toplist" else ("approximated", ("TIMEPIN",))
     )
     assert [(i.outcome, i.remarks) for i in c.items] == [expected, expected]
     assert c.dashboard is not None and baseline.dashboard is not None
@@ -788,8 +797,22 @@ def test_time_pin_converts_all_supported_widgets_with_remarks(
 @pytest.mark.parametrize(
     "span",
     [
-        "1m", "5m", "10m", "15m", "30m", "1h", "4h", "1d", "2d", "1w",
-        "1mo", "3mo", "6mo", "week_to_date", "month_to_date", "1y",
+        "1m",
+        "5m",
+        "10m",
+        "15m",
+        "30m",
+        "1h",
+        "4h",
+        "1d",
+        "2d",
+        "1w",
+        "1mo",
+        "3mo",
+        "6mo",
+        "week_to_date",
+        "month_to_date",
+        "1y",
     ],
 )
 def test_documented_preset_windows_are_approximated(span: str) -> None:
@@ -797,7 +820,8 @@ def test_documented_preset_windows_are_approximated(span: str) -> None:
     widget["definition"]["time"] = {"live_span": span}
     c = compile_body(body(widget))
     assert [(i.outcome, i.remarks) for i in c.items] == [
-        ("approximated", ("TIMEPIN",)), ("approximated", ("TIMEPIN",))
+        ("approximated", ("TIMEPIN",)),
+        ("approximated", ("TIMEPIN",)),
     ]
 
 
@@ -919,3 +943,40 @@ def test_toplist_blocks_until_topn_is_approved(monkeypatch: pytest.MonkeyPatch) 
     [d] = [d for d in c.diagnostics if d.severity == "error"]
     assert d.message == "Widget type 'toplist' is not supported."
     assert "TOPN" in d.suggested_action and "awaits manual approval" in d.suggested_action
+
+
+# --- #178: legacy multi-series requests and new filter forms ---------------------------
+
+
+def test_legacy_comma_list_becomes_one_query_per_series() -> None:
+    c = compile_body(
+        body(ts({"q": "avg:postgresql.connections{*}, max:postgresql.connections{*}"}))
+    )
+    assert [q["query"] for q in queries_of(c, "widget-0")] == [
+        CONN,
+        CONN.replace("avg", "max", 1),
+    ]
+
+
+def test_legacy_arithmetic_compiles_as_formula() -> None:
+    c = compile_body(
+        body(ts({"q": "100 * avg:postgresql.connections{*} / max:postgresql.connections{*}"}))
+    )
+    [query] = queries_of(c, "widget-0")
+    assert query["query"] == f"100 * ({CONN}) / ({CONN.replace('avg', 'max', 1)})"
+
+
+def test_negated_glob_and_or_filters_become_anchored_matchers() -> None:
+    q = "avg:postgresql.connections{!host:db-*, (db:a.b OR db:c), host:x}"
+    [query] = queries_of(compile_body(body(ts({"q": q}))), "widget-0")
+    assert query["query"] == (
+        'avg ({otel_metric_name="postgresql.backends", otel_metric_type="sum", '
+        'host_name!~"^(db-.*)$", postgresql_database_name=~"^(a\\\\.b|c)$", host_name="x"})'
+    )
+
+
+def test_cross_key_or_blocks_with_message() -> None:
+    c = compile_body(body(ts({"q": "avg:postgresql.connections{db:a OR host:b}"})))
+    [error] = [d for d in c.diagnostics if d.severity == "error"]
+    assert error.code == "UNSUPPORTED_QUERY_SYNTAX"
+    assert error.message.startswith("OR is only supported between positive filters of one tag key")

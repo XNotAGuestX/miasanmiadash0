@@ -7545,8 +7545,16 @@
             "sourcePath": "widgets[2].definition.widgets[2].definition.requests[0].queries[2].query"
           },
           {
+            "sourceId": "dashboards/kafka_dashboard.json",
+            "sourcePath": "widgets[7].definition.widgets[1].definition.requests[0].queries[0].query"
+          },
+          {
             "sourceId": "dashboards/kafka_kraft_dashboard.json",
             "sourcePath": "widgets[2].definition.widgets[2].definition.requests[0].queries[2].query"
+          },
+          {
+            "sourceId": "dashboards/kafka_kraft_dashboard.json",
+            "sourcePath": "widgets[7].definition.widgets[1].definition.requests[0].queries[0].query"
           }
         ],
         "mapped": false,
@@ -8181,7 +8189,7 @@
         "metric": "zookeeper.pending_syncs"
       }
     ],
-    "parsedQueries": 84,
+    "parsedQueries": 86,
     "unparsedQueries": [
       {
         "code": "UNSUPPORTED_QUERY_SYNTAX",
@@ -8199,15 +8207,6 @@
         "sourceId": "dashboards/kafka_dashboard.json",
         "sourcePath": "widgets[2].definition.widgets[2].definition.requests[0].queries[1].query",
         "sourceText": "count:data_streams.latency{type:kafka AND direction:in AND (pathway_type:edge OR pathway_type:partial_edge) AND $topic AND $env} by {topic,env}.as_rate()",
-        "suggestedAction": "Mapping coverage is unknown for this query; use the supported grammar."
-      },
-      {
-        "code": "UNSUPPORTED_QUERY_SYNTAX",
-        "message": "Unexpected ' ' at offset 41.",
-        "severity": "error",
-        "sourceId": "dashboards/kafka_dashboard.json",
-        "sourcePath": "widgets[7].definition.widgets[1].definition.requests[0].queries[0].query",
-        "sourceText": "max:data_streams.kafka.lag_seconds{$topic ,$env} by {env,topic}",
         "suggestedAction": "Mapping coverage is unknown for this query; use the supported grammar."
       },
       {
@@ -8253,15 +8252,6 @@
         "sourceId": "dashboards/kafka_kraft_dashboard.json",
         "sourcePath": "widgets[2].definition.widgets[2].definition.requests[0].queries[1].query",
         "sourceText": "count:data_streams.latency{type:kafka AND direction:in AND (pathway_type:edge OR pathway_type:partial_edge) AND $topic AND $env} by {topic,env}.as_rate()",
-        "suggestedAction": "Mapping coverage is unknown for this query; use the supported grammar."
-      },
-      {
-        "code": "UNSUPPORTED_QUERY_SYNTAX",
-        "message": "Unexpected ' ' at offset 41.",
-        "severity": "error",
-        "sourceId": "dashboards/kafka_kraft_dashboard.json",
-        "sourcePath": "widgets[7].definition.widgets[1].definition.requests[0].queries[0].query",
-        "sourceText": "max:data_streams.kafka.lag_seconds{$topic ,$env} by {env,topic}",
         "suggestedAction": "Mapping coverage is unknown for this query; use the supported grammar."
       },
       {

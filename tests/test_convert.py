@@ -211,6 +211,11 @@ def test_cli_entry_point_exit_codes(tmp_path: Path) -> None:
     )
     assert r.returncode == 0, r.stderr
     assert r.stdout.startswith("Dashboards\n  TRANSLATED    synthetic-supported  2/2 widgets\n")
+    # Without --mapping, the whole mappings/<source> folder is the default table.
+    r = cli("convert", "--source", "datadog", "--input", PG, "--out", str(tmp_path / "dflt"))
+    assert r.returncode == 2, r.stderr
+    convert(tmp_path, [PG], name="explicit")
+    assert tree(tmp_path / "dflt") == tree(tmp_path / "explicit")
 
 
 PG = "fixtures/datadog/integrations-core/postgres"
@@ -218,12 +223,16 @@ PG = "fixtures/datadog/integrations-core/postgres"
 
 def test_mapping_directory_equals_its_files(tmp_path: Path) -> None:
     run_convert(ConvertOptions("datadog", [PG], [MAPPING], str(tmp_path / "dir")))
-    files = [f"{MAPPING}/postgres.json", f"{MAPPING}/host.json"]
+    files = [f"{MAPPING}/postgres.json", f"{MAPPING}/host.json", f"{MAPPING}/vendor-table.json"]
     run_convert(ConvertOptions("datadog", [PG], files, str(tmp_path / "two")))
     dir_out, two_out = tree(tmp_path / "dir/dashboards"), tree(tmp_path / "two/dashboards")
     assert dir_out and dir_out == two_out
     report = json.loads((tmp_path / "two/report.json").read_text())
-    assert [m["sourceId"] for m in report["mapping"]] == ["host.json", "postgres.json"]
+    assert [m["sourceId"] for m in report["mapping"]] == [
+        "host.json",
+        "postgres.json",
+        "vendor-table.json",
+    ]
     report = json.loads((tmp_path / "dir/report.json").read_text())
     names = sorted(p.name for p in Path(MAPPING).glob("*.json"))
     assert [m["sourceId"] for m in report["mapping"]] == names

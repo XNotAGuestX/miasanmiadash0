@@ -520,13 +520,22 @@
       "suggestedAction": "No action needed unless the option matters for this panel."
     },
     {
-      "code": "UNSUPPORTED_QUERY_SYNTAX",
-      "message": "Unexpected '1' at offset 0.",
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'docker.containers.running'.",
       "severity": "error",
       "sourceId": "dashboards/docker_dashboard.json",
       "sourcePath": "widgets[11].definition.requests[0].q",
-      "sourceText": "100*(sum:docker.containers.running{$scope}/timeshift(sum:docker.containers.running{$scope}, -300))",
-      "suggestedAction": "Rewrite the query within the supported subset or migrate it manually."
+      "sourceText": "sum:docker.containers.running{$scope}",
+      "suggestedAction": "Add a reviewed entry for 'docker.containers.running' to the mapping file."
+    },
+    {
+      "code": "MISSING_METRIC_MAPPING",
+      "message": "No mapping for metric 'docker.containers.running'.",
+      "severity": "error",
+      "sourceId": "dashboards/docker_dashboard.json",
+      "sourcePath": "widgets[11].definition.requests[0].q",
+      "sourceText": "sum:docker.containers.running{$scope}",
+      "suggestedAction": "Add a reviewed entry for 'docker.containers.running' to the mapping file."
     },
     {
       "code": "OPTION_IGNORED",

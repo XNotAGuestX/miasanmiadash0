@@ -1,3 +1,5 @@
+import pytest
+
 from migrator.source.datadog.model import (
     MetricQuery,
     ParseError,
@@ -64,19 +66,40 @@ def test_rejects_wrapping_functions() -> None:
     )
 
 
-def test_rejects_negation() -> None:
-    e = err("avg:x{!env:prod}")
-    assert (e.code, e.offset) == ("UNSUPPORTED_QUERY_SYNTAX", 6)
+def test_negation_glob_and_same_key_or_parse() -> None:  # #178
+    q = ok("avg:x{!env:prod, host:db-*, (az:a OR az:b)}")
+    assert q.filters == [
+        TagFilter("env", "prod", negated=True),
+        TagFilter("host", "db-*"),
+        TagFilter("az", "a", alternatives=("b",)),
+    ]
 
 
-def test_rejects_boolean_filters() -> None:
-    e = err("avg:x{env:a OR env:b}")
-    assert (e.code, e.offset) == ("UNSUPPORTED_QUERY_SYNTAX", 11)
+def test_boolean_keywords_and_spaces_parse() -> None:  # #178
+    q = ok("avg:x{$env AND NOT host:a , $cluster-name AND $logs.auth.token}")
+    assert q.filters == [
+        VariableFilter("env"),
+        TagFilter("host", "a", negated=True),
+        VariableFilter("cluster-name"),
+        VariableFilter("logs.auth.token"),
+    ]
 
 
-def test_rejects_wildcard_values() -> None:
-    e = err("avg:x{host:db-*}")
-    assert (e.code, e.offset) == ("UNSUPPORTED_QUERY_SYNTAX", 14)
+def test_not_or_group_negates_each_value() -> None:  # #178
+    q = ok("avg:x{NOT (env:a OR env:b)}")
+    assert q.filters == [TagFilter("env", "a", negated=True), TagFilter("env", "b", negated=True)]
+
+
+@pytest.mark.parametrize(
+    ("text", "message"),
+    [
+        ("avg:x{env:a OR host:b}", "OR is only supported between positive filters of one tag key"),
+        ("avg:x{NOT (env:a AND host:b)}", "A negated AND group is not supported"),
+        ("avg:x{!$env}", "Unexpected '$'"),
+    ],
+)
+def test_inexpressible_boolean_filters_block(text: str, message: str) -> None:  # #178
+    assert err(text).message.startswith(message)
 
 
 def test_rejects_trailing_input() -> None:

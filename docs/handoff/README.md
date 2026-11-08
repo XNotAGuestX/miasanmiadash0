@@ -4,6 +4,15 @@
 
 **State:** plans 01–10 are implemented and merged, and their plan files are removed (see git history or `main-pre-rip`). The code and tests are the source of truth. [00-context.md](00-context.md) is the shared spec: rules, decisions, diagnostic codes, outcome model.
 
+Vendor-table follow-up [#171](https://github.com/XNotAGuestX/thinchackdash/issues/171) /
+[#175](https://github.com/XNotAGuestX/thinchackdash/issues/175): the full pin covers 2,065
+Datadog names. The deterministic generator produces 194 draft mappings, all `reviewed: null`,
+and skips 1,871 names with reasons. Unit pairs must have an explicit scale rule; Kubernetes
+CPU values are scaled from cores to nanocores by 10⁹. Catalog conflicts and unknown or
+incompatible units remain blocked. This includes the three conflicting Kubernetes memory /
+filesystem definitions. Run `uv run scripts/generate_vendor_mappings.py --check` (or
+`--skipped` for reasons). Mapping sign-off and live semantic verification remain outstanding.
+
 **This file** is the only open plan. An orchestrator runs it with one agent per issue, many in parallel. The user asked for parallel execution of this handoff on 2026-11-07. Epic: [#104](https://github.com/XNotAGuestX/thinchackdash/issues/104).
 
 **Goal:** make every translation demonstrably right, cheapest evidence first:
