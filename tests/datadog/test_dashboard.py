@@ -12,8 +12,9 @@ from migrator.source.datadog.dashboard import (
     compile_dashboard,
     read_template_variables,
 )
+from migrator.source.datadog.mapping import DatadogMapping
 from migrator.validation import validate_dashboard
-from tests.datadog.helpers import mapping
+from tests.datadog.helpers import entry, mapping
 
 SYNTH = Path("fixtures/datadog/synthetic/dashboards")
 CONN = 'avg ({otel_metric_name="postgresql.backends", otel_metric_type="sum"})'
@@ -23,8 +24,8 @@ def asset(body: dict[str, Any], sid: str = "s.json") -> SourceAsset:
     return SourceAsset(sid, "dashboard", str(body.get("title", "")), body, body)
 
 
-def compile_body(body: dict[str, Any]) -> DashboardCompilation:
-    return compile_dashboard(asset(body), "slug", mapping(), CompileOptions("p"))
+def compile_body(body: dict[str, Any], m: DatadogMapping | None = None) -> DashboardCompilation:
+    return compile_dashboard(asset(body), "slug", m or mapping(), CompileOptions("p"))
 
 
 def compile_file(name: str) -> DashboardCompilation:
@@ -183,10 +184,47 @@ def test_uses_source_layout_when_every_widget_has_one() -> None:
     grids = c.dashboard["spec"]["layouts"]
     assert len(grids) == 1  # the group's only child is blocked, so it has no grid
     assert [(i["x"], i["y"], i["width"], i["height"]) for i in grids[0]["spec"]["items"]] == [
-        (0, 0, 8, 2),
-        (8, 0, 16, 2),
+        (0, 0, 8, 6),
+        (8, 0, 16, 6),
     ]
     assert c.items[-1].source_path == "widgets[2].definition.widgets[0]"
+
+
+def test_source_layout_scales_rows_by_three() -> None:
+    """Datadog cells are square; one Datadog row becomes three Perses rows (issue #109)."""
+    top = ts({"q": "avg:postgresql.connections{*}"})
+    top["layout"] = {"x": 0, "y": 0, "width": 12, "height": 1}
+    below = ts({"q": "max:postgresql.connections{*}"})
+    below["layout"] = {"x": 3, "y": 2, "width": 6, "height": 2}
+    c = compile_body({**body(top, below), "layout_type": "ordered"})
+    assert _positions(c) == [(0, 0, 24, 3), (6, 6, 12, 6)]
+
+
+OVERVIEW_GOLDEN = Path("fixtures/expected/postgres-p1/dashboards/postgres-overview.json")
+
+
+def _overlap(a: dict[str, Any], b: dict[str, Any]) -> bool:
+    return bool(
+        a["x"] < b["x"] + b["width"]
+        and b["x"] < a["x"] + a["width"]
+        and a["y"] < b["y"] + b["height"]
+        and b["y"] < a["y"] + a["height"]
+    )
+
+
+def test_overview_golden_charts_are_readable_and_do_not_overlap() -> None:
+    dash = json.loads(OVERVIEW_GOLDEN.read_text())
+    panels = dash["spec"]["panels"]
+    charts = 0
+    for grid in dash["spec"]["layouts"]:
+        items = grid["spec"]["items"]
+        for i, item in enumerate(items):
+            key = item["content"]["$ref"].removeprefix("#/spec/panels/")
+            if panels[key]["spec"]["plugin"]["kind"] != "Markdown":
+                charts += 1
+                assert item["height"] >= 4, key
+            assert not any(_overlap(item, other) for other in items[i + 1 :]), key
+    assert charts == 5
 
 
 def _laid_out(x: int, width: int, layout_type: str) -> dict[str, Any]:
@@ -281,7 +319,7 @@ def test_maps_prefixed_variables_to_list_variable() -> None:
     assert validate_dashboard(c.dashboard) == []
 
 
-def test_variable_not_promoted_when_one_use_lacks_the_label() -> None:
+def test_variable_promoted_when_another_use_has_no_metric_mapping() -> None:
     c = compile_body(
         body(
             ts({"q": "avg:postgresql.connections{$db}"}),
@@ -290,8 +328,38 @@ def test_variable_not_promoted_when_one_use_lacks_the_label() -> None:
         )
     )
     assert c.dashboard is not None
+    [var] = c.dashboard["spec"]["variables"]
+    assert var["spec"]["plugin"]["spec"]["labelName"] == "postgresql_database_name"
+    assert queries_of(c, "widget-0")[0]["query"] == (
+        'avg ({otel_metric_name="postgresql.backends", otel_metric_type="sum", '
+        'postgresql_database_name=~"^($db)$"})'
+    )
+    assert errors_by_widget(c) == {"widgets[1]": ["MISSING_METRIC_MAPPING"]}
+    assert "TEMPLATE_VARIABLE_DROPPED" not in [d.code for d in c.diagnostics]
+
+
+@pytest.mark.parametrize(
+    "other_labels",
+    [
+        pytest.param({"host": "host_name"}, id="lacks-prefix-label"),
+        pytest.param({"db": "db_name"}, id="different-label"),
+    ],
+)
+def test_variable_not_promoted_when_mapped_uses_disagree(other_labels: dict[str, str]) -> None:
+    m = mapping(postgresql__connections=entry(), postgresql__other=entry(labels=other_labels))
+    c = compile_body(
+        body(
+            ts({"q": "avg:postgresql.connections{$db}"}),
+            ts({"q": "avg:postgresql.other{$db}"}),
+            variables=[{"name": "db", "prefix": "db", "default": "*"}],
+        ),
+        m,
+    )
+    assert c.dashboard is not None
     assert c.dashboard["spec"]["variables"] == []
-    assert "TEMPLATE_VARIABLE_DROPPED" in [d.code for d in c.diagnostics]
+    dropped = [d.source_path for d in c.diagnostics if d.code == "TEMPLATE_VARIABLE_DROPPED"]
+    assert dropped == ["widgets[0].definition.requests[0].q", "widgets[1].definition.requests[0].q"]
+    assert "=~" not in queries_of(c, "widget-0")[0]["query"]
 
 
 def test_note_becomes_markdown() -> None:

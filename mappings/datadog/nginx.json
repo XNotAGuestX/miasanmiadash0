@@ -1,10 +1,10 @@
 {
+  "labels": {
+    "host": "host_name"
+  },
   "metrics": {
     "nginx.net.connections": {
       "kind": "gauge",
-      "labels": {
-        "host": "host_name"
-      },
       "matchers": {
         "state": "active"
       },
@@ -20,9 +20,6 @@
     },
     "nginx.net.waiting": {
       "kind": "gauge",
-      "labels": {
-        "host": "host_name"
-      },
       "matchers": {
         "state": "waiting"
       },

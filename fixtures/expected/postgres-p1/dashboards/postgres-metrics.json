@@ -35,7 +35,7 @@
             },
             {
               "content": {
-                "$ref": "#/spec/panels/widget-6"
+                "$ref": "#/spec/panels/widget-2"
               },
               "height": 8,
               "width": 12,
@@ -44,12 +44,30 @@
             },
             {
               "content": {
-                "$ref": "#/spec/panels/widget-8"
+                "$ref": "#/spec/panels/widget-4"
               },
               "height": 8,
               "width": 12,
               "x": 12,
               "y": 8
+            },
+            {
+              "content": {
+                "$ref": "#/spec/panels/widget-6"
+              },
+              "height": 8,
+              "width": 12,
+              "x": 0,
+              "y": 16
+            },
+            {
+              "content": {
+                "$ref": "#/spec/panels/widget-8"
+              },
+              "height": 8,
+              "width": 12,
+              "x": 12,
+              "y": 16
             }
           ]
         }
@@ -135,6 +153,102 @@
                   "spec": {
                     "query": "avg by (postgresql_database_name) (max by (postgresql_database_name, service_instance_id) ({otel_metric_name=\"postgresql.backends\", otel_metric_type=\"sum\"}))",
                     "seriesNameFormat": "{{postgresql_database_name}}"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "widget-2": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "description": "",
+            "name": "Inserts / updates / deletes (per sec)"
+          },
+          "plugin": {
+            "kind": "TimeSeriesChart",
+            "spec": {}
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "avg (max by (service_instance_id, postgresql_database_name) (rate({otel_metric_name=\"postgresql.tup_inserted\", otel_metric_type=\"sum\"}[$__rate_interval])))"
+                  }
+                }
+              }
+            },
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "avg (max by (service_instance_id, postgresql_database_name) (rate({otel_metric_name=\"postgresql.tup_deleted\", otel_metric_type=\"sum\"}[$__rate_interval])))"
+                  }
+                }
+              }
+            },
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "avg (max by (service_instance_id, postgresql_database_name) (rate({otel_metric_name=\"postgresql.tup_updated\", otel_metric_type=\"sum\"}[$__rate_interval])))"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "widget-4": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "description": "",
+            "name": "System load"
+          },
+          "plugin": {
+            "kind": "TimeSeriesChart",
+            "spec": {}
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "avg ({otel_metric_name=\"system.cpu.load_average.1m\", otel_metric_type=\"gauge\"})"
+                  }
+                }
+              }
+            },
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "avg ({otel_metric_name=\"system.cpu.load_average.5m\", otel_metric_type=\"gauge\"})"
+                  }
+                }
+              }
+            },
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "avg ({otel_metric_name=\"system.cpu.load_average.15m\", otel_metric_type=\"gauge\"})"
                   }
                 }
               }
