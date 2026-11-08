@@ -235,6 +235,37 @@ def test_source_semantic_mode_is_preserved_and_override_is_explicit(tmp_path):
         queries.with_semantic_mode(bound, "guess")
 
 
+def test_dash0_is_evaluated_at_bucket_end_and_keyed_by_bucket_start():
+    from migrator.destination.dash0 import Dash0Config
+    from migrator.http import HttpResponse
+
+    seen: list[str] = []
+
+    def send(req: Any) -> Any:
+        seen.append(req.url)
+        values = [[120, "1"], [180, "2"]]
+        result = [{"metric": {}, "values": values}]
+        body = {"status": "success", "data": {"resultType": "matrix", "result": result}}
+        return HttpResponse(200, json.dumps(body).encode())
+
+    bound = queries.BoundQuery([], "a", "up")
+    dash0 = Dash0Config(api_url="https://dash0.example", token="t", dataset="d")
+    out = queries.query_target(bound, 60, 180, 60, dash0, send)
+    assert "start=120&end=180&step=60" in seen[0]
+    assert out[0].samples == {60: 1.0, 120: 2.0}
+
+
+def test_monitor_thresholds_are_checked_against_the_source_monitor(tmp_path):
+    suite = cfg.load(SUITE, cfg.Suite)
+    runner.compile_suite(suite, SUITE, tmp_path / "compiled")
+    monitor = next(c for c in suite.cases if c.kind == "monitor")
+    _, source, target = runner.artifact(tmp_path / "compiled", monitor)
+    assert queries.pair(monitor, source, target, "5m", "demo-live-test").thresholds
+    swapped = {**target, "thresholds": {"failed": 80.0, "degraded": 100.0}}
+    with pytest.raises(cp.DataError, match="thresholds differ"):
+        queries.pair(monitor, source, swapped, "5m", "demo-live-test")
+
+
 def test_readback_allows_only_known_normalizations(tmp_path):
     suite = cfg.load(SUITE, cfg.Suite)
     runner.compile_suite(suite, SUITE, tmp_path / "compiled")

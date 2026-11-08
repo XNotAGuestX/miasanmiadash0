@@ -156,6 +156,15 @@ def pair(case: Case, source: Any, target: Any, rate_interval: str, run_id: str) 
         expr = prom.parse(target["expression"].replace("$__threshold", "0"))
         if not isinstance(expr, prom.BinaryExpr) or str(expr.op) != monitor.comparator:
             raise DataError("monitor comparator differs from generated check")
+        # Verify the converted thresholds against the source monitor itself; the
+        # decisions below then apply these (equal) thresholds to both vendors.
+        levels = {"critical": "failed", "warning": "degraded"}
+        raw = body.get("options", {}).get("thresholds", {})
+        if not set(raw) <= set(levels):
+            raise DataError("unsupported source monitor threshold")
+        expected = {levels[k]: float(v) for k, v in raw.items() if v is not None}
+        if expected != {k: float(v) for k, v in target["thresholds"].items()}:
+            raise DataError("generated check thresholds differ from source monitor")
         seconds = monitor.window.amount * {"m": 60, "h": 3600, "d": 86400}[monitor.window.unit]
         return BoundQuery(
             [
@@ -260,10 +269,15 @@ def validate_ingestion_key(api_key: str, cfg: QueryConfig, send: HttpSend) -> No
 def query_target(
     bound: BoundQuery, start: int, end: int, step: int, cfg: Dash0Config, send: HttpSend
 ) -> list[Series]:
-    params = urlencode({"query": bound.target, "start": start, "end": end - step, "step": step})
+    # Datadog labels the bucket [t, t+step) with t; PromQL evaluated at t looks back
+    # from t. Evaluate Dash0 at t+step and key it by t so both describe [t, t+step).
+    params = urlencode({"query": bound.target, "start": start + step, "end": end, "step": step})
     req = HttpRequest(
         "GET",
         cfg.api_url + "/api/prometheus/api/v1/query_range?" + params,
         {"Authorization": f"Bearer {cfg.token}", "Dash0-Dataset": cfg.dataset},
     )
-    return dash0_series(request_json(req, send))
+    return [
+        Series(s.labels, {t - step: v for t, v in s.samples.items()})
+        for s in dash0_series(request_json(req, send))
+    ]

@@ -150,6 +150,9 @@ correspondence is inferred. Extra series, missing groups and ambiguous keys fail
 every requested timestamp; no interpolation, nearest-point matching or dropped nulls.
 Comparisons use the half-open historical interval `[start, end)`, on an aligned UTC grid.
 Datadog is asked for the same interval as Dash0; a backend changing that grid fails coverage.
+Datadog labels each bucket `[t, t+step)` with its start `t`, while PromQL evaluated at `t`
+looks back from `t`; Dash0 is therefore evaluated at `t+step` and keyed by `t`, so both sides
+describe the same bucket.
 Default comparison uses each series' arithmetic mean on this common grid:
 
 ```text
@@ -164,8 +167,9 @@ Ranges are recorded for inspection; they do not substitute for the chosen compar
 For a metric monitor, set `kind: monitor` and omit `request`/`panel`. The harness uses the
 existing monitor parser, computes its source lookback reducer on the same step grid, and
 queries the numeric left-hand side of the read-back check. Lookbacks must fit warm-up and
-align to the query step. Threshold decisions must agree at **every** timestamp independently
-of numeric tolerances. Checks remain disabled; actual evaluation scheduling, no-data policy,
+align to the query step. The generated check's thresholds must equal the source monitor's
+(`critical` → `failed`, `warning` → `degraded`), otherwise the case is blocked. Threshold
+decisions must agree at **every** timestamp independently of numeric tolerances. Checks remain disabled; actual evaluation scheduling, no-data policy,
 and notifications are not verified by these numeric tests.
 
 ## Evidence, resumption and cleanup
