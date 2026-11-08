@@ -19,9 +19,12 @@ from migrator.source.datadog.compile_query import (
     QueryContext,
     compile_metric_query,
 )
+from migrator.source.datadog.formula import RenderedQuery, RenderOk, render_formula
 from migrator.source.datadog.mapping import DatadogMapping
 from migrator.source.datadog.model import (
     Comparator,
+    MetricQuery,
+    MonitorExpression,
     MonitorParseOk,
     MonitorParseResult,
     MonitorQuery,
@@ -30,6 +33,10 @@ from migrator.source.datadog.model import (
     ParseOk,
     TimeAggregator,
     WindowUnit,
+)
+from migrator.source.datadog.monitor_expression import (
+    ExpressionOk,
+    parse_monitor_expression,
 )
 from migrator.source.datadog.parse_query import function_block, parse_metric_query
 from migrator.source.datadog.remarks import approved
@@ -53,11 +60,7 @@ _SUFFIX = re.compile(r" (>=|<=|>|<) (-?\d+(?:\.\d+)?)$")
 _BRACES = re.compile(r"\{[^}]*(?:\}|$)")
 _ARITHMETIC = re.compile(r"^\s*[\d(-]|[*/+]| - ")
 METRIC_MONITOR_DOC = "https://docs.datadoghq.com/monitors/types/metric/"
-ARITHMETIC = (
-    "Monitor query arithmetic is not supported: Datadog does not document whether the "
-    "monitor's time aggregation applies to each query or to the arithmetic result "
-    f"({METRIC_MONITOR_DOC})."
-)
+COUNT_EVALUATION_DOC = "https://docs.datadoghq.com/monitors/guide/as-count-in-monitor-evaluations/"
 
 
 def _utf16_len(text: str) -> int:
@@ -83,15 +86,22 @@ def parse_monitor_query(text: str) -> MonitorParseResult:
 
     inner_text = text[prefix.end() : suffix.start()]
     inner = parse_metric_query(inner_text)
+    query: MetricQuery | MonitorExpression
     if not isinstance(inner, ParseOk):
         shift = _utf16_len(text[: prefix.end()])
-        if _ARITHMETIC.search(_BRACES.sub("{}", inner_text)):
-            return ParseError(code="UNSUPPORTED_QUERY_SYNTAX", offset=shift, message=ARITHMETIC)
-        documented = function_block(inner_text)
-        if documented is not None:
-            return ParseError(code=inner.code, offset=shift, message=documented[0])
-        # Function errors carry offset 0 (the whole query); syntax errors point at a char.
-        return ParseError(code=inner.code, offset=inner.offset + shift, message=inner.message)
+        arithmetic = parse_monitor_expression(inner_text)
+        if isinstance(arithmetic, ExpressionOk):
+            query = arithmetic.expression
+        else:
+            if _ARITHMETIC.search(_BRACES.sub("{}", inner_text)):
+                return ParseError(arithmetic.code, arithmetic.offset + shift, arithmetic.message)
+            documented = function_block(inner_text)
+            if documented is not None:
+                return ParseError(code=inner.code, offset=shift, message=documented[0])
+            # Function errors point at the whole query; syntax offsets identify a character.
+            return ParseError(code=inner.code, offset=inner.offset + shift, message=inner.message)
+    else:
+        query = inner.query
 
     return MonitorParseOk(
         monitor=MonitorQuery(
@@ -99,7 +109,7 @@ def parse_monitor_query(text: str) -> MonitorParseResult:
             window=MonitorWindow(
                 amount=int(prefix.group(2)), unit=cast(WindowUnit, prefix.group(3))
             ),
-            query=inner.query,
+            query=query,
             comparator=cast(Comparator, suffix.group(1)),
             threshold=float(suffix.group(2)),
         )
@@ -119,6 +129,7 @@ class MonitorThresholds:
 class OptionsOk:
     thresholds: MonitorThresholds
     diagnostics: list[Diagnostic] = field(default_factory=list)
+    evaluation_delay: int = 0
     ok: Literal[True] = True
 
 
@@ -207,6 +218,7 @@ def evaluate_monitor_options(options: Mapping[str, Any], *, source_id: str) -> O
 
     critical: float | None = None
     warning: float | None = None
+    evaluation_delay = 0
 
     for key in sorted(options):
         value = options[key]
@@ -249,6 +261,14 @@ def evaluate_monitor_options(options: Mapping[str, Any], *, source_id: str) -> O
                 )
             else:
                 block(path, "include_tags must be true or false.")
+        elif key == "evaluation_delay":
+            # Datadog moves the complete lookback into the past, e.g. at 07:00 a
+            # five-minute window with 300 s delay evaluates 06:50-06:55:
+            # https://docs.datadoghq.com/monitors/configuration/#evaluation-delay
+            if isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= 86400:
+                evaluation_delay = value
+            elif value is not None:
+                block(path, "evaluation_delay must be null or an integer from 0 to 86400 seconds.")
         elif key in _STRICT_DEFAULTS:
             accepts, expected = _STRICT_DEFAULTS[key]
             if not accepts(value):
@@ -262,7 +282,11 @@ def evaluate_monitor_options(options: Mapping[str, Any], *, source_id: str) -> O
     diags.sort(key=lambda d: d.source_path)
     if critical is None or any(d.severity == "error" for d in diags):
         return OptionsBlocked(diagnostics=diags)
-    return OptionsOk(thresholds=MonitorThresholds(critical, warning), diagnostics=diags)
+    return OptionsOk(
+        thresholds=MonitorThresholds(critical, warning),
+        diagnostics=diags,
+        evaluation_delay=evaluation_delay,
+    )
 
 
 # --- compile_monitor and both renderers (plan 06 Task 4) ------------------------
@@ -464,14 +488,47 @@ def compile_monitor(asset: SourceAsset, slug: str, mapping: DatadogMapping) -> M
         )
         return blocked()
 
-    # 7. Inner metric query.
-    compiled = compile_metric_query(
-        monitor.query, mapping, QueryContext(sid, "query", query_text, [])
+    # 7. Classic metric arithmetic happens at each timestamp, before the lookback
+    # reducer. Datadog's as_count path has the opposite order: never let a future
+    # dashboard function implementation accidentally enter that path here.
+    queries = (
+        monitor.query.queries if isinstance(monitor.query, MonitorExpression) else (monitor.query,)
     )
-    diags.extend(compiled.diagnostics)
-    if not isinstance(compiled, CompiledOk) or any(d.severity == "error" for d in diags):
+    if any(fn.name == "as_count" for query in queries for fn in query.functions):
+        add(
+            "UNSUPPORTED_QUERY_FUNCTION",
+            "error",
+            "query",
+            "Monitor '.as_count()' requires time aggregation before arithmetic and a "
+            f"count bucket model that is not supported ({COUNT_EVALUATION_DOC}).",
+            "Use a reviewed rate-based monitor or migrate this count monitor manually.",
+            query_text,
+        )
         return blocked()
-    promql = compiled.promql.replace(f"[{RATE_INTERVAL}]", f"[{MONITOR_RATE_RANGE}]")
+    compiled_queries: dict[str, RenderedQuery] = {}
+    for index, query in enumerate(queries):
+        compiled = compile_metric_query(query, mapping, QueryContext(sid, "query", query_text, []))
+        diags.extend(compiled.diagnostics)
+        if isinstance(compiled, CompiledOk):
+            compiled_queries[f"q{index}"] = RenderedQuery(compiled.promql, compiled.group_labels)
+    if any(d.severity == "error" for d in diags):
+        return blocked()
+    if isinstance(monitor.query, MonitorExpression):
+        rendered = render_formula(monitor.query.formula, compiled_queries)
+        if not isinstance(rendered, RenderOk):
+            add(
+                "UNSUPPORTED_FORMULA",
+                "error",
+                "query",
+                f"Monitor arithmetic cannot be rendered: {rendered.reason}.",
+                "Use the same explicitly mapped group-by labels on every metric query.",
+                query_text,
+            )
+            return blocked()
+        promql = rendered.promql
+    else:
+        promql = compiled_queries["q0"].promql
+    promql = promql.replace(f"[{RATE_INTERVAL}]", f"[{MONITOR_RATE_RANGE}]")
     leftover = sorted(set(_DASHBOARD_VARIABLE.findall(promql)))
     if leftover:
         add(
@@ -534,7 +591,8 @@ def compile_monitor(asset: SourceAsset, slug: str, mapping: DatadogMapping) -> M
 
     window = f"{monitor.window.amount}{monitor.window.unit}"
     over_time = _TIME_FUNCTIONS[monitor.time_aggregator]
-    condition = f"{over_time}(({promql})[{window}:{CHECK_INTERVAL}])"
+    delay = f" offset {options_result.evaluation_delay}s" if options_result.evaluation_delay else ""
+    condition = f"{over_time}(({promql})[{window}:{CHECK_INTERVAL}]{delay})"
     annotations = {"summary": summary, "description": description}
 
     levels: list[tuple[str, float]] = []

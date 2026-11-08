@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from migrator.source.datadog.formula import Formula
 
 SpaceAggregator = Literal["avg", "sum", "min", "max"]
 SPACE_AGGREGATORS: tuple[SpaceAggregator, ...] = ("avg", "sum", "min", "max")
@@ -73,10 +76,18 @@ class MonitorWindow:
 
 
 @dataclass(frozen=True)
+class MonitorExpression:
+    """Classic monitor arithmetic over completely parsed metric-query leaves."""
+
+    queries: tuple[MetricQuery, ...]
+    formula: Formula
+
+
+@dataclass(frozen=True)
 class MonitorQuery:
     time_aggregator: TimeAggregator
     window: MonitorWindow
-    query: MetricQuery
+    query: MetricQuery | MonitorExpression
     comparator: Comparator
     threshold: float
 

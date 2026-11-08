@@ -117,3 +117,20 @@ def test_defaults_pass_silently() -> None:
     }
     r = evaluate_monitor_options(opts, source_id="m")
     assert r == OptionsOk(thresholds=MonitorThresholds(critical=5.0), diagnostics=[])
+
+
+@pytest.mark.parametrize("delay", [None, 0, 60, 86400])
+def test_evaluation_delay_is_explicit_and_exact(delay: int | None) -> None:
+    result = evaluate_monitor_options(
+        {"thresholds": {"critical": 5}, "evaluation_delay": delay}, source_id="m"
+    )
+    assert isinstance(result, OptionsOk)
+    assert result.evaluation_delay == (delay or 0)
+    assert result.diagnostics == []
+
+
+@pytest.mark.parametrize("delay", [-1, 86401, 60.5, True, "60", float("inf")])
+def test_invalid_evaluation_delay_blocks(delay: object) -> None:
+    assert blocked_paths({"thresholds": {"critical": 5}, "evaluation_delay": delay}) == [
+        "options.evaluation_delay"
+    ]

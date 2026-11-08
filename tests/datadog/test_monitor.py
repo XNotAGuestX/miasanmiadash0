@@ -260,3 +260,96 @@ def test_empty_window_is_an_unsupported_option() -> None:
     r = run(body)
     assert r.rule is None
     assert codes(r) == ["UNSUPPORTED_MONITOR_OPTION"]
+
+
+@pytest.mark.parametrize(
+    ("reducer", "target_function"),
+    [
+        ("avg", "avg_over_time"),
+        ("sum", "sum_over_time"),
+        ("min", "min_over_time"),
+        ("max", "max_over_time"),
+    ],
+)
+def test_classic_arithmetic_is_reduced_after_division(reducer: str, target_function: str) -> None:
+    body = golden_body()
+    body["query"] = (
+        f"{reducer}(last_5m):100 * avg:postgresql.connections{{*}} by {{db}} / "
+        "avg:postgresql.connections{*} by {db} > 90"
+    )
+    body["options"] = {"thresholds": {"critical": 90, "warning": 80}}
+    result = run(body)
+    assert result.rule is not None, result.diagnostics
+    assert result.item.outcome == "translated"
+    expression = result.rule.check_rule["expression"]
+    assert expression.startswith(f"{target_function}((100 * (")
+    assert expression.endswith("[5m:1m]) > $__threshold")
+    # Exactly one time reducer surrounds the entire ratio. Reducing each metric
+    # first instead would compute the different Datadog as_count evaluation path.
+    assert expression.count("_over_time(") == 1
+    assert expression.count(" / ") == 1
+    assert result.rule.check_rule["enabled"] is False
+    for rule in result.rule.prometheus_rule_group["groups"][0]["rules"]:
+        condition, _, threshold = rule["expr"].rpartition(" > ")
+        assert condition == expression.removesuffix(" > $__threshold")
+        assert threshold in ("80", "90")
+        promql_parser.parse(rule["expr"])
+
+
+def test_arithmetic_requires_compatible_grouping() -> None:
+    body = golden_body()
+    body["query"] = (
+        "avg(last_5m):avg:postgresql.connections{*} by {db} / avg:postgresql.connections{*} > 0.9"
+    )
+    result = run(body)
+    assert result.rule is None
+    assert codes(result) == ["UNSUPPORTED_FORMULA"]
+    assert "grouping mismatch" in next(
+        d.message for d in result.diagnostics if d.severity == "error"
+    )
+
+
+def test_arithmetic_blocks_whole_monitor_when_one_leaf_has_no_mapping() -> None:
+    body = golden_body()
+    body["query"] = "avg(last_5m):avg:postgresql.connections{*} / avg:unknown.metric{*} > 0.9"
+    result = run(body)
+    assert (result.rule, result.item.outcome) == (None, "blocked")
+    assert codes(result) == ["MISSING_METRIC_MAPPING"]
+
+
+@pytest.mark.parametrize(
+    "inner",
+    [
+        "sum:postgresql.rows_fetched{*}.as_count()",
+        "sum:postgresql.rows_fetched{*}.as_count() / sum:postgresql.rows_returned{*}.as_count()",
+    ],
+)
+def test_as_count_never_uses_the_classic_monitor_path(inner: str) -> None:
+    body = golden_body()
+    body["query"] = f"sum(last_5m):{inner} > 0.9"
+    result = run(body)
+    assert result.rule is None
+    assert codes(result) == ["UNSUPPORTED_QUERY_FUNCTION"]
+    error = next(d.message for d in result.diagnostics if d.severity == "error")
+    assert "time aggregation before arithmetic" in error
+    assert "as-count-in-monitor-evaluations" in error
+
+
+def test_delay_offsets_the_complete_monitor_lookback() -> None:
+    body = golden_body()
+    body["options"]["evaluation_delay"] = 300
+    result = run(body)
+    assert result.rule is not None
+    assert (
+        result.rule.check_rule["expression"]
+        == f"avg_over_time(({C})[15m:1m] offset 300s) > $__threshold"
+    )
+    expression = result.rule.check_rule["expression"].replace("$__threshold", "0.9")
+    promql_parser.parse(expression)
+    assert result.item.outcome == "approximated"  # Existing FULLWINDOW/NEWHOST only.
+
+
+def test_arithmetic_conversion_is_repeatable() -> None:
+    body = golden_body()
+    body["query"] = "avg(last_5m):(avg:postgresql.connections{*} + 1) / 2 > 0.9"
+    assert run(body) == run(copy.deepcopy(body))
