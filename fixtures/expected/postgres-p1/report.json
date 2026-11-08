@@ -2988,10 +2988,12 @@
       "title": ""
     }
   ],
-  "mapping": {
-    "sha256": "df05db108b199f982914cfdb7b419c7253451182fddb35bfdce4799ff8bce75d",
-    "sourceId": "postgres.json"
-  },
+  "mapping": [
+    {
+      "sha256": "df05db108b199f982914cfdb7b419c7253451182fddb35bfdce4799ff8bce75d",
+      "sourceId": "postgres.json"
+    }
+  ],
   "provider": "datadog",
   "reportVersion": 1,
   "summary": {

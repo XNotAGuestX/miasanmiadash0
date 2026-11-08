@@ -75,7 +75,7 @@ def run_dir(tmp_path: Path) -> Path:
         ConvertOptions(
             source="datadog",
             inputs=["fixtures/datadog/integrations-core/postgres"],
-            mapping="mappings/datadog/postgres.json",
+            mapping=["mappings/datadog"],
             out=str(out),
         )
     )

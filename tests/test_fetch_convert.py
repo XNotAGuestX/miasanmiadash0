@@ -75,7 +75,7 @@ def test_fetched_folder_converts(tmp_path: Path) -> None:
         ConvertOptions(
             source="datadog",
             inputs=[str(fetched)],
-            mapping="fixtures/mappings/postgres.json",  # the frozen copy, as the issue asks
+            mapping=["fixtures/mappings/postgres.json"],  # the frozen copy, as the issue asks
             out=str(out),
         )
     )

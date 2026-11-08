@@ -1,11 +1,13 @@
-"""Datadog mapping file contract (handoff plans 03, 05 and 06).
+"""Datadog mapping file contract (handoff plans 03, 05 and 06; several files: issue #123).
 
-Every metric and label pair the compiler uses comes from this file. Only a human may
-set ``reviewed``; coding assistants leave it ``null``.
+Every metric and label pair the compiler uses comes from the mapping files. Only a human may
+set ``reviewed``; coding assistants leave it ``null``. A file may set top-level ``labels``:
+an entry without its own ``labels`` inherits them; an entry's own ``labels`` replace them whole.
 """
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Annotated, Any, Literal
 
@@ -112,6 +114,8 @@ _KINDS: dict[str, type[GaugeMapping] | type[RateMapping] | type[ExpressionMappin
 class _Envelope(_Strict):
     version: Literal[1]
     source: Literal["datadog"]
+    # File-level default for entries without their own `labels`.
+    labels: dict[str, Label] | None = None
     metrics: dict[str, dict[str, Any]]
 
 
@@ -157,6 +161,8 @@ def parse_mapping(raw: Any) -> MappingOk | MappingInvalid:
             known = ", ".join(sorted(_KINDS))
             errors.append(f"metrics.{name}.kind: unknown kind {kind!r}; known: {known}")
             continue
+        if "labels" not in entry and envelope.labels is not None:
+            entry = {**entry, "labels": envelope.labels}
         try:
             metrics[name] = model.model_validate(entry)
         except ValidationError as err:
@@ -165,4 +171,32 @@ def parse_mapping(raw: Any) -> MappingOk | MappingInvalid:
         return MappingInvalid(errors=errors)
     return MappingOk(
         mapping=DatadogMapping(version=envelope.version, source=envelope.source, metrics=metrics)
+    )
+
+
+def parse_mappings(files: Sequence[tuple[str, Any]]) -> MappingOk | MappingInvalid:
+    """Parse several mapping files, given as (file name, raw JSON), into one table.
+
+    A metric defined in two files is an error naming both files. Errors are prefixed
+    with the file name."""
+    if not files:
+        return MappingInvalid(errors=["no mapping files"])
+    errors: list[str] = []
+    owner: dict[str, str] = {}
+    metrics: dict[str, MetricMapping] = {}
+    for source_id, raw in files:
+        parsed = parse_mapping(raw)
+        if not parsed.ok:
+            errors.extend(f"{source_id}: {e}" for e in parsed.errors)
+            continue
+        for name, entry in parsed.mapping.metrics.items():
+            if name in owner:
+                errors.append(f"metrics.{name}: defined in both {owner[name]} and {source_id}")
+                continue
+            owner[name] = source_id
+            metrics[name] = entry
+    if errors:
+        return MappingInvalid(errors=errors)
+    return MappingOk(
+        mapping=DatadogMapping(version=1, source="datadog", metrics=dict(sorted(metrics.items())))
     )
