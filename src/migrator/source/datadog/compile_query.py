@@ -20,6 +20,7 @@ https://docs.datadoghq.com/dashboards/querying/#aggregation-method).
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -233,6 +234,25 @@ def _approve_function(
     return None
 
 
+_REGEX_META = re.compile(r"[.^$|?*+()\[\]{}\\]")
+
+
+def tag_matcher(label: str, flt: TagFilter) -> Matcher:
+    """Exact matcher for a tag filter (#178). One literal value is `=`/`!=`. Globs and OR'd
+    values become one anchored alternation, `=~`/`!~`: Datadog's `*` matches any characters
+    in a tag value (https://docs.datadoghq.com/metrics/advanced-filtering/#wildcard-filtered-queries),
+    regex metacharacters are escaped, and the anchors make Dash0's unanchored `=~` match whole
+    values (see the template-variable comment below). Like Datadog, a negated matcher keeps
+    series that lack the label."""
+    values = flt.values
+    if len(values) == 1 and "*" not in values[0]:
+        return Matcher(label, values[0], "!=" if flt.negated else "=")
+    alternation = "|".join(
+        ".*".join(_REGEX_META.sub(r"\\\g<0>", part) for part in v.split("*")) for v in values
+    )
+    return Matcher(label, f"^({alternation})$", "!~" if flt.negated else "=~")
+
+
 def compile_metric_query(
     q: MetricQuery, mapping: DatadogMapping, ctx: QueryContext
 ) -> CompiledQuery:
@@ -305,7 +325,7 @@ def compile_metric_query(
                     f"No label mapping for tag '{flt.key}' on metric '{q.metric}'.",
                     f"Add a reviewed label mapping for '{flt.key}' to the '{q.metric}' entry.",
                 )
-            matchers.append(Matcher(label, flt.value))
+            matchers.append(tag_matcher(label, flt))
             continue
         var = next((v for v in ctx.variables if v.name == flt.name), None)
         if var is None:

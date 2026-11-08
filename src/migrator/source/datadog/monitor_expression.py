@@ -156,12 +156,21 @@ def parse_monitor_expression(text: str) -> ExpressionOk | ParseError:
     return ExpressionOk(MonitorExpression(tuple(parser.queries), formula))
 
 
+def _filter_text(filt: TagFilter) -> str:
+    # The parser only produces OR'd values for positive filters; NOT (a OR b) is split into
+    # one negated filter per value.
+    if filt.negated:
+        return f"!{filt.key}:{filt.value}"
+    text = " OR ".join(f"{filt.key}:{v}" for v in filt.values)
+    return f"({text})" if filt.alternatives else text
+
+
 def metric_query_text(query: MetricQuery) -> str:
     """Serialize this bounded query without changing its semantics or inventing labels."""
     prefix = f"{query.aggregator}:" if query.aggregator is not None else ""
     filters = (
         ",".join(
-            f"{filt.key}:{filt.value}" if isinstance(filt, TagFilter) else f"${filt.name}"
+            _filter_text(filt) if isinstance(filt, TagFilter) else f"${filt.name}"
             for filt in query.filters
         )
         or "*"

@@ -6,10 +6,21 @@ Grammar (fixed; widening it needs a test first):
     aggregator  := "avg" | "sum" | "min" | "max"
     metric      := ident ("." segment)*     -- segment := [A-Za-z0-9_]+ (system.load.1)
     ident       := [A-Za-z_][A-Za-z0-9_]*
-    filterList  := "*" | filter ("," " "? filter)*
-    filter      := "$" ident | tagKey ":" tagValue
+    filterList  := orExpr                 -- spaces allowed around tokens
+    orExpr      := andExpr (" OR " andExpr)*
+    andExpr     := unary (("," | " AND ") unary)*
+    unary       := "NOT " unary | "!" tagFilter | "(" orExpr ")" | "*" | filter
+    filter      := "$" varName | tagFilter
+    tagFilter   := tagKey ":" tagValue
+    varName     := ident ([.-] [A-Za-z0-9_]+)*
     tagKey      := [A-Za-z][A-Za-z0-9_./-]*
-    tagValue    := [A-Za-z0-9_./:@-]+
+    tagValue    := [A-Za-z0-9_./:@*-]+     -- `*` is a glob
+
+The filter expression must reduce to a conjunction (#178): `,` and `AND` join, `!`/`NOT`
+negate a tag filter, `*` matches everything, and `OR` is only accepted between positive
+filters of one tag key (one anchored alternation). Datadog evaluates `NOT` before `AND`
+before `OR` (https://docs.datadoghq.com/metrics/advanced-filtering/#boolean-filtered-queries).
+Cross-key `OR`, negated variables and negated conjunctions block with a message.
     tagList     := tagKey ("," " "? tagKey)*
     function    := "." ident "(" [arg ("," " "? arg)*] ")"
     arg         := [A-Za-z0-9_.'-]+
@@ -22,6 +33,8 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable
+from dataclasses import replace
+from typing import Any
 
 from migrator.source.datadog.model import (
     SPACE_AGGREGATORS,
@@ -57,7 +70,7 @@ def _is_tag_key_char(ch: str) -> bool:
 
 
 def _is_tag_value_char(ch: str) -> bool:
-    return _is_ident_char(ch) or ch in "./:@-"
+    return _is_ident_char(ch) or ch in "./:@*-"
 
 
 def _is_arg_char(ch: str) -> bool:
@@ -65,8 +78,9 @@ def _is_arg_char(ch: str) -> bool:
 
 
 class _Fail(Exception):
-    def __init__(self, pos: int) -> None:
+    def __init__(self, pos: int, message: str | None = None) -> None:
         self.pos = pos
+        self.message = message
 
 
 class _Scanner:
@@ -98,6 +112,22 @@ class _Scanner:
     def ident(self) -> str:
         return self.take_while(_is_ident_start, _is_ident_char)
 
+    def spaces(self) -> None:
+        while self.peek() == " ":
+            self.pos += 1
+
+    def keyword(self, word: str) -> bool:
+        """Consume ` word ` (a boolean keyword surrounded by spaces) if it is next."""
+        start = self.pos
+        self.spaces()
+        if self.text.startswith(word + " ", self.pos) or self.text.startswith(word + "(", self.pos):
+            if self.pos > start or word == "NOT":
+                self.pos += len(word)
+                self.spaces()
+                return True
+        self.pos = start
+        return False
+
     def separator(self) -> bool:
         """Consume ',' plus one optional space; return whether a comma was present."""
         if self.peek() != ",":
@@ -112,9 +142,11 @@ def _utf16_offset(text: str, index: int) -> int:
     return len(text[:index].encode("utf-16-le")) // 2
 
 
-def _syntax_error(text: str, index: int) -> ParseError:
+def _syntax_error(text: str, index: int, detail: str | None = None) -> ParseError:
     offset = _utf16_offset(text, index)
-    if index >= len(text):
+    if detail is not None:
+        message = f"{detail} (offset {offset})."
+    elif index >= len(text):
         message = f"Unexpected end of query at offset {offset}."
     else:
         message = f"Unexpected '{text[index]}' at offset {offset}."
@@ -126,14 +158,102 @@ def _function_error(name: str) -> ParseError:
     return ParseError(code=code, offset=0, message=f"Function '{name}' is not supported.")
 
 
-def _parse_filter(s: _Scanner) -> Filter:
-    if s.peek() == "$":
-        s.pos += 1
-        return VariableFilter(name=s.ident())
+def _parse_tag(s: _Scanner) -> TagFilter:
     key = s.take_while(_is_alpha, _is_tag_key_char)
     s.expect(":")
     value = s.take_while(_is_tag_value_char, _is_tag_value_char)
     return TagFilter(key=key, value=value)
+
+
+def _parse_filter(s: _Scanner) -> Filter:
+    if s.peek() == "$":
+        s.pos += 1
+        name = s.ident()
+        while s.peek() in (".", "-") and _is_ident_char(s.text[s.pos + 1 : s.pos + 2] or " "):
+            sep = s.peek()
+            s.pos += 1
+            name += sep + s.take_while(_is_ident_char, _is_ident_char)
+        return VariableFilter(name=name)
+    return _parse_tag(s)
+
+
+# Filter expression tree: ("lit", Filter), ("all",), ("and", [...]), ("or", [...]), ("not", n).
+_Node = tuple[Any, ...]
+
+
+def _unary(s: _Scanner) -> _Node:
+    s.spaces()
+    start = s.pos
+    if s.keyword("NOT"):
+        return ("not", _unary(s), start)
+    if s.peek() == "!":
+        s.pos += 1
+        return ("not", ("lit", _parse_tag(s), start), start)
+    if s.peek() == "(":
+        s.pos += 1
+        node = _or_expr(s)
+        s.spaces()
+        s.expect(")")
+        return node
+    if s.peek() == "*" and s.text[s.pos + 1 : s.pos + 2] in ("", ",", "}", " "):
+        s.pos += 1
+        return ("all", start)
+    return ("lit", _parse_filter(s), start)
+
+
+def _and_expr(s: _Scanner) -> _Node:
+    items = [_unary(s)]
+    while True:
+        before = s.pos
+        s.spaces()
+        if s.peek() == ",":
+            s.pos += 1
+        else:
+            s.pos = before
+            if not s.keyword("AND"):
+                break
+        items.append(_unary(s))
+    return items[0] if len(items) == 1 else ("and", items)
+
+
+def _or_expr(s: _Scanner) -> _Node:
+    items = [_and_expr(s)]
+    while s.keyword("OR"):
+        items.append(_and_expr(s))
+    return items[0] if len(items) == 1 else ("or", items, s.pos)
+
+
+def _conjunction(node: _Node, negate: bool = False) -> list[Filter]:
+    """The filters whose AND equals `node` (negated when `negate`), or _Fail."""
+    kind = node[0]
+    if kind == "all":
+        if negate:
+            raise _Fail(node[1], "Negated '*' matches nothing")
+        return []
+    if kind == "lit":
+        flt = node[1]
+        if isinstance(flt, VariableFilter):
+            if negate:
+                raise _Fail(node[2], "Negated template variables are not supported")
+            return [flt]
+        return [replace(flt, negated=flt.negated != negate)]
+    if kind == "not":
+        return _conjunction(node[1], not negate)
+    if kind == "and":
+        if negate:  # NOT (a AND b) is an OR of negations
+            if len(node[1]) == 1:
+                return _conjunction(node[1][0], True)
+            raise _Fail(node[1][0][-1], "A negated AND group is not supported")
+        return [f for child in node[1] for f in _conjunction(child)]
+    # "or"
+    if negate:  # NOT (a OR b) == NOT a AND NOT b
+        return [f for child in node[1] for f in _conjunction(child, True)]
+    parts = [_conjunction(child) for child in node[1]]
+    tags = [p[0] for p in parts if len(p) == 1 and isinstance(p[0], TagFilter)]
+    if len(tags) != len(parts) or any(t.negated for t in tags) or len({t.key for t in tags}) != 1:
+        raise _Fail(node[2], "OR is only supported between positive filters of one tag key")
+    values = [v for t in tags for v in t.values]
+    return [TagFilter(key=tags[0].key, value=values[0], alternatives=tuple(values[1:]))]
 
 
 def _parse(s: _Scanner) -> MetricQuery:
@@ -153,13 +273,8 @@ def _parse(s: _Scanner) -> MetricQuery:
     metric = ".".join(segments)
 
     s.expect("{")
-    filters: list[Filter] = []
-    if s.peek() == "*":
-        s.pos += 1
-    else:
-        filters.append(_parse_filter(s))
-        while s.separator():
-            filters.append(_parse_filter(s))
+    filters = _conjunction(_or_expr(s))
+    s.spaces()
     s.expect("}")
 
     group_by: list[str] = []
@@ -202,7 +317,7 @@ def parse_metric_query(text: str) -> ParseResult:
     try:
         return ParseOk(query=_parse(scanner))
     except _Fail as fail:
-        return _syntax_error(text, fail.pos)
+        return _syntax_error(text, fail.pos, fail.message)
 
 
 # Datadog `top()` stays blocked (#117). https://docs.datadoghq.com/dashboards/functions/rank/#top:
