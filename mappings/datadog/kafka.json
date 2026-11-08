@@ -1,4 +1,7 @@
 {
+  "labels": {
+    "instance": "service_instance_id"
+  },
   "metrics": {
     "kafka.consumer_lag": {
       "kind": "gauge",
@@ -19,9 +22,6 @@
     },
     "kafka.net.bytes_in.rate": {
       "kind": "rate",
-      "labels": {
-        "instance": "service_instance_id"
-      },
       "matchers": {
         "direction": "in"
       },
@@ -38,9 +38,6 @@
     },
     "kafka.net.bytes_out.rate": {
       "kind": "rate",
-      "labels": {
-        "instance": "service_instance_id"
-      },
       "matchers": {
         "direction": "out"
       },
@@ -57,9 +54,6 @@
     },
     "kafka.replication.isr_expands.rate": {
       "kind": "rate",
-      "labels": {
-        "instance": "service_instance_id"
-      },
       "matchers": {
         "operation": "expand"
       },
@@ -76,9 +70,6 @@
     },
     "kafka.replication.isr_shrinks.rate": {
       "kind": "rate",
-      "labels": {
-        "instance": "service_instance_id"
-      },
       "matchers": {
         "operation": "shrink"
       },
@@ -95,9 +86,6 @@
     },
     "kafka.replication.offline_partitions_count": {
       "kind": "gauge",
-      "labels": {
-        "instance": "service_instance_id"
-      },
       "ref": "Reasoning, no metrics_mapping row found: JMX OfflinePartitionsCount gauge reported by Dash0 as kafka.partition.offline (type sum, no extra labels, value 0 observed). Dash0 check 2026-11-07 (dataset default): count by (otel_metric_name, otel_metric_type, type, operation, direction, group, topic) (last_over_time({otel_metric_name=~\"kafka.isr.operation.count|kafka.network.io|kafka.purgatory.size|kafka.request.time.99p|kafka.partition.offline|kafka.partition.underReplicated|kafka.leaderElection.unclean.count|kafka.consumer_group.lag\"}[3h])) service_instance_id is a random UUID that rotates on every broker start (docs/DASH0_INVENTORY.md, 'Kafka broker JMX' and 'Caveats'), so a query or alert grouped by service_instance_id can fan out into stale groups and a sum can briefly double-count after a restart; no grain: the duplicate series differ in service_instance_id itself. Reviewer note: Datadog `instance` values are JMX instance names while Dash0 values are random UUIDs, so a filter like instance:<name> matches nothing; grouping still works.",
       "reviewed": null,
       "scale": 1,
@@ -110,9 +98,6 @@
     },
     "kafka.replication.unclean_leader_elections.rate": {
       "kind": "rate",
-      "labels": {
-        "instance": "service_instance_id"
-      },
       "rateWindow": "5m",
       "ref": "Reasoning, no metrics_mapping row found: JMX UncleanLeaderElectionsPerSec maps to Dash0 kafka.leaderElection.unclean.count (type sum, no extra labels). Datadog *.rate is a per-second rate of a cumulative counter, so rate() over the Dash0 sum target. Dash0 check 2026-11-07 (dataset default): count by (otel_metric_name, otel_metric_type, type, operation, direction, group, topic) (last_over_time({otel_metric_name=~\"kafka.isr.operation.count|kafka.network.io|kafka.purgatory.size|kafka.request.time.99p|kafka.partition.offline|kafka.partition.underReplicated|kafka.leaderElection.unclean.count|kafka.consumer_group.lag\"}[3h])) service_instance_id is a random UUID that rotates on every broker start (docs/DASH0_INVENTORY.md, 'Kafka broker JMX' and 'Caveats'), so a query or alert grouped by service_instance_id can fan out into stale groups and a sum can briefly double-count after a restart; no grain: the duplicate series differ in service_instance_id itself. Reviewer note: Datadog `instance` values are JMX instance names while Dash0 values are random UUIDs, so a filter like instance:<name> matches nothing; grouping still works.; rateWindow 5m (issue #90): the target is reported every 60 s in Dash0 (count_over_time(...[10m]) = 10 per series on dataset default, 2026-11-07 20:27 UTC), too sparse for Dash0's $__rate_interval (the panel showed \"No data\" with a gaps warning asking for at least 120s); 5m covers 4+ samples",
       "reviewed": null,
@@ -126,9 +111,6 @@
     },
     "kafka.replication.under_replicated_partitions": {
       "kind": "gauge",
-      "labels": {
-        "instance": "service_instance_id"
-      },
       "ref": "Reasoning, no metrics_mapping row found: JMX UnderReplicatedPartitions gauge reported by Dash0 as kafka.partition.underReplicated (type sum, no extra labels). Dash0 check 2026-11-07 (dataset default): count by (otel_metric_name, otel_metric_type, type, operation, direction, group, topic) (last_over_time({otel_metric_name=~\"kafka.isr.operation.count|kafka.network.io|kafka.purgatory.size|kafka.request.time.99p|kafka.partition.offline|kafka.partition.underReplicated|kafka.leaderElection.unclean.count|kafka.consumer_group.lag\"}[3h])) service_instance_id is a random UUID that rotates on every broker start (docs/DASH0_INVENTORY.md, 'Kafka broker JMX' and 'Caveats'), so a query or alert grouped by service_instance_id can fan out into stale groups and a sum can briefly double-count after a restart; no grain: the duplicate series differ in service_instance_id itself. Reviewer note: Datadog `instance` values are JMX instance names while Dash0 values are random UUIDs, so a filter like instance:<name> matches nothing; grouping still works.",
       "reviewed": null,
       "scale": 1,
@@ -141,9 +123,6 @@
     },
     "kafka.request.fetch_request_purgatory.size": {
       "kind": "gauge",
-      "labels": {
-        "instance": "service_instance_id"
-      },
       "matchers": {
         "type": "Fetch"
       },
@@ -159,9 +138,6 @@
     },
     "kafka.request.produce.time.99percentile": {
       "kind": "gauge",
-      "labels": {
-        "instance": "service_instance_id"
-      },
       "matchers": {
         "type": "Produce"
       },
@@ -177,9 +153,6 @@
     },
     "kafka.request.producer_request_purgatory.size": {
       "kind": "gauge",
-      "labels": {
-        "instance": "service_instance_id"
-      },
       "matchers": {
         "type": "Produce"
       },

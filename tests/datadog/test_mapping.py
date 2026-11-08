@@ -1,8 +1,12 @@
 import json
 from pathlib import Path
 
-from migrator.source.datadog.mapping import MappingInvalid, parse_mapping
+from migrator.source.datadog.mapping import MappingInvalid, MappingOk, parse_mapping, parse_mappings
 from tests.datadog.helpers import entry, raw_mapping
+
+
+def no_labels() -> dict[str, object]:
+    return {k: v for k, v in entry().items() if k != "labels"}
 
 
 def errors(raw: object) -> list[str]:
@@ -69,6 +73,52 @@ def test_every_mapping_file_parses() -> None:
     for f in files:
         r = parse_mapping(json.loads(f.read_text()))
         assert r.ok, (f, getattr(r, "errors", None))
+
+
+def test_entry_without_labels_inherits_the_file_labels() -> None:
+    raw = raw_mapping(inherits=no_labels(), own=entry(labels={"instance": "service_instance_id"}))
+    r = parse_mapping({**raw, "labels": {"host": "host_name"}})
+    assert isinstance(r, MappingOk), r
+    assert r.mapping.metrics["inherits"].labels == {"host": "host_name"}
+    # An entry's own labels replace the file's whole; they are not merged.
+    assert r.mapping.metrics["own"].labels == {"instance": "service_instance_id"}
+
+
+def test_labels_missing_on_entry_and_file_is_an_error() -> None:
+    assert errors(raw_mapping(x=no_labels())) == ["metrics.x.labels: Field required"]
+
+
+def test_rejects_bad_file_labels() -> None:
+    assert errors({**raw_mapping(x=entry()), "labels": {"db": "db.namespace"}})
+
+
+def test_several_files_merge_into_one_table() -> None:
+    a = raw_mapping(**{"m.a": entry()})
+    b = {**raw_mapping(**{"m.b": no_labels()}), "labels": {"host": "host_name"}}
+    r = parse_mappings([("a.json", a), ("b.json", b)])
+    assert isinstance(r, MappingOk), r
+    assert sorted(r.mapping.metrics) == ["m.a", "m.b"]
+    assert r.mapping.metrics["m.a"].labels == entry()["labels"]
+    assert r.mapping.metrics["m.b"].labels == {"host": "host_name"}
+
+
+def test_metric_in_two_files_is_an_error_naming_both() -> None:
+    a, b = raw_mapping(**{"m.a": entry()}), raw_mapping(**{"m.a": entry(scale=2)})
+    r = parse_mappings([("a.json", a), ("b.json", b)])
+    assert isinstance(r, MappingInvalid)
+    assert r.errors == ["metrics.m.a: defined in both a.json and b.json"]
+
+
+def test_file_errors_name_the_file() -> None:
+    r = parse_mappings([("bad.json", raw_mapping(x=entry(kind="nope")))])
+    assert isinstance(r, MappingInvalid)
+    assert r.errors[0].startswith("bad.json: metrics.x.kind: unknown kind 'nope'")
+
+
+def test_mapping_directory_parses_as_one_table() -> None:
+    files = sorted(Path("mappings/datadog").glob("*.json"))
+    r = parse_mappings([(f.name, json.loads(f.read_text())) for f in files])
+    assert r.ok, getattr(r, "errors", None)
 
 
 def test_mapping_entries_state_review_explicitly() -> None:

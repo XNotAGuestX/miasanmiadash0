@@ -66,7 +66,6 @@ def test_compiles_tag_filters_into_matchers() -> None:
 def test_blocking_checks() -> None:
     cases = {
         "avg:postgresql.connections{*}.rollup(max)": "UNSUPPORTED_QUERY_FUNCTION",
-        "postgresql.connections{*}": "MISSING_AGGREGATOR",
         "avg:system.io.util{$scope}": "MISSING_METRIC_MAPPING",
         "avg:postgresql.connections{*} by {table}": "MISSING_LABEL_MAPPING",
         "avg:postgresql.connections{table:x}": "MISSING_LABEL_MAPPING",
@@ -77,6 +76,29 @@ def test_blocking_checks() -> None:
         assert isinstance(r, CompiledError), text
         assert codes(r) == [code], text
         assert r.diagnostics[-1].severity == "error"
+
+
+LOAD = entry(target={"name": "system.cpu.load_average.1m", "type": "gauge"}, labels={})
+LOAD_SEL = '{otel_metric_name="system.cpu.load_average.1m", otel_metric_type="gauge"}'
+
+
+def test_missing_aggregator_defaults_to_avg() -> None:
+    r = ok("system.load.1{*}", mapping(system__load__1=LOAD))
+    assert r.promql == f"avg ({LOAD_SEL})"
+    (warning,) = r.diagnostics
+    assert (warning.code, warning.severity) == ("DEFAULT_AGGREGATOR_APPLIED", "warning")
+    assert "https://docs.datadoghq.com/dashboards/querying/#aggregation-method" in warning.message
+
+
+def test_missing_aggregator_never_blocks() -> None:
+    m = mapping(system__load__1=LOAD)
+    for text in ("system.load.1{*}", "system.load.1{$scope}", "system.io.util{*}"):
+        assert "MISSING_AGGREGATOR" not in codes(run(text, m)), text
+    # A later check may still block; the warning collected so far stays.
+    assert codes(run("system.io.util{*}", m)) == [
+        "DEFAULT_AGGREGATOR_APPLIED",
+        "MISSING_METRIC_MAPPING",
+    ]
 
 
 def test_blocks_non_star_template_default() -> None:
@@ -265,8 +287,8 @@ def test_promoted_variable_becomes_regex_matcher() -> None:
     assert codes(r) == []
 
 
-def _postgres_mapping() -> DatadogMapping:
-    result = parse_mapping(json.loads(Path("mappings/datadog/postgres.json").read_text()))
+def _mapping_file(name: str) -> DatadogMapping:
+    result = parse_mapping(json.loads(Path(f"mappings/datadog/{name}.json").read_text()))
     assert isinstance(result, MappingOk), result
     return result.mapping
 
@@ -274,7 +296,7 @@ def _postgres_mapping() -> DatadogMapping:
 def test_postgres_mapping_dedups_per_instance_and_database() -> None:
     """Resource-hash duplicates collapse per (instance, database), so a sum or avg over
     databases is unchanged (docs/DASH0_INVENTORY.md, caveat 2)."""
-    pg = _postgres_mapping()
+    pg = _mapping_file("postgres")
     grain = "max by (service_instance_id, postgresql_database_name)"
     tup = 'rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum"}'
     assert ok("sum:postgresql.rows_fetched{*}", pg).promql == (
@@ -293,12 +315,12 @@ def test_postgres_mapping_dedups_per_instance_and_database() -> None:
         assert e.grain.labels == ["service_instance_id", "postgresql_database_name"]
 
 
-def test_postgres_network_keeps_every_interface_and_has_no_grain() -> None:
+def test_host_network_keeps_every_interface_and_has_no_grain() -> None:
     """Datadog's network check excludes no interface by default (excluded_interfaces
     defaults to []), so loopback stays in, and no grain collapses interfaces. The
     fixed 5m range is the entry's rateWindow: system.network.io is reported every
     60 s, too sparse for $__rate_interval (#90)."""
-    r = ok("sum:system.net.bytes_rcvd{*}", _postgres_mapping())
+    r = ok("sum:system.net.bytes_rcvd{*}", _mapping_file("host"))
     assert r.promql == (
         'sum (rate({otel_metric_name="system.network.io", otel_metric_type="sum", '
         'system_network_direction="receive"}[5m]))'

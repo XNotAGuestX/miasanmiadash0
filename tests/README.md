@@ -27,8 +27,8 @@ PromQL and diagnostic codes side by side, the canonical PromQL diff and the Data
 first. `conftest.py` collects the records (`record_comparison` fixture), `report_html.py` renders them.
 
 Tests are offline: an autouse fixture in `conftest.py` replaces `socket.socket` and
-`socket.create_connection`, so any network access raises. A case whose mapping file
-(`mappings/datadog/<name>.json`) does not exist is skipped.
+`socket.create_connection`, so any network access raises. A case whose mapping path
+(`mapping` in `expected.yaml`) does not exist is skipped.
 
 ## Layout
 
@@ -98,7 +98,7 @@ each case names a `source_path` that is resolved inside the pinned source dashbo
 
 ```yaml
 source_fixture: fixtures/datadog/integrations-core/nginx/dashboards/NGINX-Metrics_dashboard.json
-mapping: mappings/datadog/nginx.json      # reviewed mapping the expectation assumes (end state)
+mapping: mappings/datadog                # reviewed mapping files the expectation assumes (end state)
 project: datadog-migration
 requests:
 - source_path: widgets[0].definition.requests[0]
@@ -113,9 +113,9 @@ requests:
   expected:
     outcome: translated | blocked
     promql: [...]                         # translated only
-    errors: [...]                         # e.g. MISSING_METRIC_MAPPING, MISSING_AGGREGATOR, UNSUPPORTED_FORMULA,
+    errors: [...]                         # e.g. MISSING_METRIC_MAPPING, UNSUPPORTED_FORMULA,
                                           #      UNSUPPORTED_QUERY_FUNCTION, UNSUPPORTED_QUERY_SYNTAX, UNSUPPORTED_DATA_SOURCE
-    warnings: [...]                       # e.g. TEMPLATE_VARIABLE_DROPPED (compared as a set)
+    warnings: [...]                       # e.g. TEMPLATE_VARIABLE_DROPPED, DEFAULT_AGGREGATOR_APPLIED (compared as a set)
   notes: [...]                            # optional, e.g. rule overlay applied
 widgets:   [{source_path, type, milestone, reviewed, expected: {outcome, panel_key, title, panel_plugin, promql, errors, warnings}}]
 dashboard: {milestone, reviewed, expected: {outcome, widgets: [{source_path, outcome, panel_key, promql}]}}
@@ -128,10 +128,9 @@ missing from the Dash0 dataset snapshot (`fixtures/oracle/dash0_default_metrics.
 `translated` and gets the `dataset` block; only metrics found in neither are `blocked` with
 `MISSING_METRIC_MAPPING`.
 
-`mapping` names the converter's mapping file, which is not always the integrations-core directory
-name (`docker_daemon` → `docker.json`, `redisdb` → `redis.json`; `MAPPING_FILE` in the script). The
-expectations assume that file in its reviewed end state, so a translated case also expects no
-`UNREVIEWED_MAPPING` warning.
+`mapping` names the converter's mapping files: `mappings/datadog`, every `*.json` in it merged into
+one table, as `--mapping mappings/datadog` does. The expectations assume those files in their
+reviewed end state, so a translated case also expects no `UNREVIEWED_MAPPING` warning.
 
 Widget and dashboard expectations are derived from the request expectations: a widget is
 translated only if its type is supported (`timeseries`, `query_value`, `note`), it has no blocking
@@ -156,11 +155,11 @@ Agent0 proposed (plans 02/03/05). `ALLOWED_FUNCTIONS` in the script is empty; a 
 added through its own plan task with an exact test. The converter's mapping-independent checks
 also override Agent0, in PR #85's order: request read errors (non-metric data source, a formula with
 a function or a reference to a non-metric query) first; then for every displayed query a wrapping
-function, a syntax error (`count:`, `p95:`, `100*(...)`, `-sum:...`), a trailing function, a missing
-space aggregator (`MISSING_AGGREGATOR`: #85 has no default aggregator), or an undefined or non-`*`
-template variable. Error codes come from these rules, not Agent0's prose; a block that no rule
-explains gets `MISSING_METRIC_MAPPING` plus a note that the code is a proposal (the real code depends
-on the mapping). `TEMPLATE_VARIABLE_DROPPED` is expected for unprefixed `*` variables only; prefixed
+function, a syntax error (`count:`, `p95:`, `100*(...)`, `-sum:...`), a trailing function, or an
+undefined or non-`*` template variable. A query without a space aggregator compiles with Datadog's
+default `avg` and expects `DEFAULT_AGGREGATOR_APPLIED`. Error codes come from these rules, not
+Agent0's prose; a block that no rule explains gets `MISSING_METRIC_MAPPING` plus a note that the
+code is a proposal (the real code depends on the mapping). `TEMPLATE_VARIABLE_DROPPED` is expected for unprefixed `*` variables only; prefixed
 ones are promoted to a Perses ListVariable (matcher `<label>=~"^($name)$"`). Every OTel metric in
 a translated request is checked against the dataset snapshot and the catalog: present in the dataset →
 nothing to note; only in the catalog → stays `translated` with a `dataset` block and a note (no live check

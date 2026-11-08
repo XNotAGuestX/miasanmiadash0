@@ -9,7 +9,7 @@ from typing import Any, Literal
 
 from migrator.input import InputError, collect_input_files
 from migrator.report import exit_code_for, manifest_entry, summarize
-from migrator.source.asset import CompileOptions
+from migrator.source.asset import CompileOptions, MappingFile
 from migrator.source.provider import get_provider
 from migrator.target import ValidationLevels
 from migrator.version import COMPILER_VERSION
@@ -22,7 +22,7 @@ Format = Literal["json", "yaml"]
 class ConvertOptions:
     source: str
     inputs: list[str]
-    mapping: str
+    mapping: list[str]  # mapping files or directories (--mapping, repeatable)
     out: str
     format: Format = "json"
     project: str = "datadog-migration"
@@ -43,24 +43,49 @@ def _write(out: Path, rel: str, text: str) -> str:
     return sha256(text)
 
 
+def _read_mappings(paths: list[str]) -> list[tuple[str, str, Any]]:
+    """Read --mapping paths: files, or directories (their *.json, non-recursive).
+
+    Returns (file name, text, parsed JSON), sorted by file name. File names must be unique."""
+    found: list[Path] = []
+    for raw in paths:
+        p = Path(raw)
+        if p.is_dir():
+            inside = sorted(c for c in p.glob("*.json") if c.is_file())
+            if not inside:
+                raise InputError(f"no mapping files (*.json) in {raw}")
+            found.extend(inside)
+        else:
+            found.append(p)
+    out: dict[str, tuple[str, str, Any]] = {}
+    for p in found:
+        if p.name in out:
+            raise InputError(f"duplicate mapping file name: {p.name}")
+        try:
+            text = p.read_text(encoding="utf-8")
+        except OSError as err:
+            raise InputError(f"cannot read mapping: {p}: {err.strerror}") from err
+        try:
+            out[p.name] = (p.name, text, json.loads(text))
+        except json.JSONDecodeError as err:
+            raise InputError(f"invalid mapping: {p}: {err}") from err
+    return [out[name] for name in sorted(out)]
+
+
 def run_convert(opts: ConvertOptions) -> ConvertResult:
     provider = get_provider(opts.source)
     out = Path(opts.out)
     if out.exists() and (not out.is_dir() or any(out.iterdir())):
         raise InputError(f"output directory is not empty: {opts.out}")
     files = collect_input_files(opts.inputs)
-    mapping_path = Path(opts.mapping)
-    try:
-        mapping_text = mapping_path.read_text(encoding="utf-8")
-    except OSError as err:
-        raise InputError(f"cannot read mapping: {opts.mapping}: {err.strerror}") from err
-    try:
-        mapping = json.loads(mapping_text)
-    except json.JSONDecodeError as err:
-        raise InputError(f"invalid mapping: {opts.mapping}: {err}") from err
+    mappings = _read_mappings(opts.mapping)
 
     loaded = provider.load(files)
-    result = provider.compile(loaded.assets, mapping, CompileOptions(project=opts.project))
+    result = provider.compile(
+        loaded.assets,
+        [MappingFile(name, raw) for name, _, raw in mappings],
+        CompileOptions(project=opts.project),
+    )
 
     out.mkdir(parents=True, exist_ok=True)
     entries: list[dict[str, Any]] = []
@@ -101,7 +126,7 @@ def run_convert(opts: ConvertOptions) -> ConvertResult:
         "provider": provider.id,
         "compilerVersion": COMPILER_VERSION,
         "format": opts.format,
-        "mapping": {"sourceId": mapping_path.name, "sha256": sha256(mapping_text)},
+        "mapping": [{"sourceId": name, "sha256": sha256(text)} for name, text, _ in mappings],
         "summary": summarize(result.items, len(loaded.diagnostics)),
         "items": [i.to_dict() for i in result.items],
         "diagnostics": [d.to_dict() for d in loaded.diagnostics + result.diagnostics],
