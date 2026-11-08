@@ -15,7 +15,7 @@ from migrator.source.datadog.mapping import (
     MappingOk,
     parse_mapping,
 )
-from migrator.source.datadog.model import ParseOk
+from migrator.source.datadog.model import ParseError, ParseOk
 from migrator.source.datadog.parse_query import parse_metric_query
 from migrator.validation import check_promql_syntax
 from tests.datadog.helpers import entry, mapping
@@ -80,6 +80,33 @@ def test_blocking_checks() -> None:
 
 LOAD = entry(target={"name": "system.cpu.load_average.1m", "type": "gauge"}, labels={})
 LOAD_SEL = '{otel_metric_name="system.cpu.load_average.1m", otel_metric_type="gauge"}'
+
+
+def test_weighted_blocks_in_every_form() -> None:
+    # Pinned Kafka queries, an argument, a non-sum aggregator, after another function (#116).
+    for text in (
+        "sum:kafka.replication.offline_partitions_count{*}.weighted()",
+        "sum:kafka.producer.bytes_out{$env} by {topic,env}.weighted()",
+        "sum:postgresql.connections{*}.weighted(1)",
+        "avg:postgresql.connections{*}.weighted()",
+        "sum:postgresql.connections{*}.rollup(avg, 60).weighted()",
+    ):
+        r = run(text, variables=[TemplateVariable("env", "env", "*")])
+        assert isinstance(r, CompiledError), text
+        assert codes(r) == ["UNSUPPORTED_QUERY_FUNCTION"], text
+        diag = r.diagnostics[0]
+        assert diag.message == (
+            "Query function '.weighted()' is not supported: Datadog weights each series by the "
+            "metric's submission interval from its Metrics Catalog, which the query does not "
+            "carry (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/)."
+        ), text
+        assert diag.suggested_action == (
+            "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag "
+            "values churn."
+        ), text
+    # The documented `sum:(<metric>{*}).weighted()` form is outside the parser's grammar.
+    parsed = parse_metric_query("sum:(kafka.net.bytes_in.rate{*}).weighted()")
+    assert isinstance(parsed, ParseError) and parsed.code == "UNSUPPORTED_QUERY_SYNTAX"
 
 
 def test_missing_aggregator_defaults_to_avg() -> None:
