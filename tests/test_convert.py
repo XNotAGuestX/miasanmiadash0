@@ -211,6 +211,11 @@ def test_cli_entry_point_exit_codes(tmp_path: Path) -> None:
     )
     assert r.returncode == 0, r.stderr
     assert r.stdout.startswith("Dashboards\n  TRANSLATED    synthetic-supported  2/2 widgets\n")
+    # Without --mapping, the whole mappings/<source> folder is the default table.
+    r = cli("convert", "--source", "datadog", "--input", PG, "--out", str(tmp_path / "dflt"))
+    assert r.returncode == 2, r.stderr
+    convert(tmp_path, [PG], name="explicit")
+    assert tree(tmp_path / "dflt") == tree(tmp_path / "explicit")
 
 
 PG = "fixtures/datadog/integrations-core/postgres"
