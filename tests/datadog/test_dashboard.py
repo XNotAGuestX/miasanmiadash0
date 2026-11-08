@@ -171,6 +171,17 @@ def test_abs_formula_translates_and_query_abs_stays_blocked() -> None:
     assert (d.code, d.message) == ("UNSUPPORTED_QUERY_FUNCTION", "Function 'abs' is not supported.")
 
 
+def test_empty_widget_time_is_ignored_and_live_span_blocks() -> None:
+    c = compile_body(body(ts(new_req("avg:postgresql.connections{*}"), time={})))
+    assert c.items[1].outcome == "translated"
+    [d] = [d for d in c.diagnostics if d.source_path.endswith(".time")]
+    assert (d.code, d.severity) == ("OPTION_IGNORED", "info")
+    c = compile_body(body(ts(new_req("avg:postgresql.connections{*}"), time={"live_span": "1w"})))
+    assert c.items[1].outcome == "blocked"
+    [d] = [d for d in c.diagnostics if d.severity == "error"]
+    assert (d.code, d.message) == ("UNSUPPORTED_WIDGET", "Widget option 'time' is not supported.")
+
+
 def test_formula_uses_only_referenced_queries() -> None:
     c = compile_body(
         body(

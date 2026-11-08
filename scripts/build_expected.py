@@ -298,7 +298,9 @@ def build(key: str) -> dict:
             wtype = wdef.get("type")
             reqs = by_widget.get(path, [])
             supported = wtype in PANEL_PLUGIN
-            bad_keys = sorted(BLOCKING_WIDGET_KEYS & set(wdef)) if supported else []
+            # An empty `time: {}` carries no override; the converter ignores it.
+            keys = {k for k in wdef if not (k == "time" and wdef[k] == {})}
+            bad_keys = sorted(BLOCKING_WIDGET_KEYS & keys) if supported else []
             translated = supported and not bad_keys and all(r["expected"]["outcome"] == "translated" for r in reqs)
             if wtype == "note":
                 translated = True
