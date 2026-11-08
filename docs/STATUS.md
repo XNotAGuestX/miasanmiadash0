@@ -1,6 +1,20 @@
 # Shared project status
 
-Last updated: 2026-11-07: repository slimmed (oracle triage stack and finished plan files removed; backup branch `main-pre-rip`). Open work: the orchestrator handoff [`handoff/README.md`](handoff/README.md) (epic #104: parallel waves of agent-ready issues, merge order, human-only items, live-Datadog horizon #122). Work is tracked in [issues](https://github.com/XNotAGuestX/thinchackdash/issues) and on the [project board](https://github.com/users/XNotAGuestX/projects/3).
+Last updated: 2026-11-08: on-demand comparison harness implemented on branch `146-live-comparison`; review and live two-vendor evidence pending. Open work: the orchestrator handoff [`handoff/README.md`](handoff/README.md) (epic #104, live-Datadog horizon #122 and implementation #146). Work is tracked in [issues](https://github.com/XNotAGuestX/thinchackdash/issues) and on the [project board](https://github.com/users/XNotAGuestX/projects/3).
+
+2026-11-08 update ([#146](https://github.com/XNotAGuestX/thinchackdash/issues/146), branch
+`146-live-comparison`): on-demand comparison harness implemented with independent workload
+profiles/test suites, shared-sample exports, publication/read-back, strict numeric comparison,
+resumable receipts and cleanup. Default six-case dry-run passes. A local-only full-demo smoke
+started all 23 containers healthy and observed five expected nonzero metric families
+(Postgres backends/fetched tuples, Redis used/RSS memory, nginx connections); its containers,
+network and local volumes were removed. Collector 0.160.0 configuration validated with
+networking disabled. **No Datadog/Dash0 parity run has occurred**: Datadog credentials and
+explicit endpoint/dataset configuration are still required. See [LIVE_COMPARE.md](LIVE_COMPARE.md).
+
+Verification on an isolated uv-managed CPython 3.13.18 environment, synced from `uv.lock`:
+`uv run migrator check` → **765 passed, 621 skipped**, ruff and mypy strict passed.
+The new harness also passes explicit script lint/type checks and 53 focused offline tests.
 
 Highest-priority requirement: deterministic conversion before all other objectives. No LLM involvement in source-to-Perses or query/alert conversion, including optional inference, repair, and fallback paths. Codex and Claude remain implementation assistants only.
 
@@ -15,7 +29,7 @@ Highest-priority requirement: deterministic conversion before all other objectiv
 | Oracle cases | 9 integrations-core dashboards, 207 requests; Agent0 proposals plus the deterministic rules in `scripts/build_expected.py`; none human-reviewed, so they skip by default | `fixtures/expected/*/*/expected.yaml`; `uv run pytest --include-unreviewed` |
 | Dash0 | Import contract checked live; Postgres dashboards and the disabled check rule published and read back | Sections below; sanitized responses in `fixtures/dash0/live-2026-11-07/` |
 | Telemetry | Not durable: `default` has receiver data only 2026-11-07 ~14:05–15:21 UTC (one `docker-desktop` host) | [`DASH0_INVENTORY.md`](DASH0_INVENTORY.md) |
-| Automated checks | Green: `uv run migrator check` (ruff, mypy --strict, pytest) | 613 passed, 621 skipped (unreviewed oracle cases) |
+| Automated checks | Green on branch `146-live-comparison`: `uv run migrator check` (ruff, mypy --strict, pytest) | 765 passed, 621 skipped (unreviewed oracle cases); uv-managed Python and locked dependencies |
 | Submission | Not started | #2; steps in `handoff/README.md`, "Human-only items" (only on the user's request) |
 
 ## Recorded decisions
@@ -23,6 +37,10 @@ Highest-priority requirement: deterministic conversion before all other objectiv
 - 2026-11-07 (user): translation does not need to be source-agnostic. Datadog is the only P0 source. Each source provider owns its parsing, mapping, and translation; the requirement is one `SourceProvider` interface with a static table selected by `--source`, plus shared output types (Perses dashboards, PromQL check conditions, diagnostics, outcomes). If a shared contract would limit Datadog functionality, discuss it with the user before compromising features. Contract: `src/migrator/source/provider.py`; decision D1 in `handoff/00-context.md`.
 - 2026-11-07 (user): remaining work runs as an orchestrated, parallel handoff (`handoff/README.md`, epic #104); live Datadog is a feature horizon (#122), not scheduled.
 - 2026-11-07 (user): the LLM triage of oracle expectations (Agent0 judge, Haiku cross-check, lint, mutations, `TRIAGE.md`, `verified.json`) is removed. An expectation counts only after a human review.
+- 2026-11-08 (user): expand #122 into an on-demand shared-OTel-sample comparison environment
+  using the full OTel Demo, independently definable workloads/tests/destination dataset,
+  publication/read-back and a default 3% per-series window-mean tolerance. Keep checks disabled
+  and preserve deterministic conversion artifacts; implementation is #146.
 
 ## Known blockers
 

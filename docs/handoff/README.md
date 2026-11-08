@@ -93,11 +93,17 @@ Mapping rules for #111–#115 are written out in each issue. The agent never set
 
 ## Horizon: live Datadog ([#122](https://github.com/XNotAGuestX/thinchackdash/issues/122))
 
-Tracked, not scheduled; it needs a Datadog account (B3):
+The live `fetch` round trip remains tracked and needs a Datadog account (B3):
 - the live `fetch` round trip (code merged, offline-tested);
 - targeted numeric spot checks for function semantics the docs leave open.
 
-No permanent comparison lab.
+Felix expanded this horizon on 2026-11-08 into an **on-demand comparison environment**
+([#146](https://github.com/XNotAGuestX/thinchackdash/issues/146), branch `146-live-comparison`).
+It reuses pinned full OTel Demo images, collects shared samples, publishes converted demo
+assets and checks read-back and numeric parity, with independently defined workloads/tests
+and a default 3% per-series mean tolerance. See [LIVE_COMPARE.md](../LIVE_COMPARE.md).
+Offline tests and a local-only startup/metric smoke are verified; Datadog credentials still
+block real two-vendor evidence. Compiler semantics, mappings and review status are unchanged.
 
 ## Open decisions and blockers
 

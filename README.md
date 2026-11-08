@@ -23,6 +23,25 @@ uv run migrator typecheck    # mypy --strict over src and tests
 uv run migrator lint         # ruff
 ```
 
+## Compare live Datadog and Dash0 values
+
+The on-demand harness reuses the full OpenTelemetry Demo and its load generator, sends
+shared samples to both vendors, publishes converted demo assets, verifies read-back and
+compares each matched series within a configurable tolerance (default 3%). Workload profiles,
+comparison suites and the Dash0 dataset are independently selectable.
+
+```sh
+uv run scripts/live_compare.py \
+  --dataset-config scripts/live/datasets/otel-demo.yaml \
+  --tests scripts/live/suites/default.yaml \
+  --dash0-dataset migration-demo --out out/live/demo-01 --dry-run
+```
+
+Remove `--dry-run` after configuring vendor credentials and explicit Dash0 endpoints.
+See [LIVE_COMPARE.md](docs/LIVE_COMPARE.md) for configuration, evidence, resumption and cleanup.
+Offline tests and a local-only full-demo smoke run are verified; two-vendor live parity still
+requires Datadog credentials. Imported checks remain disabled.
+
 ## Convert (offline)
 
 ```bash
