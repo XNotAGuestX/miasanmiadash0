@@ -1,9 +1,9 @@
-"""Pin Datadog's OpenTelemetry Metrics Mapping rows for our services, and report mapping drift.
+"""Pin Datadog's OpenTelemetry Metrics Mapping table, and report mapping drift.
 
 Development-time only (issue #105); the converter never imports this file.
 
-Write mode fetches the page once with urllib (or reads a saved copy), keeps the rows whose
-`datadog` or `otel` name starts with one of PREFIXES, dedupes and sorts them, and writes
+Write mode fetches the page once with urllib (or reads a saved copy), keeps every table row
+(#171; #105 kept only our fixture services' prefixes), dedupes and sorts them, and writes
 fixtures/datadog/otel-mapping.yaml. By default it stores the metric names only: Datadog's
 website terms (https://www.datadoghq.com/legal/terms/) restrict copying site content, so storing
 the filter, transform and integration columns waits for a decision on issue #105
@@ -40,7 +40,6 @@ OUT = ROOT / "fixtures" / "datadog" / "otel-mapping.yaml"
 MAPPINGS = ROOT / "mappings" / "datadog"
 CASES = ROOT / "fixtures" / "cases"
 
-PREFIXES = ("postgresql.", "redis.", "kafka.", "nginx.", "container.", "docker.", "system.", "jvm.")
 HEADER = ["otel", "datadog", "description", "filter", "transform", "Integration"]
 NAME_COLUMNS = ["datadog", "otel"]
 ALL_COLUMNS = ["datadog", "otel", "filter", "transform", "integration"]
@@ -70,7 +69,7 @@ def _sort_key(row: Row) -> tuple[str, ...]:
 
 
 def parse_table(text: str) -> list[Row]:
-    """Rows of the page's mapping table for PREFIXES, all columns, deduped and sorted."""
+    """Rows of the page's mapping table, all columns, deduped and sorted."""
     lines = [line for line in text.splitlines() if line.startswith("|")]
     if not lines or _cells(lines[0]) != HEADER:
         raise ValueError(f"unexpected table header: {_cells(lines[0]) if lines else None}")
@@ -91,8 +90,6 @@ def parse_table(text: str) -> list[Row]:
             transform and not _TRANSFORM.fullmatch(transform)
         ):
             raise ValueError(f"unrecognized filter or transform cell: {line[:200]}")
-        if not (otel.startswith(PREFIXES) or datadog.startswith(PREFIXES)):
-            continue
         row = {
             "datadog": datadog,
             "otel": otel,
@@ -112,7 +109,6 @@ def render_pin(rows: list[Row], columns: list[str], fetched: str) -> str:
     body = {
         "source": URL,
         "fetched": fetched,
-        "prefixes": list(PREFIXES),
         "columns": columns,
         "rows": sorted(kept.values(), key=_sort_key),
     }
