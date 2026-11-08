@@ -11,6 +11,13 @@ A deterministic CLI that migrates Datadog dashboards and metric monitors to Dash
 
 See [STATUS.md](docs/STATUS.md) for details and [DEMO.md](docs/DEMO.md) for the demo runbook.
 
+Metric monitors support classic arithmetic and evaluation delay, producing disabled Dash0
+checks and Prometheus rules from one condition. See [alert conversion](docs/ALERT_CONVERSION.md).
+Bounded `.weighted()`, `.rollup()` and `.as_rate()` conversions produce the distinct
+`best_effort` category with visible limitations; unsupported combinations still block.
+See [function grammar](docs/FUNCTION_CONVERSION.md), [remark categories](docs/REMARKS.md)
+and [empirical verification](docs/LIVE_EXTENSIONS.md).
+
 ## Install and test
 
 Needs Python ≥ 3.13 and [uv](https://docs.astral.sh/uv/). Everything runs through one entry point, `uv run migrator <command>`:

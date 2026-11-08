@@ -327,12 +327,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.as_count()' is not supported.",
+      "message": "Query function '.as_count()' or its arguments are not supported. weighted() requires explicit sum and no arguments; as_rate() takes no arguments.",
       "severity": "error",
       "sourceId": "dashboards/NGINX-Overview_dashboard.json",
       "sourcePath": "widgets[1].definition.widgets[0].definition.requests[0].q",
       "sourceText": "sum:nginx.net.conn_dropped_per_s{*}.as_count()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Use a documented supported form or migrate this query manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -3053,12 +3053,12 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Query function '.as_count()' is not supported.",
+      "message": "Query function '.as_count()' or its arguments are not supported. weighted() requires explicit sum and no arguments; as_rate() takes no arguments.",
       "severity": "error",
       "sourceId": "dashboards/plus_overview.json",
       "sourcePath": "widgets[7].definition.widgets[1].definition.requests[0].queries[0].query",
       "sourceText": "sum:nginx.ssl.handshakes_count{$host} by {host}.as_count()",
-      "suggestedAction": "Remove the function from the source query or migrate this widget manually."
+      "suggestedAction": "Use a documented supported form or migrate this query manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -3529,6 +3529,7 @@
     "dashboards": {
       "approximated": 0,
       "assumed": 0,
+      "best_effort": 0,
       "blocked": 0,
       "partial": 3,
       "translated": 0
@@ -3536,6 +3537,7 @@
     "monitors": {
       "approximated": 0,
       "assumed": 0,
+      "best_effort": 0,
       "blocked": 0,
       "partial": 0,
       "translated": 0
@@ -3544,6 +3546,7 @@
     "widgets": {
       "approximated": 2,
       "assumed": 0,
+      "best_effort": 0,
       "blocked": 27,
       "partial": 0,
       "translated": 21

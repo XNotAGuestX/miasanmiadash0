@@ -18,7 +18,10 @@
       "kind": "dashboard",
       "outcome": "partial",
       "path": "dashboards/kafka-kraft-overview.json",
-      "sha256": "9bf0c3ab8aa91e49098030409abf64afe101c79edfc2aef4580bbe614ae6f237",
+      "remarks": [
+        "WEIGHTED"
+      ],
+      "sha256": "c6741bfe8a82559b370d9a99a8891e2c3abecf5a998e85eb7411b8858dfda581",
       "sourceId": "dashboards/kafka_kraft_dashboard.json"
     },
     {
@@ -26,7 +29,10 @@
       "kind": "dashboard",
       "outcome": "partial",
       "path": "dashboards/kafka-zookeeper-and-kafka-consumer-overview.json",
-      "sha256": "09b2597d228759f10608956dcd05dfab1aec3096c87153e9a87c9c18d16f15d7",
+      "remarks": [
+        "WEIGHTED"
+      ],
+      "sha256": "bb41c6992dc8d3b0b7d990231ce1e390df540a9d6fe7486c47126322d527c42b",
       "sourceId": "dashboards/kafka_dashboard.json"
     },
     {
