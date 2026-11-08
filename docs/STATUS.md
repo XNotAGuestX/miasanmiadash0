@@ -1,11 +1,18 @@
 # Shared project status
 
+2026-11-08 follow-up to #177: Felix explicitly authorized Agent0 recommendations
+only on user request for blocked items, with a three-call backend-session limit and
+then a plain sales prompt (sandy@dash0.com). `/api/suggest` keeps draft recommendations
+separate from compiler artifacts/outcomes. No automatic AI or publication. Existing
+MCP dependencies are reused. Tests for this follow-up were skipped at Felix's request;
+the passing counts below refer to the preceding backend commit, not this AI addition.
+
 2026-11-08 local UI update ([#177](https://github.com/XNotAGuestX/thinchackdash/issues/177),
 stacked on frontend PR #174): `backend/` serves the frontend and runs the unchanged
 offline converter on uploaded JSON or the pinned Postgres demo. Real rows show exact
 outcome categories; translated warnings are hidden and other warnings show short names
 only. Full diagnostics and target artifacts remain in the downloadable results.
-Dashboard failures remain hidden at Felix's request. No vendor calls, publishing,
+Dashboard failures remain hidden at Felix's request. Conversion makes no vendor calls; no publishing,
 numeric comparison or streamed progress; [mismatch list](../backend/README.md#frontendbackend-mismatches).
 Checks: `uv run migrator check` passed (ruff, strict mypy: 89 files;
 **1013 passed / 621 skipped**). Explicit backend strict typing/lint and 5 frontend

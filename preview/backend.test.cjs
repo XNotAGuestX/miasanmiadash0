@@ -74,3 +74,29 @@ test("saved reports stay supported; cross-origin reports are rejected", async ()
   assert.equal((await api.load()).length, 6);
   await assert.rejects(backend("?report=https://elsewhere/report.json").load(), /same-origin/);
 });
+
+test("AI calls are explicit and only for blocked items; server quota is retained", async () => {
+  const calls = [];
+  const api = backend("", async (url, options) => {
+    calls.push({ url, body: JSON.parse(options.body) });
+    return url === "/api/convert"
+      ? { ok: true, json: async () => ({ report: report(), runId: 4, ai: { remaining: 3, available: true } }) }
+      : { ok: true, json: async () => ({ recommendation: "Draft", ai: { remaining: 2, available: true }, applied: false }) };
+  });
+  const items = await api.load();
+  assert.equal(calls.length, 1);
+  await assert.rejects(api.suggest(items[0]), /failed translations/);
+  assert.equal(calls.length, 1);
+  assert.equal(await api.suggest(items[5]), "Draft");
+  assert.deepEqual(calls[1], { url: "/api/suggest", body: { runId: 4, sourceId: "d.json", sourcePath: "widgets[5]" } });
+  assert.equal(api.ai.remaining, 2);
+});
+
+test("exhausted quota returns sales contact without hiding the last recommendation", async () => {
+  const api = backend("", async (url) => url === "/api/convert"
+    ? { ok: true, json: async () => ({ report: report(), runId: 4 }) }
+    : { ok: false, json: async () => ({ error: "Contact our sales team at sandy@dash0.com.", ai: { remaining: 0, available: true } }) });
+  const items = await api.load();
+  await assert.rejects(api.suggest(items[5]), /sandy@dash0.com/);
+  assert.equal(api.ai.remaining, 0);
+});

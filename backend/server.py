@@ -7,9 +7,10 @@ import json
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlsplit
 
+from backend.ai import AiHelp, HelpError
 from migrator.convert import ConvertOptions, run_convert
 from migrator.input import InputError
 
@@ -77,7 +78,8 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_POST(self) -> None:
-        if urlsplit(self.path).path != "/api/convert":
+        route = urlsplit(self.path).path
+        if route not in ("/api/convert", "/api/suggest"):
             self._json(404, {"error": "Unknown endpoint."})
             return
         # This local tool only accepts JSON from its own page, never cross-origin forms.
@@ -94,7 +96,16 @@ class Handler(SimpleHTTPRequestHandler):
                 self._json(413, {"error": "Request must contain JSON and be at most 10 MiB."})
                 return
             payload = json.loads(self.rfile.read(length))
-            result = convert_request(payload)
+            help_session = cast("Server", self.server).ai
+            result = (
+                help_session.remember(convert_request(payload)) if route == "/api/convert"
+                else help_session.suggest(payload)
+            )
+        except HelpError as error:
+            self._json(error.status, {
+                "error": str(error), "ai": cast("Server", self.server).ai.info()
+            })
+            return
         except (InputError, ValueError, UnicodeError) as error:
             self._json(400, {"error": str(error)})
             return
@@ -104,11 +115,17 @@ class Handler(SimpleHTTPRequestHandler):
         self._json(200, result)
 
 
+class Server(HTTPServer):
+    def __init__(self, address: tuple[str, int]) -> None:
+        self.ai = AiHelp()
+        super().__init__(address, Handler)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=3001)
     args = parser.parse_args()
-    with HTTPServer(("127.0.0.1", args.port), Handler) as server:
+    with Server(("127.0.0.1", args.port)) as server:
         print(f"Local migration UI: http://localhost:{server.server_port}", flush=True)
         try:
             server.serve_forever()

@@ -69,6 +69,7 @@
   window.MigrateBackend = {
     mode,
     result: null,
+    ai: { remaining: 0, available: false },
 
     async load(files = []) {
       if (mode === "mock") return window.MIGRATION_ITEMS;
@@ -96,7 +97,20 @@
       const report = mode === "report" ? result : result.report;
       const items = fromReport(report);
       this.result = mode === "report" ? { report } : result;
+      this.ai = result.ai || { remaining: 0, available: false };
       return items;
+    },
+
+    async suggest(item) {
+      if (mode !== "api" || item.outcome !== "blocked") throw new Error("AI help is only available for failed translations from this backend.");
+      const res = await fetch("/api/suggest", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ runId: this.result.runId, sourceId: item.source.id, sourcePath: item.source.path }),
+      });
+      const data = await res.json();
+      if (data.ai) this.ai = data.ai;
+      if (!res.ok) throw new Error(data.error || "Agent0 could not complete this request.");
+      return data.recommendation;
     },
 
     // Real results are already complete: never simulate per-item compiler progress.

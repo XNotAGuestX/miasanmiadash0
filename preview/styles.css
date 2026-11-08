@@ -576,6 +576,7 @@ button:disabled { cursor: wait; opacity: 0.6; }
 #consult-btn:disabled { cursor: default; }
 #download-results { text-decoration: none; }
 #limitations { max-width: 40rem; }
+.ai-recommendation { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; margin: 0; font: 0.75rem/1.5 var(--mono); }
 
 /* ---------- Loading screen: dial on the left, step boxes on the right ---------- */
 .stage {

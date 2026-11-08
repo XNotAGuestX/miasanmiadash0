@@ -5,14 +5,13 @@ from __future__ import annotations
 import json
 from collections.abc import Iterator
 from http.client import HTTPConnection
-from http.server import HTTPServer
 from pathlib import Path
 from threading import Thread
 from typing import Any
 
 import pytest
 
-from backend.server import MAX_BODY, Handler, convert_request
+from backend.server import MAX_BODY, Server, convert_request
 from migrator.input import InputError
 
 SUPPORTED = Path("fixtures/datadog/synthetic/dashboards/supported.json")
@@ -64,7 +63,7 @@ def test_invalid_uploads_fail_without_guessing(payload: Any) -> None:
 def connection(monkeypatch: pytest.MonkeyPatch) -> Iterator[HTTPConnection]:
     # Local transport only; conversion tests above retain the suite's no-network guard.
     monkeypatch.undo()
-    with HTTPServer(("127.0.0.1", 0), Handler) as server:
+    with Server(("127.0.0.1", 0)) as server:
         thread = Thread(target=server.serve_forever, daemon=True)
         thread.start()
         client = HTTPConnection("127.0.0.1", server.server_port, timeout=10)

@@ -21,6 +21,12 @@ dashboard visibility, AI, review state, target queries and configuration.
 `process(item)` does nothing for real results; conversion is already finished.
 Errors are shown on the start screen; there is no automatic mock fallback.
 
+Blocked items in backend mode have an explicit **Ask AI** action: `/api/suggest`
+calls Agent0 for a draft recommendation. The backend enforces three calls per local
+server session, then prompts contact with sales at sandy@dash0.com. No automatic
+AI requests, outcome changes or publishing. Set `DASH0_AUTH_TOKEN` in `.env` or the
+environment to enable it; saved-report mode cannot request recommendations.
+
 | Compiler outcome | UI column | Row category |
 | --- | --- | --- |
 | `translated` | Translated | Translated |

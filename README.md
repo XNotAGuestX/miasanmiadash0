@@ -1,5 +1,9 @@
 # Datadog → Dash0 Migrator
 
+The local UI also supports explicitly requested Agent0 recommendations for blocked
+translations, capped at three calls per backend session. These drafts stay separate
+from the deterministic converter; see the exception in [AGENTS.md](AGENTS.md).
+
 **Highest priority, before anything else: deterministic conversion. No LLM shall be involved in translation from a source to Perses, PromQL, or Dash0 check rules—not even as an optional fallback. Reduce MVP scope before compromising this rule.** Codex and Claude may help write the implementation and tests; migration itself uses explicit parsers, mappings, and deterministic rules only.
 
 A deterministic CLI that migrates Datadog dashboards and metric monitors to Dash0. Dashboards become Perses dashboards; metric monitors become Dash0 check rules and Prometheus rule groups. Every metric pair comes from an explicit, human-reviewed mapping file. Anything outside the supported subset is blocked with a diagnostic instead of being guessed.

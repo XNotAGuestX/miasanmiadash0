@@ -19,6 +19,8 @@
   const real = window.MigrateBackend.mode !== "mock";
   const OUTCOME = { translated: "Translated", approximated: "Approximated", assumed: "Assumed", best_effort: "Best effort", partial: "Partial", blocked: "Blocked" };
   let downloadUrl;
+  let aiBusy = false;
+  const salesMessage = "You have used your 3 AI calls. Contact our sales team at sandy@dash0.com.";
   $("#data-mode").textContent = window.MigrateBackend.mode === "api" ? "Local converter · Real results" : real ? "Saved report" : "Mock demo · Simulated";
   $("#upload").hidden = window.MigrateBackend.mode !== "api";
   if (real) {
@@ -396,6 +398,35 @@
     title.focus({ preventScroll: true });
     const n = (s) => items.filter((it) => it.status === s).length;
     $("#live").textContent = `Conversion complete. ${n("converted")} translated, ${n("review")} converted with remarks, ${n("unsupported")} blocked.`;
+    updateAiQuota();
+  }
+
+  function updateAiQuota() {
+    if (window.MigrateBackend.mode !== "api") return;
+    const ai = window.MigrateBackend.ai;
+    $("#ai-quota").hidden = false;
+    $("#ai-quota").textContent = ai.remaining === 0 ? salesMessage : ai.available
+      ? `${ai.remaining} of 3 AI calls remaining. AI help runs only when you request it for a blocked item.`
+      : "AI help is unavailable until Agent0 is configured on the backend.";
+    $$("[data-ai-help]").forEach((button) => { button.disabled = aiBusy || !ai.available || ai.remaining === 0; });
+  }
+
+  async function requestAi(it) {
+    if (aiBusy) return;
+    aiBusy = true;
+    it.aiError = "";
+    updateAiQuota();
+    const output = $(`#ai-result-${it.id}`);
+    output.textContent = "Asking Agent0…";
+    try {
+      it.aiRecommendation = await window.MigrateBackend.suggest(it);
+    } catch (err) {
+      it.aiError = String(err.message || err);
+    } finally {
+      aiBusy = false;
+      render(it);
+      updateAiQuota();
+    }
   }
 
   /* ---------- Item drawer ---------- */
@@ -409,6 +440,10 @@
         <code>${esc(it.source.id)} ${esc(it.source.path)}</code>
         ${it.warningNames.length ? `<div class="category-summary" aria-label="Warnings">${it.warningNames.map((name) => `<span class="outcome">${esc(name)}</span>`).join("")}</div>` : ""}
         ${diagnostics ? `<ul class="diagnostics">${diagnostics}</ul>` : ""}
+        ${it.outcome === "blocked" && window.MigrateBackend.mode === "api" ? `
+          <p class="why">Ask Agent0 to recommend a conversion for this item. Sends this source item and the checked-in mappings to Agent0.</p>
+          <button class="btn btn-small" type="button" data-ai-help="${it.id}" ${aiBusy || !window.MigrateBackend.ai.available || window.MigrateBackend.ai.remaining === 0 ? "disabled" : ""}>Ask AI</button>
+          <div id="ai-result-${it.id}" aria-live="polite">${it.aiError ? `<p class="why">${esc(it.aiError)}</p>` : ""}${it.aiRecommendation ? `<p class="why">AI recommendation · Not validated or applied</p><pre class="ai-recommendation">${esc(it.aiRecommendation)}</pre>` : ""}</div>` : ""}
         ${it.status === "review" ? '<p class="why">Numeric comparison unavailable: this offline run has no Datadog or Dash0 measurements.</p>' : ""}`;
     }
     const out = [`<p class="why">${esc(it.why)}</p>`];
@@ -583,6 +618,7 @@
     const t = e.target.closest("button");
     if (!t) return;
     if (t.dataset.open) toggle(find(t.dataset.open));
+    else if (t.dataset.aiHelp) requestAi(find(t.dataset.aiHelp));
     else if (t.dataset.diff) showDiff(find(t.dataset.diff), t);
     else if (t.dataset.options) openOptions();
     else if (t.dataset.more) {
