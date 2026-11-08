@@ -15,6 +15,7 @@ from migrator.source.datadog.dashboard import (
     read_template_variables,
 )
 from migrator.source.datadog.mapping import DatadogMapping, parse_mapping
+from migrator.source.datadog.parse_query import UNDOCUMENTED_FUNCTIONS
 from migrator.validation import validate_dashboard
 from tests.datadog.helpers import entry, mapping
 
@@ -173,6 +174,19 @@ def test_abs_formula_translates_and_query_abs_stays_blocked() -> None:
     c = compile_body(body(ts(new_req("abs(avg:postgresql.connections{*})"))))
     [d] = [d for d in c.diagnostics if d.severity == "error"]
     assert (d.code, d.message) == ("UNSUPPORTED_QUERY_FUNCTION", "Function 'abs' is not supported.")
+
+
+def test_week_before_formula_translates_to_offset() -> None:
+    c = compile_body(
+        body(
+            ts(new_req("avg:postgresql.connections{*}", formulas=["query1 - week_before(query1)"]))
+        )
+    )
+    assert c.dashboard is not None and validate_dashboard(c.dashboard) == []
+    shifted = CONN[:-1] + " offset 1w)"
+    assert queries_of(c, "widget-0") == [{"query": f"({CONN}) - ({shifted})"}]
+    # Diagnostics of the shifted compile are not repeated.
+    assert [d.code for d in c.diagnostics].count("DEFAULT_AGGREGATOR_APPLIED") == 0
 
 
 def test_empty_widget_time_is_ignored_and_live_span_is_approximated() -> None:
@@ -607,12 +621,27 @@ def test_top_blocks_in_queries_and_formulas_with_its_reason(args: str) -> None:
         )
 
 
-def test_other_wrapping_functions_keep_the_generic_message() -> None:
+def test_undocumented_functions_block_with_their_documented_reason() -> None:
     c = compile_body(body(ts({"q": "per_second(avg:postgresql.connections{*})"})))
     [d] = [d for d in c.diagnostics if d.severity == "error"]
     assert (d.code, d.message) == (
         "UNSUPPORTED_QUERY_FUNCTION",
-        "Function 'per_second' is not supported.",
+        UNDOCUMENTED_FUNCTIONS["per_second"],
+    )
+    for name in UNDOCUMENTED_FUNCTIONS:
+        for formula in [f"{name}(query1)", f"query1 * {name}(query1)"]:
+            c = compile_body(body(ts(new_req("avg:postgresql.connections{*}", formulas=[formula]))))
+            [d] = [d for d in c.diagnostics if d.severity == "error"]
+            assert (d.code, d.message) == ("UNSUPPORTED_FORMULA", UNDOCUMENTED_FUNCTIONS[name])
+            assert "https://docs.datadoghq.com/" in d.message
+
+
+def test_other_wrapping_functions_keep_the_generic_message() -> None:
+    c = compile_body(body(ts({"q": "cumsum(avg:postgresql.connections{*})"})))
+    [d] = [d for d in c.diagnostics if d.severity == "error"]
+    assert (d.code, d.message) == (
+        "UNSUPPORTED_QUERY_FUNCTION",
+        "Function 'cumsum' is not supported.",
     )
     c = compile_body(
         body(ts(new_req("avg:postgresql.connections{*}", formulas=["cumsum(query1)"])))

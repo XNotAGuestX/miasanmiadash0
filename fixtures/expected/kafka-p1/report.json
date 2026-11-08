@@ -2036,12 +2036,12 @@
     },
     {
       "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 12.",
+      "message": "Function 'default_zero' is not supported: Datadog interpolates gaps first and then fills the remaining intervals with 0 (https://docs.datadoghq.com/dashboards/functions/interpolation/); PromQL has no gap interpolation.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[7].definition.widgets[2].definition.requests[0].formulas[0].formula",
       "sourceText": "default_zero(upstream_services_throughput)",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
+      "suggestedAction": "Migrate this widget or monitor manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -2125,12 +2125,12 @@
     },
     {
       "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 12.",
+      "message": "Function 'default_zero' is not supported: Datadog interpolates gaps first and then fills the remaining intervals with 0 (https://docs.datadoghq.com/dashboards/functions/interpolation/); PromQL has no gap interpolation.",
       "severity": "error",
       "sourceId": "dashboards/kafka_dashboard.json",
       "sourcePath": "widgets[7].definition.widgets[3].definition.requests[0].formulas[0].formula",
       "sourceText": "default_zero(downstream_services_throughput_by_queues)",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
+      "suggestedAction": "Migrate this widget or monitor manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -5082,12 +5082,12 @@
     },
     {
       "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 12.",
+      "message": "Function 'default_zero' is not supported: Datadog interpolates gaps first and then fills the remaining intervals with 0 (https://docs.datadoghq.com/dashboards/functions/interpolation/); PromQL has no gap interpolation.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[7].definition.widgets[2].definition.requests[0].formulas[0].formula",
       "sourceText": "default_zero(upstream_services_throughput)",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
+      "suggestedAction": "Migrate this widget or monitor manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -5171,12 +5171,12 @@
     },
     {
       "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 12.",
+      "message": "Function 'default_zero' is not supported: Datadog interpolates gaps first and then fills the remaining intervals with 0 (https://docs.datadoghq.com/dashboards/functions/interpolation/); PromQL has no gap interpolation.",
       "severity": "error",
       "sourceId": "dashboards/kafka_kraft_dashboard.json",
       "sourcePath": "widgets[7].definition.widgets[3].definition.requests[0].formulas[0].formula",
       "sourceText": "default_zero(downstream_services_throughput_by_queues)",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
+      "suggestedAction": "Migrate this widget or monitor manually."
     },
     {
       "code": "OPTION_IGNORED",
@@ -6563,7 +6563,7 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Function 'anomalies' is not supported.",
+      "message": "Function 'anomalies' is not supported: Datadog's anomaly algorithms and bounds are not documented precisely enough to reproduce in PromQL (https://docs.datadoghq.com/monitors/types/anomaly/).",
       "severity": "error",
       "sourceId": "monitors/kafka_high_producer_request_rate.json",
       "sourcePath": "query",

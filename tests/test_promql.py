@@ -1,4 +1,10 @@
-from migrator.promql import Matcher, MetricRef, escape_label_value, render_selector
+from migrator.promql import (
+    Matcher,
+    MetricRef,
+    escape_label_value,
+    format_offset,
+    render_selector,
+)
 from migrator.validation import check_promql_syntax
 
 
@@ -30,3 +36,9 @@ def test_promql_syntax_check() -> None:
     assert (check_promql_syntax("avg by (a) (") or "").startswith("syntax error")
     assert check_promql_syntax('rate({otel_metric_name="x"}[$__rate_interval])') is None
     assert check_promql_syntax('avg_over_time((avg ({a="b"}))[15m:1m]) > $__threshold') is None
+
+
+def test_format_offset_uses_the_largest_exact_unit() -> None:
+    cases = {604800: "1w", 2419200: "4w", 86400: "1d", 3600: "1h", 5400: "90m", 61: "61s"}
+    for seconds, text in cases.items():
+        assert format_offset(seconds) == text

@@ -46,7 +46,7 @@
     },
     {
       "code": "UNSUPPORTED_QUERY_FUNCTION",
-      "message": "Function 'anomalies' is not supported.",
+      "message": "Function 'anomalies' is not supported: Datadog's anomaly algorithms and bounds are not documented precisely enough to reproduce in PromQL (https://docs.datadoghq.com/monitors/types/anomaly/).",
       "severity": "error",
       "sourceId": "monitors/replication_delay.json",
       "sourcePath": "query",

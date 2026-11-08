@@ -24,10 +24,11 @@ from migrator.source.datadog.formula import (
     parse_formula,
     references,
     render_formula,
+    shifted,
 )
 from migrator.source.datadog.mapping import DatadogMapping
 from migrator.source.datadog.model import ParseOk, VariableFilter
-from migrator.source.datadog.parse_query import parse_metric_query, top_block
+from migrator.source.datadog.parse_query import function_block, parse_metric_query
 from migrator.source.datadog.remarks import REMARKS, approved, describe
 from migrator.target import (
     Diagnostic,
@@ -445,7 +446,7 @@ def _read_request(req: Any, path: str, wtype: str, c: _Collector) -> _Request | 
             text = fo["formula"]
             parsed = parse_formula(text)
             if not parsed.ok:
-                message, action = top_block(text) or (
+                message, action = function_block(text, anywhere=True) or (
                     f"Formula syntax is not supported at offset {parsed.offset}.",
                     "Only +, -, *, / over query names and numbers convert.",
                 )
@@ -486,12 +487,13 @@ def _compile_requests(
     out: list[PersesQuery] = []
     for req in requests:
         compiled: dict[str, RenderedQuery] = {}
+        parsed_ok: dict[str, ParseOk] = {}
         needed = [n for d in req.displayed for n in d.query_names]
         for name in dict.fromkeys(needed):
             qpath, text, _ = req.queries[name]
             parsed = parse_metric_query(text)
             if not parsed.ok:
-                message, action = top_block(text) or (
+                message, action = function_block(text) or (
                     parsed.message,
                     "Rewrite the query within the supported subset or migrate it manually.",
                 )
@@ -505,14 +507,34 @@ def _compile_requests(
             c.items.extend(result.diagnostics)
             if isinstance(result, CompiledOk):
                 compiled[name] = RenderedQuery(result.promql, result.group_labels)
+                parsed_ok[name] = parsed
+        # Timeshifted references compile again with an offset. Their other diagnostics
+        # repeat the unshifted compile's, so only a new blocking error is reported.
+        shifts: dict[tuple[str, int], RenderedQuery] = {}
+        pairs = [p for d in req.displayed if d.formula is not None for p in shifted(d.formula)]
+        for name, offset in dict.fromkeys(pairs):
+            if name not in compiled:
+                continue
+            qpath, text, _ = req.queries[name]
+            result = compile_metric_query(
+                parsed_ok[name].query,
+                ctx.mapping,
+                QueryContext(ctx.source_id, qpath, text, ctx.variables, ctx.promoted, offset),
+            )
+            if isinstance(result, CompiledOk):
+                shifts[(name, offset)] = RenderedQuery(result.promql, result.group_labels)
+            else:
+                c.items.append(result.diagnostics[-1])
         for disp in req.displayed:
             if any(n not in compiled for n in disp.query_names):
+                continue
+            if disp.formula is not None and any(p not in shifts for p in shifted(disp.formula)):
                 continue
             if disp.formula is None:
                 q = compiled[disp.query_names[0]]
                 out.append(_query(q.promql, q.group_labels))
                 continue
-            rendered = render_formula(disp.formula, compiled)
+            rendered = render_formula(disp.formula, compiled, shifts)
             if not rendered.ok:
                 c.error(
                     "UNSUPPORTED_FORMULA",

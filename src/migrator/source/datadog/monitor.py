@@ -31,7 +31,7 @@ from migrator.source.datadog.model import (
     TimeAggregator,
     WindowUnit,
 )
-from migrator.source.datadog.parse_query import parse_metric_query
+from migrator.source.datadog.parse_query import function_block, parse_metric_query
 from migrator.source.datadog.remarks import approved
 from migrator.target import (
     Diagnostic,
@@ -47,6 +47,17 @@ from migrator.validation import validate_check_rule, validate_prometheus_rule_gr
 
 _PREFIX = re.compile(r"^(avg|max|min|sum)\(last_(\d+)(m|h|d)\):")
 _SUFFIX = re.compile(r" (>=|<=|>|<) (-?\d+(?:\.\d+)?)$")
+
+
+# Arithmetic between queries or numbers, outside `{...}` filters (tag values may hold `-`, `/`).
+_BRACES = re.compile(r"\{[^}]*(?:\}|$)")
+_ARITHMETIC = re.compile(r"^\s*[\d(-]|[*/+]| - ")
+METRIC_MONITOR_DOC = "https://docs.datadoghq.com/monitors/types/metric/"
+ARITHMETIC = (
+    "Monitor query arithmetic is not supported: Datadog does not document whether the "
+    "monitor's time aggregation applies to each query or to the arithmetic result "
+    f"({METRIC_MONITOR_DOC})."
+)
 
 
 def _utf16_len(text: str) -> int:
@@ -70,9 +81,15 @@ def parse_monitor_query(text: str) -> MonitorParseResult:
             message=f"Expected ' <comparator> <number>' at the end of the query (offset {offset}).",
         )
 
-    inner = parse_metric_query(text[prefix.end() : suffix.start()])
+    inner_text = text[prefix.end() : suffix.start()]
+    inner = parse_metric_query(inner_text)
     if not isinstance(inner, ParseOk):
         shift = _utf16_len(text[: prefix.end()])
+        if _ARITHMETIC.search(_BRACES.sub("{}", inner_text)):
+            return ParseError(code="UNSUPPORTED_QUERY_SYNTAX", offset=shift, message=ARITHMETIC)
+        documented = function_block(inner_text)
+        if documented is not None:
+            return ParseError(code=inner.code, offset=shift, message=documented[0])
         # Function errors carry offset 0 (the whole query); syntax errors point at a char.
         return ParseError(code=inner.code, offset=inner.offset + shift, message=inner.message)
 

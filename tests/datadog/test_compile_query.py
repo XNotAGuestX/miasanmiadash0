@@ -29,11 +29,12 @@ def run(
     m: DatadogMapping | None = None,
     variables: list[TemplateVariable] | None = None,
     promoted: dict[str, str] | None = None,
+    offset: int = 0,
 ) -> CompiledOk | CompiledError:
     parsed = parse_metric_query(text)
     assert isinstance(parsed, ParseOk)
     ctx = QueryContext(
-        "s.json", "q", text, STAR if variables is None else variables, promoted or {}
+        "s.json", "q", text, STAR if variables is None else variables, promoted or {}, offset
     )
     return compile_metric_query(parsed.query, m or mapping(), ctx)
 
@@ -395,3 +396,32 @@ def test_host_network_keeps_every_interface_and_has_no_grain() -> None:
         'system_network_direction="receive"}[5m]))'
     )
     assert check_promql_syntax(r.promql) is None
+
+
+def test_offset_follows_the_selector_of_a_gauge() -> None:
+    r = ok("avg:postgresql.connections{db:a} by {db}", offset=604800)
+    sel = SEL[:-1] + ', postgresql_database_name="a"}'
+    assert r.promql == f"avg by (postgresql_database_name) ({sel} offset 1w)"
+    assert check_promql_syntax(r.promql) is None
+
+
+def test_offset_goes_inside_rate_after_the_range() -> None:
+    m = mapping(
+        postgresql__rows_fetched=entry(
+            kind="rate", target={"name": "postgresql.tup_fetched", "type": "sum"}
+        )
+    )
+    r = ok("avg:postgresql.rows_fetched{$scope}", m, offset=2419200)
+    assert r.promql == (
+        'avg (rate({otel_metric_name="postgresql.tup_fetched", otel_metric_type="sum"}'
+        "[$__rate_interval] offset 4w))"
+    )
+    assert check_promql_syntax(r.promql) is None
+
+
+def test_offset_blocks_expression_mappings() -> None:
+    m = mapping(postgresql__percent_usage_connections=RATIO)
+    r = run("avg:postgresql.percent_usage_connections{*}", m, offset=3600)
+    assert isinstance(r, CompiledError)
+    assert codes(r)[-1] == "UNSUPPORTED_FORMULA"
+    assert "Timeshift" in r.diagnostics[-1].message
