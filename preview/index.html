@@ -39,10 +39,41 @@
             <span class="go-arrow" aria-hidden="true"><span class="a1">→</span><span class="a2">→</span></span>
           </button>
         </div>
+        <!-- Files to convert: a drop zone on the left, one-click samples on the right. -->
         <div class="upload" id="upload">
-          <label for="source-files">Datadog JSON files</label>
-          <input id="source-files" type="file" accept=".json,application/json" multiple>
-          <p class="why">No files selected? Convert the pinned Postgres demo. Uses mappings/datadog.</p>
+          <div class="drop" id="drop">
+            <input id="source-files" class="drop-input" type="file" accept=".json,application/json" multiple aria-describedby="drop-txt">
+            <label class="drop-empty" for="source-files">
+              <span class="drop-title">Choose Datadog JSON files</span>
+              <span class="drop-txt" id="drop-txt">Dashboards or monitors exported from Datadog. Drag them here.</span>
+              <span class="drop-note">No files selected? Convert runs the pinned Postgres demo. Uses mappings/datadog.</span>
+            </label>
+            <div class="drop-picked" id="drop-picked" hidden>
+              <p class="drop-count mono" id="drop-count" aria-live="polite"></p>
+              <ul class="drop-files mono" id="drop-files"></ul>
+              <div class="drop-acts">
+                <label class="link-btn" for="source-files">Choose other files</label>
+                <button class="link-btn" type="button" id="clear-files">Clear</button>
+              </div>
+            </div>
+          </div>
+          <div class="samples">
+            <p class="samples-head mono">Or try a sample:</p>
+            <ul class="sample-list">
+              <li><button class="sample" type="button" data-sample="checkout_dashboard.json checkout_error_rate_monitor.json" aria-pressed="false">
+                <span class="sample-name">Online shop checkout</span><span class="sample-cat mono">Fictional · dashboard and alert</span><span class="sample-fmt mono">2 files</span>
+              </button></li>
+              <li><button class="sample" type="button" data-sample="checkout_dashboard.json" aria-pressed="false">
+                <span class="sample-name">Checkout dashboard</span><span class="sample-cat mono">Volume, errors, latency</span><span class="sample-fmt mono">Dashboard</span>
+              </button></li>
+              <li><button class="sample" type="button" data-sample="checkout_error_rate_monitor.json" aria-pressed="false">
+                <span class="sample-name">High checkout error rate</span><span class="sample-cat mono">Alert above 5%</span><span class="sample-fmt mono">Monitor</span>
+              </button></li>
+              <li><button class="sample" type="button" data-sample="" aria-pressed="false">
+                <span class="sample-name">PostgreSQL integration</span><span class="sample-cat mono">Datadog's own · pinned demo</span><span class="sample-fmt mono">Built in</span>
+              </button></li>
+            </ul>
+          </div>
         </div>
         <p class="start-error mono" id="start-error" role="alert"></p>
       </div>

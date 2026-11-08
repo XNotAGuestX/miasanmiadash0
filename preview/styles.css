@@ -558,22 +558,6 @@ code {
 /* Local backend: ordinary file input and the compiler's actual outcome categories. */
 [hidden] { display: none !important; }
 /* Real mode uses the mock's look: hairline rows, mono labels, legend-style counts. */
-/* File picker: a hairline row under the start row, with the same rise-in. */
-.upload {
-  margin-top: clamp(18px, 2.6vh, 26px); padding-top: clamp(16px, 2.4vh, 22px); border-top: 1px solid var(--line);
-  display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.75rem 1.6rem;
-  animation: rise 800ms var(--ease) 260ms both;
-}
-.upload label { font: 450 0.72rem/1 var(--mono); letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink); }
-.upload input { max-width: 100%; min-width: 0; color: var(--ink-2); font: 0.78rem/1.4 var(--mono); }
-.upload input::file-selector-button {
-  margin-right: 1rem; padding: 0.7rem 1rem; border: 1px solid var(--line-2); border-radius: 0;
-  background: transparent; color: var(--ink); cursor: pointer;
-  font: 450 0.68rem/1 var(--mono); letter-spacing: 0.07em; text-transform: uppercase;
-  transition: border-color 200ms var(--ease), color 200ms var(--ease);
-}
-.upload input:hover::file-selector-button { border-color: var(--signal); color: var(--signal); }
-.upload .why { grid-column: 1 / -1; color: var(--ink-3); font-size: 0.85rem; }
 
 /* Results heading: run notes as quiet meta lines, counts like the dial legend. */
 .run-head #download-results { flex: none; margin-bottom: 0.35rem; }
@@ -646,7 +630,6 @@ button:disabled { cursor: wait; opacity: 0.6; }
   background: color-mix(in srgb, var(--paper-2) 85%, transparent); border: 1px solid var(--line); border-left: 2px solid var(--signal);
 }
 @media (max-width: 760px) {
-  .upload { grid-template-columns: minmax(0, 1fr); }
   .run-head { flex-wrap: wrap; align-items: flex-start; }
 }
 
@@ -756,4 +739,70 @@ button:disabled { cursor: wait; opacity: 0.6; }
   .run-wrap { --dial: min(64vw, 36vh, 300px); }
   .stage { grid-template-columns: minmax(0, 1fr); justify-items: center; }
   .stage-side { grid-column: 1; grid-row: 3; justify-self: stretch; width: 100%; max-width: 440px; margin-inline: auto; }
+}
+
+/* ---------- Start: drop zone beside one-click samples ---------- */
+.upload {
+  margin-top: clamp(24px, 4vh, 40px); padding: 0; border: 1px solid var(--line-2);
+  display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 0;
+  animation: rise 800ms var(--ease) 260ms both;
+}
+.drop {
+  position: relative; min-height: clamp(220px, 30vh, 300px); display: grid; place-items: center;
+  padding: clamp(20px, 3vw, 36px); text-align: center; border-right: 1px solid var(--line-2); isolation: isolate;
+  background: repeating-linear-gradient(135deg, var(--line) 0 1px, transparent 1px 14px);
+  transition: background-color 260ms var(--ease);
+}
+.drop::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; border: 1px solid var(--signal);
+  opacity: 0; transition: opacity 200ms var(--ease);
+}
+.drop:hover::after, .drop:focus-within::after { opacity: 0.6; }
+.drop.is-over { background-color: color-mix(in srgb, var(--signal) 8%, transparent); }
+.drop.is-over::after { opacity: 1; }
+.drop.is-loaded .drop-picked { animation: rise 520ms var(--ease); }
+/* The input stays focusable for keyboards and screen readers; the drop zone shows its focus. */
+.drop-input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.drop-input:focus-visible { outline: none; }
+.drop:has(.drop-input:focus-visible)::after { opacity: 1; border-width: 2px; }
+.drop-empty, .drop-picked { position: relative; display: grid; gap: 0.7rem; justify-items: center; max-width: 34rem; }
+.drop-empty { cursor: pointer; }
+.drop-empty::before, .drop-picked::before {
+  content: ""; position: absolute; inset: -0.8rem -1.2rem; z-index: -1;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+}
+.drop-title { font-size: clamp(1.25rem, 1.8vw, 1.6rem); font-weight: 300; letter-spacing: -0.02em; color: var(--ink); }
+.drop-txt { color: var(--ink-2); font-size: 0.98rem; line-height: 1.45; }
+.drop-note { color: var(--ink-3); font-size: 0.82rem; line-height: 1.5; max-width: 26rem; }
+.drop-empty:hover .drop-title { color: var(--signal); }
+.drop-count { margin: 0; color: var(--ok); font-size: 0.72rem; letter-spacing: 0.07em; text-transform: uppercase; display: flex; align-items: center; gap: 0.55rem; }
+.drop-count::before { content: ""; width: 6px; height: 6px; background: var(--ok); }
+.drop-files { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; color: var(--ink); font-size: 0.82rem; overflow-wrap: anywhere; }
+.drop-acts { display: flex; gap: 1.4rem; margin-top: 0.3rem; }
+.drop-acts label.link-btn { cursor: pointer; }
+
+.samples { display: flex; flex-direction: column; min-width: 0; }
+.samples-head { margin: 0; padding: 1.1rem 1.2rem; color: var(--ink-3); font-size: 0.68rem; letter-spacing: 0.07em; text-transform: uppercase; border-bottom: 1px solid var(--line-2); }
+.sample-list { list-style: none; margin: 0; padding: 0; }
+.sample-list li + li { border-top: 1px solid var(--line); }
+.sample {
+  width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.3rem 1rem;
+  padding: 0.95rem 1.2rem; border: 0; background: none; color: var(--ink); cursor: pointer; text-align: left;
+  transition: background-color 200ms var(--ease);
+}
+.sample:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.sample-name { grid-column: 1; font-size: 1rem; letter-spacing: -0.012em; transition: color 160ms; }
+.sample-cat { grid-column: 1; color: var(--ink-3); font-size: 0.62rem; letter-spacing: 0.07em; text-transform: uppercase; }
+.sample-fmt {
+  grid-column: 2; grid-row: 1 / span 2; padding: 0.28rem 0.45rem; border: 1px solid var(--line-2);
+  font-size: 0.6rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-2);
+  transition: border-color 200ms var(--ease), color 200ms var(--ease), background-color 200ms var(--ease);
+}
+.sample:hover .sample-name { color: var(--signal); }
+.sample:hover .sample-fmt { border-color: var(--signal); color: var(--signal); }
+.sample[aria-pressed="true"] { background: color-mix(in srgb, var(--signal) 8%, transparent); box-shadow: inset 2px 0 0 var(--signal); }
+.sample[aria-pressed="true"] .sample-fmt { background: var(--signal); border-color: var(--signal); color: #fff; }
+@media (max-width: 760px) {
+  .upload { grid-template-columns: minmax(0, 1fr); }
+  .drop { border-right: 0; border-bottom: 1px solid var(--line-2); min-height: 200px; }
 }

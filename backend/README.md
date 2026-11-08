@@ -7,8 +7,9 @@ uv sync
 uv run python -m backend.server --port 3001
 ```
 
-Open <http://localhost:3001/>. Select Datadog dashboard/monitor JSON files and click
-**Convert**, or leave the selection empty to convert the pinned Postgres demo.
+Open <http://localhost:3001/>. Choose or drag Datadog dashboard/monitor JSON files, or
+pick a sample from `preview/samples/`, and click **Convert**. Leave the selection
+empty to convert the pinned Postgres demo.
 Uses the existing `mappings/datadog` folder. Conversion needs no credentials, Node
 server or new dependencies. One stdlib HTTP server serves `preview/` and a
 synchronous `POST /api/convert`; request files are removed after conversion.
@@ -57,7 +58,7 @@ not retain runs. It is a JSON bundle, not a ZIP or CLI run directory; extract it
 | --- | --- |
 | Three result columns | Outcomes are **Translated, Approximated, Assumed, Best effort, Partial, Blocked**. Every row has its category, plus category counts. Translated is the first column; approximated/assumed/best effort go to Review; blocked goes to Blocked. This grouping does not change compiler publish eligibility. |
 | Failed/partial dashboards | Dashboard rows/failures remain hidden at Felix's request. Panel/monitor results are shown; the downloaded report retains dashboard outcomes. `partial` is currently dashboard-only, so normally has no visible rows. |
-| Translation/refinement progress | One completed response. The UI says Converting while waiting, then shows results. Simulated stage boxes are mock-only; no streamed progress, automatic refinement or mapping selection is claimed. |
+| Translation/refinement progress | One completed response. While waiting, the UI shows the dial and Read / Translate / Check steps with minimum durations, then reveals the finished report's items on the dial and sorts them into the columns. The mock's refinement step boxes are mock-only; no streamed progress, automatic refinement or mapping selection is claimed. |
 | Publish final migration | No publish endpoint. Real runs skip the fake publish button and offer a download. Nothing is sent to Dash0; publishing stays a separate explicit CLI operation. |
 | Values / % difference | Offline compilation has no measurements. Real review drawers explicitly flag numeric comparison unavailable; no fake values or percentages. |
 | Query comparison per row | Reports carry source paths, diagnostics and optional source query text, not a direct panel-to-target-query pointer. Drawers show available source evidence and every diagnostic; exact target artifacts are in the download. |
