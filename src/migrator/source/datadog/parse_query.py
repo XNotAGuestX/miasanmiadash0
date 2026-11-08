@@ -227,3 +227,87 @@ def top_block(text: str) -> tuple[str, str] | None:
     """(message, suggested action) when a query or formula is wrapped in Datadog `top()`."""
     leading = _LEADING_FUNCTION.match(text)
     return (TOP_MESSAGE, TOP_ACTION) if leading and leading.group(1) == "top" else None
+
+
+# Wrapping functions that stay blocked because the Datadog docs leave their semantics open.
+# Rate page (https://docs.datadoghq.com/dashboards/functions/rate/): per_second/per_minute/
+# per_hour: "Graph the rate at which the metric is changing per <unit>", with no formula;
+# diff: "Calculates the difference between each interval on a per interval basis", "done after
+# applying time aggregation and before space aggregation"; monotonic_diff: "like diff() but only
+# if the delta is positive". Interpolation page
+# (https://docs.datadoghq.com/dashboards/functions/interpolation/): default_zero "fills empty time
+# intervals using the value 0 or, if interpolation is enabled, with interpolation". Count page
+# (https://docs.datadoghq.com/dashboards/functions/count/): count_nonzero/count_not_null count
+# values "at each point"; the result when no series has a value is not documented.
+RATE_DOC = "https://docs.datadoghq.com/dashboards/functions/rate/"
+INTERPOLATION_DOC = "https://docs.datadoghq.com/dashboards/functions/interpolation/"
+COUNT_DOC = "https://docs.datadoghq.com/dashboards/functions/count/"
+ANOMALY_DOC = "https://docs.datadoghq.com/monitors/types/anomaly/"
+_UNDOCUMENTED_ACTION = "Migrate this widget or monitor manually."
+
+
+def _rate_reason(name: str) -> str:
+    unit = name.removeprefix("per_")
+    return (
+        f"Function '{name}' is not supported: Datadog documents it only as 'Graph the rate at "
+        f"which the metric is changing per {unit}' ({RATE_DOC}); without a formula, neither a "
+        "PromQL derivative nor a constant factor is known to match."
+    )
+
+
+def _diff_reason(name: str) -> str:
+    return (
+        f"Function '{name}' is not supported: Datadog takes the difference per interval after "
+        f"time aggregation ({RATE_DOC}); the interval depends on the graph, so no fixed PromQL "
+        "range reproduces it."
+    )
+
+
+def _count_reason(name: str) -> str:
+    return (
+        f"Function '{name}' is not supported: Datadog counts values per point across series, "
+        f"but does not document the result when no series has a value ({COUNT_DOC})."
+    )
+
+
+UNDOCUMENTED_FUNCTIONS: dict[str, str] = {
+    "per_second": _rate_reason("per_second"),
+    "per_minute": _rate_reason("per_minute"),
+    "per_hour": _rate_reason("per_hour"),
+    "diff": _diff_reason("diff"),
+    "monotonic_diff": _diff_reason("monotonic_diff"),
+    "default_zero": (
+        "Function 'default_zero' is not supported: Datadog interpolates gaps first and then "
+        f"fills the remaining intervals with 0 ({INTERPOLATION_DOC}); PromQL has no gap "
+        "interpolation."
+    ),
+    "count_nonzero": _count_reason("count_nonzero"),
+    "count_not_null": _count_reason("count_not_null"),
+    "anomalies": (
+        "Function 'anomalies' is not supported: Datadog's anomaly algorithms and bounds are not "
+        f"documented precisely enough to reproduce in PromQL ({ANOMALY_DOC})."
+    ),
+}
+
+_ANY_FUNCTION = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)\(")
+
+
+def function_block(text: str, anywhere: bool = False) -> tuple[str, str] | None:
+    """(message, suggested action) for `top()` or a function with undocumented semantics.
+
+    Query strings only block on a leading function; formulas pass ``anywhere=True``, since
+    a function can appear inside arithmetic (``query1 * per_minute(query2)``)."""
+    top = top_block(text)
+    if top is not None:
+        return top
+    names = (
+        _ANY_FUNCTION.findall(text)
+        if anywhere
+        else [m.group(1) for m in [_LEADING_FUNCTION.match(text)] if m]
+    )
+    for name in names:
+        if name == "top":
+            return TOP_MESSAGE, TOP_ACTION
+        if name in UNDOCUMENTED_FUNCTIONS:
+            return UNDOCUMENTED_FUNCTIONS[name], _UNDOCUMENTED_ACTION
+    return None

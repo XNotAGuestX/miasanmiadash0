@@ -2476,12 +2476,12 @@
     },
     {
       "code": "UNSUPPORTED_FORMULA",
-      "message": "Formula syntax is not supported at offset 13.",
+      "message": "Function 'count_nonzero' is not supported: Datadog counts values per point across series, but does not document the result when no series has a value (https://docs.datadoghq.com/dashboards/functions/count/).",
       "severity": "error",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json",
       "sourcePath": "widgets[7].definition.widgets[0].definition.requests[0].formulas[0].formula",
       "sourceText": "count_nonzero(query1)",
-      "suggestedAction": "Only +, -, *, / over query names and numbers convert."
+      "suggestedAction": "Migrate this widget or monitor manually."
     },
     {
       "code": "OPTION_IGNORED",
