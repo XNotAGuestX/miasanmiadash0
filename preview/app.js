@@ -83,11 +83,10 @@
     li.id = `item-${it.id}`;
     li.innerHTML = `
       <button class="item-btn" type="button" data-open="${it.id}" aria-expanded="false" aria-controls="drawer-${it.id}">
-        <span class="badge s-${it.status}" role="img" aria-label="${LABEL[it.status]}">
+        <span class="badge s-${it.status}" role="img" aria-label="${it.outcome ? OUTCOME[it.outcome] : LABEL[it.status]}">
           <svg viewBox="0 0 22 22" aria-hidden="true">${ICON[it.status]}</svg>
         </span>
         <span class="name">${esc(it.name)}</span>
-        ${it.outcome ? `<span class="outcome o-${it.outcome}">${esc(OUTCOME[it.outcome])}</span>` : ""}
         <span class="plus" aria-hidden="true"></span>
       </button>
       <div class="drawer" id="drawer-${it.id}"><div><div class="drawer-body" data-body="${it.id}"></div></div></div>`;
@@ -194,7 +193,7 @@
   function reset(list) {
     items = list.map((it) => ({ ...it, open: false, state: "idle" }));
     $$(".items", board).forEach((ul) => (ul.innerHTML = ""));
-    $$(".more-btn", board).forEach((b) => b.remove());
+    $$(".more-btn, .rgroups", board).forEach((b) => b.remove());
     board.classList.remove("is-sorted", "is-done", "is-entering", "show-all");
     board.classList.add("is-hidden");
     $("#stage-wrap").classList.remove("is-closed", "is-hidden");
@@ -375,12 +374,37 @@
     await wait(delay + 650);
   }
 
+  // The review column's groups: one per remark outcome. Partial appears only when it has rows.
+  const REVIEW_GROUPS = ["approximated", "assumed", "best_effort", "partial"];
+  function reviewGroups() {
+    const review = items.filter((it) => it.status === "review");
+    if (!review.length || !review.every((it) => it.outcome)) return null;
+    const col = $('.col[data-status="review"]');
+    const wrap = document.createElement("div");
+    wrap.className = "rgroups";
+    wrap.innerHTML = REVIEW_GROUPS.map((o) => {
+      const n = review.filter((it) => it.outcome === o).length;
+      if (o === "partial" && !n) return "";
+      return `<section class="rgroup${n ? "" : " is-empty"}" data-outcome="${o}">
+          <button class="rgroup-head" type="button" data-group="${o}" aria-expanded="${n ? "true" : "false"}" aria-controls="rg-${o}" ${n ? "" : "disabled"}>
+            <span class="rgroup-name">${OUTCOME[o]}</span><b>${n}</b><span class="plus" aria-hidden="true"></span>
+          </button>
+          <div class="rgroup-body" id="rg-${o}"><div><ul class="items"></ul></div></div>
+        </section>`;
+    }).join("");
+    col.appendChild(wrap);
+    return wrap;
+  }
+
   function placeAll(els) {
     board.classList.add("is-sorted");
     for (const status of ["converted", "review", "unsupported"]) {
       const ul = listFor(status);
       els.filter((e) => find(e.id.slice(5)).status === status).forEach((e) => ul.appendChild(e));
     }
+    const groups = reviewGroups();
+    if (groups) $$(":scope > .item", listFor("review")).forEach((e) =>
+      $(`.rgroup[data-outcome="${find(e.id.slice(5)).outcome}"] .items`, groups).appendChild(e));
   }
 
   function finish(id) {
@@ -625,6 +649,11 @@
     if (!t) return;
     if (t.dataset.open) toggle(find(t.dataset.open));
     else if (t.dataset.aiHelp) requestAi(find(t.dataset.aiHelp));
+    else if (t.dataset.group) {
+      const open = t.getAttribute("aria-expanded") !== "true";
+      t.setAttribute("aria-expanded", String(open));
+      t.closest(".rgroup").classList.toggle("is-collapsed", !open);
+    }
     else if (t.dataset.diff) showDiff(find(t.dataset.diff), t);
     else if (t.dataset.options) openOptions();
     else if (t.dataset.more) {

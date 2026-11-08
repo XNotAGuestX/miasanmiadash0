@@ -592,12 +592,30 @@ code {
 .category-summary b { color: var(--ink); font-weight: 400; font-variant-numeric: tabular-nums; }
 .category-summary .is-zero { opacity: 0.5; }
 
-/* Rows stay one line, as in the mock: the outcome is a small tag before the plus. */
-.item-btn .outcome {
-  flex: none; padding: 0.24rem 0.45rem; color: var(--c, var(--ink-2));
-  font: 0.6rem/1 var(--mono); letter-spacing: 0.07em; text-transform: uppercase;
-  border: 1px solid color-mix(in srgb, var(--c, var(--ink-2)) 45%, transparent);
+/* Review column: one collapsible group per remark outcome, split by a heavier rule. */
+.rgroup + .rgroup { border-top: 2px solid var(--line-2); }
+.rgroup-head {
+  width: 100%; display: flex; align-items: center; gap: 0.6rem; padding: 1rem 0;
+  border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--ink-2); cursor: pointer; text-align: left;
+  font: 450 0.66rem/1 var(--mono); letter-spacing: 0.07em; text-transform: uppercase;
+  transition: color 160ms, border-color 380ms var(--ease);
 }
+.rgroup-head::before { content: ""; width: 6px; height: 6px; flex: none; background: var(--warn); }
+.rgroup-name { flex: 1; min-width: 0; }
+.rgroup-head b { color: var(--ink); font-weight: 400; font-variant-numeric: tabular-nums; }
+.rgroup-head .plus { position: relative; width: 10px; height: 10px; flex: none; opacity: 0.45; transition: transform 320ms var(--ease), opacity 160ms; }
+.rgroup-head .plus::before, .rgroup-head .plus::after { content: ""; position: absolute; background: var(--ink); }
+.rgroup-head .plus::before { left: 0; right: 0; top: 4.5px; height: 1px; }
+.rgroup-head .plus::after { top: 0; bottom: 0; left: 4.5px; width: 1px; transition: transform 320ms var(--ease); }
+.rgroup-head[aria-expanded="true"] .plus::after { transform: scaleY(0); }
+.rgroup-head:hover:not(:disabled) { color: var(--signal); }
+.rgroup-head:hover:not(:disabled) .plus { opacity: 1; }
+.rgroup-head:disabled { cursor: default; opacity: 0.5; }
+.rgroup.is-empty .rgroup-head, .rgroup.is-collapsed .rgroup-head { border-bottom-color: transparent; }
+.rgroup-body { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 380ms var(--ease); }
+.rgroup-body > div { overflow: hidden; min-height: 0; }
+.rgroup.is-collapsed .rgroup-body, .rgroup.is-empty .rgroup-body { grid-template-rows: 0fr; }
+.rgroup .item:last-child { border-bottom: 0; }
 
 /* Real drawers: warning names as tags, diagnostics like the mock's manual note. */
 .warn-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
