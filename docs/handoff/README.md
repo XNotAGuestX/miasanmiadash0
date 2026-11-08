@@ -102,8 +102,11 @@ Felix expanded this horizon on 2026-11-08 into an **on-demand comparison environ
 It reuses pinned full OTel Demo images, collects shared samples, publishes converted demo
 assets and checks read-back and numeric parity, with independently defined workloads/tests
 and a default 3% per-series mean tolerance. See [LIVE_COMPARE.md](../LIVE_COMPARE.md).
-Offline tests and a local-only startup/metric smoke are verified; Datadog credentials still
-block real two-vendor evidence. Compiler semantics, mappings and review status are unchanged.
+Offline tests and a local-only startup/metric smoke are verified. The authorized `.env` PAT
+and Dash0 token passed live query authentication on 2026-11-08; the supplied `DD_API_KEY`
+also passed ingestion-key validation. The script loads `.env` automatically; see `STATUS.md`
+for the actual numeric outcome.
+Compiler semantics, mappings and review status are unchanged.
 
 ## Open decisions and blockers
 

@@ -70,6 +70,8 @@ class Vendors:
         path = urlsplit(req.url).path
         if self.http_error:
             return HttpResponse(403, b"private error content")
+        if path == "/api/v1/validate":
+            return self.response({"valid": True})
         if path == "/api/v2/query/timeseries":
             assert req.body is not None
             a = json.loads(req.body)["data"]["attributes"]

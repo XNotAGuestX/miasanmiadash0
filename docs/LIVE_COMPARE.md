@@ -27,15 +27,23 @@ uv run scripts/live_compare.py \
   --out out/live/demo-01 --dry-run
 ```
 
-Export these variables in your shell (or explicitly load a private, gitignored `.env`):
+The script automatically reads the repository's private, gitignored `.env`. Use
+`--env-file <path>` for another file, or `--no-env-file` for shell variables only.
+Shell values override file values. Only the documented vendor variables are loaded;
+other application credentials are ignored. Values are parsed literally: shell commands,
+backticks and variable references are never executed or expanded. Credentials stay in
+memory and inherited process environment; they are never embedded in the script.
+
+Configure these variables:
 
 | Variable | Purpose |
 |---|---|
 | `DD_SITE` | Datadog site, defaults to `datadoghq.eu` |
-| `DD_API_KEY` | Metrics ingestion and query API key |
-| `DD_APP_KEY` | Application key with `timeseries_query` permission |
-| `DASH0_API_URL` | Explicit HTTPS API URL from your organization's endpoints |
-| `DASH0_OTLP_ENDPOINT` | Explicit HTTPS OTLP/HTTP **base** endpoint, without `/v1/metrics` |
+| `DD_API_KEY` | Required metrics **ingestion** API key; validated before starting containers |
+| `DATADOG_PAT` / `DD_BEARER_TOKEN` | PAT for queries with `timeseries_query` permission; a nonempty `DD_BEARER_TOKEN` takes precedence |
+| `DD_APP_KEY` | Query application key, needed only if no PAT is configured |
+| `DASH0_API_URL` | HTTPS API URL; defaults to the project's `https://api.eu-west-1.aws.dash0.com` |
+| `DASH0_OTLP_ENDPOINT` | HTTPS OTLP/HTTP **base** endpoint without `/v1/metrics`; defaults to `https://ingress.eu-west-1.aws.dash0.com` |
 | `DASH0_AUTH_TOKEN` | Token with ingestion, query and import access to the demo dataset |
 
 Run the same command without `--dry-run`. `--dash0-dataset` selects the dataset for
@@ -46,6 +54,12 @@ repeatable `--case redis-memory --case connection-monitor` selects comparisons.
 The default measurement takes about 17 minutes after startup: five minutes warm-up, ten
 minutes measurement and two minutes ingestion allowance. Progress is printed every 30 seconds.
 Image downloads and initial health checks add startup time.
+
+A query PAT is not an ingestion API key. Create the latter in Datadog's
+**Organization Settings → API Keys → New Key**, then save it as `DD_API_KEY` in `.env`.
+The preflight verifies query access to both vendors and separately validates the ingestion
+key before starting containers or publishing. A missing ingestion key is recorded explicitly;
+successful query authentication alone is not reported as successful parity.
 
 Exit codes: **0** all selected comparisons and read-backs passed; **2** comparison failures
 or blocked conversions; **1** configuration, credentials, HTTP, Docker or cleanup failure.
@@ -203,5 +217,6 @@ uv run mypy --strict scripts/live_compare.py scripts/live_compare_support
 
 Focused tests use fake vendor APIs and stubbed Docker operations. They never establish live
 parity. A real two-vendor run requires configured credentials and recorded IDs/read-back/
-numeric evidence. At implementation time Datadog credentials were unavailable, so live
-Datadog/Dash0 parity remains unverified.
+numeric evidence. On 2026-11-08 the authorized `.env` PAT and Dash0 token passed actual query
+API checks; the subsequently supplied ingestion key also passed Datadog's validation API.
+See `docs/STATUS.md` for the recorded live comparison outcome.

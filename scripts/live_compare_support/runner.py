@@ -33,15 +33,21 @@ from live_compare_support.config import (
     resolve,
     save_json,
 )
+from live_compare_support.credentials import load_environment, read_query_config
 from live_compare_support.environment import Environment
-from live_compare_support.queries import BoundQuery, pair, query_source, query_target
+from live_compare_support.queries import (
+    BoundQuery,
+    pair,
+    query_source,
+    query_target,
+    validate_ingestion_key,
+)
 from migrator.convert import ConvertOptions, run_convert
 from migrator.destination.dash0 import Dash0Config, read_back, read_dash0_config
 from migrator.http import HttpSend, urllib_send
 from migrator.input import InputError
 from migrator.publish import PublishOptions, run_publish
 from migrator.receipts import load_receipts
-from migrator.source.datadog.api import read_datadog_config
 
 EnvironmentFactory = Callable[..., Environment]
 
@@ -204,7 +210,7 @@ def threshold_decisions(series: list[Series], bound: BoundQuery) -> list[Series]
 
 
 def redact(message: str, env: Mapping[str, str]) -> str:
-    for name in ["DD_API_KEY", "DD_APP_KEY", "DASH0_AUTH_TOKEN"]:
+    for name in ["DD_API_KEY", "DD_APP_KEY", "DD_BEARER_TOKEN", "DATADOG_PAT", "DASH0_AUTH_TOKEN"]:
         if env.get(name):
             message = message.replace(env[name], "<redacted>")
     return message[:800]
@@ -340,7 +346,7 @@ def execute(
         run_env = dict(env)
         run_env["DASH0_DATASET"] = args.dash0_dataset
         run_env.setdefault("DD_SITE", "datadoghq.eu")
-        cfg, dd = read_dash0_config(run_env), read_datadog_config(run_env)
+        cfg, dd = read_dash0_config(run_env), read_query_config(run_env)
         for name in ["DASH0_API_URL", "DASH0_OTLP_ENDPOINT"]:
             url = urlsplit(run_env.get(name, ""))
             if (
@@ -436,6 +442,15 @@ def execute(
                     cfg,
                     send,
                 )
+                report["authentication"] = {"datadogQuery": "passed", "dash0Query": "passed"}
+                if not run_env.get("DD_API_KEY", "").strip():
+                    raise InputError(
+                        "Datadog/Dash0 query authentication passed, but metric ingestion requires "
+                        "DD_API_KEY in .env; DATADOG_PAT/DD_BEARER_TOKEN authenticates queries "
+                        "and does not replace the Collector's ingestion API key"
+                    )
+                validate_ingestion_key(run_env["DD_API_KEY"].strip(), dd, send)
+                report["authentication"]["datadogIngestion"] = "passed"
                 if not state["collectionComplete"]:
                     environment.stop()  # clean up only this run after a previous interruption
                     environment.prepare()
@@ -550,6 +565,7 @@ def execute(
                 report["error"] = redact(
                     "interrupted" if isinstance(err, KeyboardInterrupt) else str(err), run_env
                 )
+                print(f"error: {report['error']}", flush=True)
             finally:
                 if not args.keep_running:
                     try:
@@ -580,9 +596,18 @@ def main(
     parser.add_argument("--case", action="append")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--keep-running", action="store_true")
+    env_files = parser.add_mutually_exclusive_group()
+    env_files.add_argument(
+        "--env-file", type=Path, help="literal .env file (default: repository .env when present)"
+    )
+    env_files.add_argument("--no-env-file", action="store_true", help="use only shell credentials")
     args = parser.parse_args(argv)
     environment = dict(os.environ if env is None else env)
     try:
+        path = args.env_file
+        if path is None and env is None and not args.no_env_file and (ROOT / ".env").is_file():
+            path = ROOT / ".env"
+        environment = load_environment(environment, path)
         if not args.dash0_dataset.strip():
             raise InputError("--dash0-dataset must be nonempty")
         return execute(args, environment, send, make_environment, now, sleep)

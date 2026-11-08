@@ -12,9 +12,9 @@ import promql_parser as prom
 
 from live_compare_support.comparison import DataError, Series, dash0_series, datadog_series
 from live_compare_support.config import Case
+from live_compare_support.credentials import QueryConfig
 from migrator.destination.dash0 import Dash0Config
 from migrator.http import HttpRequest, HttpSend
-from migrator.source.datadog.api import DatadogConfig
 from migrator.source.datadog.model import MetricQuery, TagFilter, VariableFilter
 from migrator.source.datadog.monitor import parse_monitor_query
 from migrator.source.datadog.parse_query import parse_metric_query
@@ -213,7 +213,7 @@ def request_json(request: HttpRequest, send: HttpSend) -> Any:
 
 
 def query_source(
-    bound: BoundQuery, start: int, end: int, step: int, cfg: DatadogConfig, send: HttpSend
+    bound: BoundQuery, start: int, end: int, step: int, cfg: QueryConfig, send: HttpSend
 ) -> list[Series]:
     attributes = {
         "from": start * 1000,
@@ -227,13 +227,19 @@ def query_source(
         "POST",
         cfg.base_url + "/api/v2/query/timeseries",
         {
-            "DD-API-KEY": cfg.api_key,
-            "DD-APPLICATION-KEY": cfg.app_key,
+            **cfg.headers,
             "Content-Type": "application/json",
         },
         json.dumps(body).encode(),
     )
     return datadog_series(request_json(req, send))
+
+
+def validate_ingestion_key(api_key: str, cfg: QueryConfig, send: HttpSend) -> None:
+    request = HttpRequest("GET", cfg.base_url + "/api/v1/validate", {"DD-API-KEY": api_key})
+    payload = request_json(request, send)
+    if not isinstance(payload, dict) or payload.get("valid") is not True:
+        raise RuntimeError("Datadog ingestion API key validation did not succeed")
 
 
 def query_target(

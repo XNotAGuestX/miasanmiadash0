@@ -37,10 +37,12 @@ uv run scripts/live_compare.py \
   --dash0-dataset migration-demo --out out/live/demo-01 --dry-run
 ```
 
-Remove `--dry-run` after configuring vendor credentials and explicit Dash0 endpoints.
+The script loads the repository `.env` automatically. Configure `DD_API_KEY` for ingestion,
+`DATADOG_PAT` (or `DD_BEARER_TOKEN`) for queries and `DASH0_AUTH_TOKEN`, then remove `--dry-run`.
+Dash0 endpoints default to the project's EU West region and can be overridden.
 See [LIVE_COMPARE.md](docs/LIVE_COMPARE.md) for configuration, evidence, resumption and cleanup.
 Offline tests and a local-only full-demo smoke run are verified; two-vendor live parity still
-requires Datadog credentials. Imported checks remain disabled.
+requires the Datadog ingestion API key. Imported checks remain disabled.
 
 ## Convert (offline)
 
