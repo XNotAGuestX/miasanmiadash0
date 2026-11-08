@@ -6,10 +6,25 @@ Start from the repository root:
 uv run python -m backend.server --port 3001
 ```
 
-Open <http://localhost:3001/>. Select Datadog JSON files or use the pinned Postgres
-demo by leaving the selection empty, then click **Convert**. The real deterministic
-compiler runs synchronously and the page shows its actual report. Download results
-to retain the generated artifacts. No account credentials are needed.
+Open <http://localhost:3001/>. Choose or drag Datadog JSON files into the drop zone,
+pick a sample, or leave the selection empty for the pinned Postgres demo, then click
+**Convert**. The real deterministic compiler runs synchronously and the page shows its
+actual report. Download results to retain the generated artifacts. No account
+credentials are needed.
+
+Samples live in `preview/samples/` and go through the same upload as picked files:
+`checkout_dashboard.json` (a fictional online shop checkout dashboard: request volume,
+error rate, p95 latency, cart cache, orders database, host CPU) and
+`checkout_error_rate_monitor.json` (alert when the checkout error rate is above 5%).
+With the current mappings the converter returns 4 translated, 1 assumed, 1 best effort
+and 2 blocked widgets; the monitor is blocked. Error rate, latency and the monitor use
+Datadog APM trace metrics (`trace.http.request.*`), which have no reviewed mapping yet.
+
+While the request runs, the run screen shows the dial and three steps (Read, Translate,
+Check) with minimum durations, so a fast answer is still visible. Once the report
+arrives its items are revealed on the dial in their real outcome colours and sort into
+the columns. Nothing is streamed or simulated per item; the mock's step boxes, values
+and publish button stay in `?mock=1`.
 
 See [backend/README.md](../backend/README.md) for the API, limits and the complete
 **frontend/backend mismatch list**: publishing, numeric comparison, progress,
