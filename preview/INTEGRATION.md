@@ -51,12 +51,21 @@ UI item shape:
 ```js
 { id, name, status: "converted" | "review" | "unsupported",
   why, action?, from?, to?, outcome?, source?: { id, path, kind },
-  suggestion?: { code, note } }   // mock only
+  compare?: { datadog, dash0, unit? },   // Needs review: the two values the difference is computed from
+  suggestion?: { code, note } }          // mock only, unsupported items
 ```
+
+## Needs review: manual fix and % difference
+
+Needs review items show their issue, a "Fix this manually in Dash0." note, and the Datadog and Dash0 values from `compare`. A button shows `(dash0 − datadog) / |datadog| × 100`. If a value is missing or the Datadog value is 0, it shows "Difference unavailable." instead. `report.json` carries no such values today. To fill them, a live comparison (for example from `scripts/live_compare.py`) would set `compare` on each item.
+
+## Loading screen and publish
+
+The dial sits on the left and the step boxes on the right: Generate dashboard mappings, Apply mapping structures, Test and refine, Check what worked. The boxes follow progress (`onProgress` in `app.js`); they don't report real backend stages. When the steps end, "Publish final migration" appears. Its click plays an animation and then shows the results. It does not call `migrator publish`; wire that in where `publishResolve` is awaited in `runMigration`.
 
 ## AI suggestions
 
-`suggestion` exists only in the mock data. It drives the simulated "Ask AI" and "Try with AI" demo paths. The report adapter never sets it, so with a real report those buttons and the AI option card are hidden. Under AGENTS.md, no model may take part in conversion, including optional fallbacks, so don't connect them to a model without an explicit project decision.
+`suggestion` exists only in the mock data, and only for unsupported items. It drives the simulated "Try with AI" demo on the Not supported page. Needs review items no longer have an AI fix. The report adapter never sets `suggestion`, so with a real report the AI option card is hidden. Under AGENTS.md, no model may take part in conversion, including optional fallbacks, so don't connect them to a model without an explicit project decision.
 
 ## Going live (not built)
 

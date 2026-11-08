@@ -61,7 +61,8 @@
         <!-- A dial: one tick per item (or per group of items when there are many). A tick lights in
              its status colour when the (simulated) backend finishes it; the orange arc keeps turning while it works. -->
         <div class="stage-wrap" id="stage-wrap">
-          <div class="stage" aria-hidden="true">
+          <div class="stage">
+            <div class="stage-l" aria-hidden="true">
             <div class="dial">
               <svg class="dial-svg" viewBox="0 0 400 400">
                 <circle class="orbit" cx="200" cy="200" r="150"/>
@@ -78,6 +79,20 @@
               <span><i class="s-review"></i><b id="n-review">0</b> review</span>
               <span><i class="s-unsupported"></i><b id="n-unsupported">0</b> not supported</span>
             </p>
+            </div>
+            <!-- What the migration is doing: one box per step, in while the step runs, out when it ends. -->
+            <div class="stage-r" id="steps">
+              <div class="publish" id="publish" hidden>
+                <p class="mono faint">Migration ready</p>
+                <button id="publish-btn" class="go pub" type="button">
+                  <span class="go-label"><span class="pub-txt">Publish final migration</span></span>
+                  <span class="go-arrow" aria-hidden="true">
+                    <span class="a1">→</span><span class="a2">→</span>
+                    <svg class="pub-tick" viewBox="0 0 12 12"><path d="M2.2 6.3l2.4 2.4L9.8 3.4"/></svg>
+                  </span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 

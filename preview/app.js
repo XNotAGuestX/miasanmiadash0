@@ -108,6 +108,51 @@
   }
   function stopStage() { dialEl.classList.remove("is-working"); }
 
+  /* ---------- Step boxes (right of the dial) ---------- */
+  const STEPS = [
+    { title: "Generate dashboard mappings" },
+    { title: "Apply mapping structures" },
+    { title: "Test and refine", subs: ["Approximate where needed", "Record assumptions", "Choose the best-effort mapping"] },
+    { title: "Check what worked", subs: ["Deterministically evaluate which mapping succeeded best"] },
+  ];
+  const stepsEl = $("#steps"), publishEl = $("#publish"), publishBtn = $("#publish-btn");
+  let stepEl = null, stepN = -1, subN = -1, publishResolve = null;
+
+  function stepOut() {
+    const el = stepEl;
+    stepEl = null;
+    if (!el) return;
+    if (still()) { el.remove(); return; }
+    $$(".step-subs li", el).forEach((li) => li.classList.add("is-in", "is-done"));
+    el.classList.add("is-out");
+    el.addEventListener("animationend", () => el.remove(), { once: true });
+  }
+  function stepIn(n) {
+    stepOut();
+    stepN = n; subN = -1;
+    const s = STEPS[n];
+    const el = document.createElement("div");
+    el.className = "step-box";
+    el.innerHTML = `<p class="step-num mono">${String(n + 1).padStart(2, "0")} / ${String(STEPS.length).padStart(2, "0")}</p>
+      <h3 class="step-title">${s.title}</h3>
+      ${s.subs ? `<ul class="step-subs">${s.subs.map((t) => `<li>${t}</li>`).join("")}</ul>` : ""}
+      <span class="step-bar" aria-hidden="true"></span>`;
+    stepsEl.appendChild(el);
+    stepEl = el;
+    $("#live").textContent = s.title;
+  }
+  function stepSub(k) {
+    if (!stepEl || k <= subN) return;
+    const lis = $$(".step-subs li", stepEl);
+    lis.forEach((li, j) => { if (j <= k) li.classList.add("is-in"); if (j < k) li.classList.add("is-done"); });
+    subN = k;
+  }
+  // While items translate: Apply mapping structures, then Test and refine with its three parts.
+  function onProgress(p) {
+    if (stepN === 1 && p >= 0.35) { stepIn(2); stepSub(0); }
+    if (stepN === 2) { if (p >= 0.6) stepSub(1); if (p >= 0.82) stepSub(2); }
+  }
+
   async function work(i, id) {
     const it = items[i], tick = tickFor(i);
     tick.classList.add("is-active");
@@ -123,6 +168,7 @@
     const n = $(`#n-${it.status}`);
     n.textContent = count[it.status];
     n.classList.remove("is-bump"); void n.offsetWidth; n.classList.add("is-bump");
+    onProgress(doneN / items.length);
   }
 
   /* ---------- Run ---------- */
@@ -141,6 +187,12 @@
     board.classList.add("is-hidden");
     $("#stage-wrap").classList.remove("is-closed", "is-hidden");
     dialEl.classList.remove("is-working", "is-read", "is-done");
+    $$(".step-box", stepsEl).forEach((b) => b.remove());
+    stepEl = null; stepN = -1; subN = -1; publishResolve = null;
+    publishEl.hidden = true;
+    publishEl.classList.remove("is-out", "is-done");
+    publishBtn.classList.remove("is-publishing", "is-published");
+    $(".pub-txt", publishBtn).textContent = "Publish final migration";
     buildTicks();
     doneN = 0;
     for (const s of Object.keys(count)) { count[s] = 0; $(`#n-${s}`).textContent = "0"; }
@@ -171,16 +223,16 @@
 
     // 01 Read: the ticks sweep in around the dial.
     setStep(0);
-    $("#live").textContent = `Reading ${items.length} dashboards and alerts.`;
     showNow(`${items.length} items`);
     dialEl.classList.add("is-read");
-    await wait(900);
+    stepIn(0);
+    await wait(1500);
     if (id !== runId) return;
 
     // 02 Translate: a few at a time, for as long as the backend takes.
     setStep(1);
-    $("#live").textContent = "Translating queries and rules.";
     dialEl.classList.add("is-working");
+    stepIn(1);
     let next = 0;
     const lane = async (d) => {
       await wait(d);
@@ -190,20 +242,53 @@
     if (id !== runId) return;
     stopStage();
 
-    // 03 Check: the dial glows once, folds away, and the results sort into the table.
+    // 03 Check: the dial glows once while the last step runs.
     setStep(2);
-    $("#live").textContent = "Checking what needs review.";
+    stepIn(3);
     $("#pct").textContent = "100";
     showNow("Done");
     dialEl.classList.add("is-done");
-    await wait(1200);
+    await wait(500);
+    stepSub(0);
+    await wait(1300);
     if (id !== runId) return;
+    stepOut();
+
+    // Publish: the button appears where the steps were; the results follow its click.
+    await wait(260);
+    if (id !== runId) return;
+    publishEl.hidden = false;
+    $("#live").textContent = "Migration ready. Publish final migration.";
+    publishBtn.focus({ preventScroll: true });
+    await new Promise((r) => (publishResolve = r));
+    if (id !== runId) return;
+    await publishAnim();
+    if (id !== runId) return;
+
+    // The stage folds away and the results sort into the table.
     $("#stage-wrap").classList.add("is-closed");
     await wait(440);
     $("#stage-wrap").classList.add("is-hidden");
     if (id !== runId) return;
     await sortIntoBoard(id);
     finish(id);
+  }
+
+  async function publishAnim() {
+    publishBtn.classList.add("is-publishing");
+    $(".pub-txt", publishBtn).textContent = "Publishing";
+    await wait(760);                                   // orange sweeps across the button
+    publishBtn.classList.remove("is-publishing");
+    publishBtn.classList.add("is-published");
+    $(".pub-txt", publishBtn).textContent = "Published";
+    publishEl.style.setProperty("--pub-w", `${publishBtn.offsetWidth}px`);
+    publishEl.style.setProperty("--pub-h", `${publishBtn.offsetHeight}px`);
+    publishEl.classList.add("is-done");                // ring pulses out, tick draws
+    burst(publishEl, publishBtn, 14, ["var(--ok)", "var(--signal)", "var(--warn)"], "confetti", 46);
+    $("#live").textContent = "Published.";
+    await wait(900);
+    publishEl.classList.add("is-out");
+    await wait(320);
   }
 
   const SHOW_FIRST = 6;
@@ -282,31 +367,57 @@
     const out = [`<p class="why">${esc(it.why)}</p>`];
     if (it.action) out.push(`<p class="why">${esc(it.action)}</p>`);
     if (it.status === "converted") return out.join("");
+    if (it.status === "review") {
+      const c = it.compare || {};
+      out.push(`<p class="manual-note">Fix this manually in Dash0.</p>
+        <dl class="compare">
+          <div><dt class="mono">Datadog</dt><dd>${fmtVal(c.datadog, c.unit)}</dd></div>
+          <div><dt class="mono">Dash0</dt><dd>${fmtVal(c.dash0, c.unit)}</dd></div>
+        </dl>
+        <button class="link-btn" type="button" data-diff="${it.id}">Show % difference <span class="arrow" aria-hidden="true">→</span></button>
+        <p class="diff" id="diff-${it.id}" aria-live="polite"></p>`);
+      return out.join("");
+    }
     if (it.status === "unsupported" && it.state !== "accepted") {
       out.push(`<button class="link-btn" type="button" data-options="1">See options <span class="arrow" aria-hidden="true">→</span></button>`);
       return out.join("");
     }
-    if (it.state === "suggested") {
-      const kind = "Suggested fix";
-      out.push(`<div class="suggestion is-in" role="region" aria-label="${kind} for ${esc(it.name)}">
-        <p class="label mono">${kind}</p>
-        <code>${esc(it.suggestion.code)}</code>
-        <p class="note">${esc(it.suggestion.note)}</p>
-        <div class="row">
-          <button class="btn btn-small accept-btn" type="button" data-accept="${it.id}">
-            <svg class="tick" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.2 6.3l2.4 2.4L9.8 3.4"/></svg>
-            <span class="txt">Accept suggestion</span>
-          </button>
-          <button class="btn btn-ghost btn-small" type="button" data-dismiss="${it.id}">Not now</button>
-        </div>
-      </div>`);
-    } else if (it.state === "accepted") {
+    if (it.state === "accepted") {
       out.push(`<code>${esc(it.suggestion.code)}</code>
         <p class="accepted-note" role="status">Accepted. Still needs validation in Dash0.</p>`);
-    } else if (it.suggestion) {
-      out.push(`<button class="ai-btn" type="button" data-ai="${it.id}">${STAR}<span class="txt">Ask AI to suggest a fix</span><span class="bar" aria-hidden="true"></span></button>`);
     }
     return out.join("");
+  }
+
+  /* ---------- Needs review: Datadog vs Dash0 difference, from the displayed values ---------- */
+  const isNum = (v) => typeof v === "number" && Number.isFinite(v);
+  const fmtNum = (v) => v.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  function fmtVal(v, unit) { return isNum(v) ? `${fmtNum(v)}${esc(unit || "")}` : "Not available"; }
+  // (Dash0 − Datadog) / |Datadog| × 100. Null when a value is missing or Datadog is 0: no made-up result.
+  function pctDiff(c) {
+    if (!c || !isNum(c.datadog) || !isNum(c.dash0) || c.datadog === 0) return null;
+    return ((c.dash0 - c.datadog) / Math.abs(c.datadog)) * 100;
+  }
+  async function showDiff(it, btn) {
+    const out = $(`#diff-${it.id}`);
+    const d = pctDiff(it.compare);
+    btn.remove();
+    if (d === null) { out.textContent = "Difference unavailable."; out.classList.add("is-in", "is-na"); return; }
+    const word = d > 0 ? "higher" : d < 0 ? "lower" : "";
+    const tail = word ? ` Dash0 is ${word} than Datadog.` : " Same value in both.";
+    out.innerHTML = `<span class="diff-num">${d > 0 ? "+" : d < 0 ? "−" : ""}<b>0.0</b>%</span><span class="diff-txt">${tail}</span>`;
+    out.classList.add("is-in");
+    const b = $("b", out), target = Math.abs(d);
+    if (still()) { b.textContent = target.toFixed(1); return; }
+    const t0 = performance.now(), dur = 700;
+    await new Promise((done) => {
+      const tickNum = (t) => {
+        const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+        b.textContent = (target * e).toFixed(1);
+        k < 1 ? requestAnimationFrame(tickNum) : done();
+      };
+      requestAnimationFrame(tickNum);
+    });
   }
 
   function render(it) { $(`[data-body="${it.id}"]`).innerHTML = bodyHTML(it); }
@@ -336,40 +447,6 @@
       host.appendChild(s);
       s.addEventListener("animationend", () => s.remove());
     }
-  }
-
-  async function askAi(it, btn) {
-    burst(btn.closest(".item"), $(".star", btn), 8, ["var(--signal)"], "spark", 22);
-    btn.classList.add("is-thinking");
-    btn.setAttribute("aria-busy", "true");
-    $(".txt", btn).textContent = "Analyzing";
-    await wait(1350);
-    it.state = "suggested";
-    render(it);
-    $(`[data-accept="${it.id}"]`)?.focus({ preventScroll: true });
-  }
-
-  async function accept(it, btn) {
-    btn.classList.add("is-accepted");
-    $(".txt", btn).textContent = "Accepted";
-    await wait(420);
-
-    // The row celebrates: a green wash runs across, a seal pops onto the badge, a few bits fly.
-    const li = $(`#item-${it.id}`);
-    const badge = $(".badge", li);
-    if (!still()) {
-      const wash = document.createElement("span");
-      wash.className = "wash";
-      li.prepend(wash);
-      wash.addEventListener("animationend", () => wash.remove());
-    }
-    markAccepted(it);
-    burst(li, badge, 12, ["var(--ok)", "var(--signal)", "var(--warn)"], "confetti", 34);
-
-    await wait(520);
-    it.state = "accepted";
-    render(it);
-    $(`[data-open="${it.id}"]`).focus({ preventScroll: true });
   }
 
   function markAccepted(it) {
@@ -459,20 +536,20 @@
     const t = e.target.closest("button");
     if (!t) return;
     if (t.dataset.open) toggle(find(t.dataset.open));
-    else if (t.dataset.ai) askAi(find(t.dataset.ai), t);
-    else if (t.dataset.accept) accept(find(t.dataset.accept), t);
+    else if (t.dataset.diff) showDiff(find(t.dataset.diff), t);
     else if (t.dataset.options) openOptions();
     else if (t.dataset.more) {
       const open = board.classList.toggle("show-all");
       t.setAttribute("aria-expanded", String(open));
       t.innerHTML = open ? 'Show fewer <span class="arrow" aria-hidden="true">↑</span>' : `Show all ${+t.dataset.more + SHOW_FIRST} <span class="arrow" aria-hidden="true">↓</span>`;
     }
-    else if (t.dataset.dismiss) {
-      const it = find(t.dataset.dismiss);
-      it.state = "idle";
-      render(it);
-      $(`[data-ai="${it.id}"]`)?.focus();
-    }
+  });
+
+  publishBtn.addEventListener("click", () => {
+    if (!publishResolve || publishBtn.classList.contains("is-publishing")) return;
+    const r = publishResolve;
+    publishResolve = null;
+    r();
   });
 
   $("#options-btn").addEventListener("click", openOptions);

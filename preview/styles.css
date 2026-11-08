@@ -554,3 +554,93 @@ code {
 /* Backend adapter: a load error on the start screen, and a one-column options grid when there is no AI option */
 .start-error { margin: 18px 0 0; min-height: 1em; color: var(--bad); }
 .options.is-single { grid-template-columns: minmax(0, 1fr); }
+
+/* ---------- Loading screen: dial on the left, step boxes on the right ---------- */
+.stage {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center;
+  gap: clamp(28px, 6vw, 96px);
+}
+.stage-l { display: flex; flex-direction: column; align-items: center; gap: clamp(20px, 4vh, 40px); min-width: 0; }
+.stage .dial { width: min(40vw, 58vh, 500px); }
+.stage-r { position: relative; display: grid; align-items: center; justify-items: start; min-height: 300px; min-width: 0; }
+.stage-r > * { grid-area: 1 / 1; }
+
+.step-box {
+  position: relative; width: min(100%, 440px); padding: 24px 26px 26px; display: grid; gap: 10px; overflow: hidden;
+  border: 1px solid var(--line-2); background: color-mix(in srgb, var(--paper) 72%, transparent);
+  animation: box-in 560ms var(--ease) both;
+}
+.step-box.is-out { animation: box-out 420ms var(--ease) forwards; }
+@keyframes box-in { from { opacity: 0; transform: translateY(16px); } }
+@keyframes box-out { to { opacity: 0; transform: translateY(-16px); } }
+.step-num { margin: 0; color: var(--signal); }
+.step-title { margin: 0; font-weight: 300; font-size: clamp(1.4rem, 2.2vw, 1.9rem); letter-spacing: -0.035em; line-height: 1.1; }
+.step-subs { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 8px; }
+.step-subs li {
+  display: flex; align-items: center; gap: 0.7rem; color: var(--ink-2); font-size: 0.95rem;
+  opacity: 0; transform: translateY(6px); transition: opacity 420ms var(--ease), transform 420ms var(--ease), color 300ms;
+}
+.step-subs li::before { content: ""; width: 6px; height: 6px; flex: none; background: var(--signal); transition: background-color 300ms; }
+.step-subs li.is-in { opacity: 1; transform: none; }
+.step-subs li.is-done { color: var(--ink-3); }
+.step-subs li.is-done::before { background: var(--ok); }
+.step-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--line); overflow: hidden; }
+.step-bar::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 30%; background: var(--signal);
+  animation: step-run 1.6s var(--ease) infinite;
+}
+@keyframes step-run { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
+
+/* Publish final migration */
+.publish { position: relative; display: grid; gap: 14px; justify-items: start; animation: box-in 600ms var(--ease) both; }
+.publish[hidden] { display: none; }
+.publish.is-out { animation: box-out 320ms var(--ease) forwards; }
+.publish p { margin: 0; }
+.pub::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; background: var(--signal);
+  transform: scaleX(0); transform-origin: left; transition: transform 720ms cubic-bezier(0.7, 0, 0.2, 1), background-color 260ms;
+}
+.pub .pub-tick { width: 14px; height: 14px; grid-area: 1 / 1; opacity: 0; }
+.pub .pub-tick path { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 14; stroke-dashoffset: 14; }
+.pub.is-publishing, .pub.is-published { pointer-events: none; }
+.pub.is-publishing { border-color: var(--signal); color: #fff; animation: pub-press 260ms var(--ease); }
+.pub.is-publishing::after { transform: scaleX(1); }
+.pub.is-publishing .go-arrow .a1 { transform: translateX(2.6rem); }
+.pub.is-publishing .go-arrow .a2 { transform: none; }
+.pub.is-publishing .go-arrow { border-left-color: transparent; }
+.pub.is-published { border-color: var(--ok); color: var(--on-ok); animation: pub-pop 520ms var(--spring); }
+.pub.is-published::after { transform: scaleX(1); background: var(--ok); }
+.pub.is-published .go-arrow { border-left-color: transparent; color: var(--on-ok); }
+.pub.is-published .go-arrow .a1, .pub.is-published .go-arrow .a2 { opacity: 0; }
+.pub.is-published .pub-tick { opacity: 1; }
+.pub.is-published .pub-tick path { animation: draw 340ms var(--ease) 120ms forwards; }
+@keyframes pub-press { 40% { transform: scale(0.96); } }
+@keyframes pub-pop { 0% { transform: scale(0.94); } 100% { transform: scale(1); } }
+.publish.is-done::after {
+  content: ""; position: absolute; left: 0; bottom: 0; width: var(--pub-w, 100%); height: var(--pub-h, 56px); pointer-events: none;
+  border: 1.5px solid var(--ok); animation: pub-ring 800ms var(--ease) forwards;
+}
+.publish .pub { position: relative; }
+@keyframes pub-ring { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.08, 1.5); } }
+
+/* ---------- Needs review: manual fix and the Datadog vs Dash0 difference ---------- */
+.manual-note { margin: 0; display: flex; align-items: center; gap: 0.55rem; color: var(--ink); font-size: 0.92rem; }
+.manual-note::before { content: ""; width: 6px; height: 6px; flex: none; background: var(--warn); }
+.compare { margin: 0; display: flex; flex-wrap: wrap; gap: 0.6rem 2rem; }
+.compare div { display: grid; gap: 4px; }
+.compare dt { color: var(--ink-3); }
+.compare dd { margin: 0; font-size: 1.05rem; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.diff { margin: 0; min-height: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.6rem; }
+.diff.is-in { animation: rise 420ms var(--ease); }
+.diff-num { font: 250 2rem/1 var(--sans); letter-spacing: -0.04em; color: var(--warn); font-variant-numeric: tabular-nums; }
+.diff-num b { font-weight: inherit; }
+.diff-txt { color: var(--ink-2); font-size: 0.9rem; }
+.diff.is-na { color: var(--ink-2); font-size: 0.9rem; }
+
+@media (max-width: 760px) {
+  .stage { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .stage .dial { width: min(68vw, 40vh, 340px); }
+  .stage-r { min-height: 200px; justify-items: stretch; }
+  .step-box { width: 100%; }
+  .publish .pub { width: 100%; }
+}
