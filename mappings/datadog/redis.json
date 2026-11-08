@@ -1,4 +1,18 @@
 {
+  "gaps": {
+    "redis.info.latency_ms": {
+      "reason": "Datadog (integrations-core@a9b9e42 redisdb.py check, gauge, millisecond) times the INFO call round trip from the Agent (_call_and_time(conn.info)). No OTel metric in fixtures/otel/catalog.yaml carries client-side INFO latency; redis.cmd.latency (fixtures/otel/collector-contrib/receiver/redisreceiver/metadata.yaml) is the server's per-command latency percentiles from INFO latencystats, a different quantity. dash0: not checked (no access in this run).",
+      "tag": "NOOTEL"
+    },
+    "redis.replication.delay": {
+      "reason": "Datadog (integrations-core@a9b9e42 redisdb.py _check_replication, gauge, offset) computes master_repl_offset - slaveN offset on the master, one series per replica (tags slave_ip, slave_port, slave_id). OTel (fixtures/otel/collector-contrib/receiver/redisreceiver/metadata.yaml) has redis.replication.offset (this server's offset) and redis.replication.replica_offset (slave_repl_offset, reported by the replica itself), with no attribute linking a replica to its master, so the per-replica difference cannot be rebuilt deterministically. dash0: not checked (no access in this run).",
+      "tag": "NOEQUIV"
+    },
+    "redis.replication.master_link_down_since_seconds": {
+      "reason": "Datadog (integrations-core@a9b9e42 redisdb.py _check_replication, gauge, second) reports INFO master_link_down_since_seconds on a replica (0 while master_link_status is up). No OTel metric in fixtures/otel/catalog.yaml or fixtures/otel/collector-contrib/receiver/redisreceiver/metadata.yaml carries master_link_status or master_link_down_since_seconds; collector-contrib@v0.165.0 metric_functions.go does not read either key. dash0: not checked (no access in this run).",
+      "tag": "NOOTEL"
+    }
+  },
   "labels": {
     "host": "host_name"
   },
@@ -104,6 +118,21 @@
         "type": "gauge"
       },
       "targetUnit": "1"
+    },
+    "redis.mem.maxmemory": {
+      "kind": "gauge",
+      "labels": {
+        "host": "host_name"
+      },
+      "ref": "Vendor row: fixtures/datadog/otel-mapping.yaml redis.mem.maxmemory -> redis.maxmemory. Datadog: integrations-core@a9b9e42 redisdb/datadog_checks/redisdb/constants.py GAUGE_KEYS 'maxmemory', submitted with self.gauge (redisdb.py _check_info_fields); metadata.csv gauge, unit byte. OTel: fixtures/otel/collector-contrib/receiver/redisreceiver/metadata.yaml redis.maxmemory, gauge, unit By, \"The value of the maxmemory configuration directive\", no attributes, disabled by default; from INFO maxmemory (collector-contrib@v0.165.0 receiver/redisreceiver/metric_functions.go). Units: byte vs By. Kind gauge: both sides read the same INFO value (0 when no limit is set, on both sides). dash0: not checked (no access in this run). Churn: see redis.mem.used (resource-hash split on os_description). No grain set, like the file's other entries; open question in the #113 PR.",
+      "reviewed": null,
+      "scale": 1,
+      "sourceUnit": "byte",
+      "target": {
+        "name": "redis.maxmemory",
+        "type": "gauge"
+      },
+      "targetUnit": "By"
     },
     "redis.mem.rss": {
       "kind": "gauge",

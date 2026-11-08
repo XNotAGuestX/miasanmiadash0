@@ -108,8 +108,8 @@ REMARKS: dict[str, Remark] = {
     "SEMANTIC": Remark(
         category="assumed",
         summary=(
-            "Datadog's vendor table pairs these metrics, but their documented definitions differ "
-            "in scope; the value is close, not identical."
+            "The Datadog and OTel metrics measure the same thing, but their documented "
+            "definitions differ in scope; the value is close, not identical."
         ),
         evidence="see the mapping entry's ref",
         approved=None,

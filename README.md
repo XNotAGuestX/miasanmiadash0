@@ -158,7 +158,7 @@ A missing variable gives `error: missing env: <NAMES>` and exit 1, without print
 - `rate`: `rate(...[$__rate_interval])` for per-second counters;
 - `expression`: a reviewed PromQL template, such as the deduplicated connection ratio.
 
-Entries can also carry fixed label matchers, unit scale, label renames and a deduplication grain. A file may set top-level `labels`: entries without their own `labels` inherit them, and an entry's own `labels` replace them whole. An unmapped metric or label blocks the query. Entries with `reviewed: null` still convert but carry an `UNREVIEWED_MAPPING` warning; only a human sets `reviewed`. An entry may carry an `assumption` tag when no exact OTel metric exists, and a file may record unmappable metrics under `gaps`; see [docs/REMARKS.md](docs/REMARKS.md). Files exist for `postgres`, `kafka`, `docker`, `redis`, `nginx` and `host` (`system.*` metrics).
+Entries can also carry fixed label matchers, unit scale, label renames and a deduplication grain. A file may set top-level `labels`: entries without their own `labels` inherit them, and an entry's own `labels` replace them whole. An unmapped metric or label blocks the query. Entries with `reviewed: null` still convert but carry an `UNREVIEWED_MAPPING` warning; only a human sets `reviewed`. An entry may carry an `assumption` tag when no exact OTel metric exists, and a file may record unmappable metrics under `gaps`; see [docs/REMARKS.md](docs/REMARKS.md). Files exist for `postgres`, `kafka`, `jvm`, `zookeeper`, `docker`, `redis`, `nginx` and `host` (`system.*` metrics).
 
 **Monitors:**
 - Supported: `query alert` / `metric alert` with `<avg|max|min|sum>(last_<n><m|h|d>):<query> <op> <number>`, a window ≤ 7 days, and options within the reviewed allowlist.

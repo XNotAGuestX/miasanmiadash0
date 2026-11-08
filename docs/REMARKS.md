@@ -61,7 +61,7 @@ A mapping entry names one of these in its `assumption` field. Its `ref` must spe
 | `AGG` | The value is rebuilt by aggregating OTel series over an attribute, for example summing memory states. |
 | `DERIVED` | The value is computed from other OTel metrics by an expression. |
 | `ATTRVAL` | The value is one slice of an OTel metric, selected by an attribute value that the OTel definition doesn't enumerate. |
-| `SEMANTIC` | Datadog's vendor table pairs the metrics, but their documented definitions differ in scope. |
+| `SEMANTIC` | The Datadog and OTel metrics measure the same thing (often paired in Datadog's vendor table), but their documented definitions differ in scope. |
 
 None of the assumed tags is approved yet.
 
@@ -79,6 +79,7 @@ A widget using that metric still blocks, but its `MISSING_METRIC_MAPPING` messag
 |---|---|
 | `NOOTEL` | No OTel metric carries it in the pinned sources. |
 | `NOEQUIV` | OTel has related data, but there is no deterministic rebuild. |
+| `AMBIG` | The Datadog name covers several sources at once (for example two JMX beans), which no single OTel metric reproduces. |
 
 Other short tags may appear; each gap's `reason` explains its tag.
 
