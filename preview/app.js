@@ -1,5 +1,5 @@
-// UI-only demo. No network requests, no AI: all data and "suggestions" come from data.js,
-// and the "backend" below is a local timer that reports one result at a time.
+// Local conversion UI. Simulated steps, values and publishing are confined to explicit ?mock=1.
+// Real runs animate the request and then reveal the finished report; nothing is invented.
 (() => {
   "use strict";
 
@@ -17,6 +17,18 @@
   const title = $("#results-title");
   let items = [];
   let runId = 0;
+  const real = window.MigrateBackend.mode !== "mock";
+  const OUTCOME = { translated: "Translated", approximated: "Approximated", assumed: "Assumed", best_effort: "Best effort", partial: "Partial", blocked: "Blocked" };
+  let downloadUrl;
+  let aiBusy = false;
+  const salesMessage = "You have used your 3 AI calls. Contact our sales team at sandy@dash0.com.";
+  $("#data-mode").textContent = window.MigrateBackend.mode === "api" ? "Local converter · Real results" : real ? "Saved report" : "Mock demo · Simulated";
+  $("#upload").hidden = window.MigrateBackend.mode !== "api";
+  if (real) {
+    $("#consult-btn").disabled = true;
+    $("#consult-btn .txt").textContent = "Booking unavailable";
+    $("#opt-ai").hidden = true;
+  }
 
   /* ---------- Theme ---------- */
   const themeBtn = $("#theme-btn");
@@ -55,6 +67,52 @@
     dot.addEventListener("animationend", () => dot.remove());
   });
 
+  /* ---------- Files: drop zone and samples ---------- */
+  const fileInput = $("#source-files"), drop = $("#drop");
+  function setFiles(list) {
+    const dt = new DataTransfer();
+    list.forEach((f) => dt.items.add(f));
+    fileInput.files = dt.files;
+    syncFiles();
+  }
+  function syncFiles(sample) {
+    const files = Array.from(fileInput.files);
+    $(".drop-empty", drop).hidden = files.length > 0;
+    $("#drop-picked").hidden = files.length === 0;
+    drop.classList.toggle("has-files", files.length > 0);
+    $("#drop-count").textContent = `${files.length} file${files.length === 1 ? "" : "s"} ready to convert`;
+    $("#drop-files").innerHTML = files.map((f) => `<li>${esc(f.name)}</li>`).join("");
+    $$(".sample").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.sample === sample)));
+    $("#start-error").textContent = "";
+  }
+  fileInput.addEventListener("change", () => syncFiles());
+  $("#clear-files").addEventListener("click", () => { setFiles([]); fileInput.focus(); });
+  // Drag and drop puts the dropped .json files into the same input the picker uses.
+  ["dragenter", "dragover"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add("is-over"); }));
+  ["dragleave", "drop"].forEach((t) => drop.addEventListener(t, (e) => { if (t === "dragleave" && drop.contains(e.relatedTarget)) return; drop.classList.remove("is-over"); }));
+  drop.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const files = Array.from(e.dataTransfer.files).filter((f) => f.name.toLowerCase().endsWith(".json"));
+    if (files.length) setFiles(files);
+    else $("#start-error").textContent = "Drop Datadog .json files.";
+  });
+  // Samples are ordinary files served from preview/samples; they go through the same upload.
+  $$(".sample").forEach((b) => b.addEventListener("click", async () => {
+    const names = b.dataset.sample.split(" ").filter(Boolean);
+    try {
+      const files = await Promise.all(names.map(async (name) => {
+        const res = await fetch(`samples/${name}`, { cache: "no-store" });
+        if (!res.ok) throw new Error(`Could not load sample ${name} (HTTP ${res.status}).`);
+        return new File([await res.text()], name, { type: "application/json" });
+      }));
+      setFiles(files);
+      syncFiles(b.dataset.sample);
+      drop.classList.remove("is-loaded"); void drop.offsetWidth; drop.classList.add("is-loaded");
+    } catch (err) {
+      $("#start-error").textContent = String(err.message || err);
+    }
+  }));
+
   /* ---------- Board markup ---------- */
   const ICON = {
     converted: '<path d="M7 11.4l2.7 2.7L15.2 8.4"/>',
@@ -72,7 +130,7 @@
     li.id = `item-${it.id}`;
     li.innerHTML = `
       <button class="item-btn" type="button" data-open="${it.id}" aria-expanded="false" aria-controls="drawer-${it.id}">
-        <span class="badge s-${it.status}" role="img" aria-label="${LABEL[it.status]}">
+        <span class="badge s-${it.status}" role="img" aria-label="${it.outcome ? OUTCOME[it.outcome] : LABEL[it.status]}">
           <svg viewBox="0 0 22 22" aria-hidden="true">${ICON[it.status]}</svg>
         </span>
         <span class="name">${esc(it.name)}</span>
@@ -115,6 +173,12 @@
     { title: "Test and refine", subs: ["Approximate where needed", "Record assumptions", "Choose the best-effort mapping"] },
     { title: "Check what worked", subs: ["Deterministically evaluate which mapping succeeded best"] },
   ];
+  // Real runs: what the local backend actually does inside its one request, then the reveal.
+  const REAL_STEPS = [
+    { title: "Read the Datadog files" },
+    { title: "Translate with the deterministic converter", subs: ["Checked-in mappings, no AI"] },
+    { title: "Check the results" },
+  ];
   const stepsEl = $("#steps"), publishEl = $("#publish"), publishBtn = $("#publish-btn");
   let stepEl = null, stepN = -1, subN = -1, publishResolve = null;
 
@@ -127,15 +191,16 @@
     el.classList.add("is-out");
     el.addEventListener("animationend", () => el.remove(), { once: true });
   }
-  function stepIn(n) {
+  function stepIn(n, subs) {
     stepOut();
     stepN = n; subN = -1;
-    const s = STEPS[n];
+    const list = real ? REAL_STEPS : STEPS;
+    const s = { ...list[n], ...(subs ? { subs } : {}) };
     const el = document.createElement("div");
     el.className = "step-box";
-    el.innerHTML = `<p class="step-num mono">${String(n + 1).padStart(2, "0")} / ${String(STEPS.length).padStart(2, "0")}</p>
-      <h3 class="step-title">${s.title}</h3>
-      ${s.subs ? `<ul class="step-subs">${s.subs.map((t) => `<li>${t}</li>`).join("")}</ul>` : ""}
+    el.innerHTML = `<p class="step-num mono">${String(n + 1).padStart(2, "0")} / ${String(list.length).padStart(2, "0")}</p>
+      <h3 class="step-title">${esc(s.title)}</h3>
+      ${s.subs ? `<ul class="step-subs">${s.subs.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
       <span class="step-bar" aria-hidden="true"></span>`;
     stepsEl.appendChild(el);
     stepEl = el;
@@ -159,6 +224,11 @@
     showNow(it.name);
     await window.MigrateBackend.process(it);   // backend.js: mock delay, or a real result
     if (id !== runId) return;
+    light(i);
+    onProgress(doneN / items.length);
+  }
+  function light(i) {
+    const it = items[i], tick = tickFor(i);
     tick.classList.remove("is-active");
     tick.classList.remove("t-converted", "t-review", "t-unsupported");
     tick.classList.add(`t-${it.status}`);
@@ -168,7 +238,6 @@
     const n = $(`#n-${it.status}`);
     n.textContent = count[it.status];
     n.classList.remove("is-bump"); void n.offsetWidth; n.classList.add("is-bump");
-    onProgress(doneN / items.length);
   }
 
   /* ---------- Run ---------- */
@@ -182,12 +251,13 @@
   function reset(list) {
     items = list.map((it) => ({ ...it, open: false, state: "idle" }));
     $$(".items", board).forEach((ul) => (ul.innerHTML = ""));
-    $$(".more-btn", board).forEach((b) => b.remove());
+    $$(".more-btn, .rgroups", board).forEach((b) => b.remove());
     board.classList.remove("is-sorted", "is-done", "is-entering", "show-all");
     board.classList.add("is-hidden");
     $("#stage-wrap").classList.remove("is-closed", "is-hidden");
     dialEl.classList.remove("is-working", "is-read", "is-done");
-    $$(".step-box", stepsEl).forEach((b) => b.remove());
+    $$(":scope > .step-box", stepsEl).forEach((b) => b.remove());
+    $(".run-wrap").classList.add("is-running");
     stepEl = null; stepN = -1; subN = -1; publishResolve = null;
     publishEl.hidden = true;
     publishEl.classList.remove("is-out", "is-done");
@@ -207,13 +277,23 @@
   }
 
   async function runMigration() {
+    if (real) return runReal();
+    const startBtn = $("#start-btn");
+    if (startBtn.disabled) return;
     const id = ++runId;
+    startBtn.disabled = true;
+    startBtn.setAttribute("aria-busy", "true");
+    $(".go-label", startBtn).textContent = real ? "Converting…" : "Loading…";
     let list;
     try {
-      list = await window.MigrateBackend.load();
+      list = await window.MigrateBackend.load($("#source-files").files);
     } catch (err) {
       $("#start-error").textContent = String(err.message || err);
       return;
+    } finally {
+      startBtn.disabled = false;
+      startBtn.removeAttribute("aria-busy");
+      $(".go-label", startBtn).textContent = "Convert";
     }
     if (id !== runId) return;
     $("#start-error").textContent = "";
@@ -266,8 +346,107 @@
     if (id !== runId) return;
 
     // The stage folds away and the results sort into the table.
+    progress.classList.add("is-gone");
     $("#stage-wrap").classList.add("is-closed");
     await wait(440);
+    $(".run-wrap").classList.remove("is-running");
+    $("#stage-wrap").classList.add("is-hidden");
+    if (id !== runId) return;
+    await sortIntoBoard(id);
+    finish(id);
+  }
+
+  // Each stage stays on screen for at least its minimum, however fast the backend answers.
+  const MIN_READ = 1100, MIN_TRANSLATE = 1500, REVEAL = 1500;
+
+  async function runReal() {
+    const startBtn = $("#start-btn");
+    if (startBtn.disabled) return;
+    const id = ++runId;
+    const files = Array.from($("#source-files").files);
+    startBtn.disabled = true;
+    startBtn.setAttribute("aria-busy", "true");
+    $(".go-label", startBtn).textContent = "Converting…";
+    $("#start-error").textContent = "";
+    // The one POST (or saved report fetch) starts now; the screens below only animate around it.
+    const pending = window.MigrateBackend.load(files).then((list) => ({ list }), (err) => ({ err }));
+
+    reset([]);
+    await show("run");
+    window.scrollTo(0, 0);
+
+    // 01 Read: the arc turns while the backend reads the files.
+    setStep(0);
+    dialEl.classList.add("is-working");
+    showNow("Reading");
+    const source = window.MigrateBackend.mode === "report" ? "Saved report"
+      : files.length ? `${files.length} uploaded file${files.length === 1 ? "" : "s"}` : "Pinned Postgres demo";
+    stepIn(0, [source]);
+    stepSub(0);
+    await wait(MIN_READ);
+    if (id !== runId) return;
+
+    // 02 Translate: stays until the converter has answered.
+    setStep(1);
+    showNow("Converting");
+    stepIn(1);
+    stepSub(0);
+    const [res] = await Promise.all([pending, wait(MIN_TRANSLATE)]);
+    startBtn.disabled = false;
+    startBtn.removeAttribute("aria-busy");
+    $(".go-label", startBtn).textContent = "Convert";
+    if (id !== runId) return;
+    if (res.err) {
+      stopStage();
+      stepOut();
+      $(".run-wrap").classList.remove("is-running");
+      await show("start");
+      $("#start-error").textContent = String(res.err.message || res.err);
+      return;
+    }
+
+    // 03 Check: the finished report is revealed on the dial, one tick per result.
+    items = res.list.map((it) => ({ ...it, open: false, state: "idle" }));
+    buildTicks();
+    stopStage();
+    void dialEl.offsetWidth;
+    dialEl.classList.add("is-read");
+    showNow(`${items.length} items`);
+    setStep(2);
+    const v = window.MigrateBackend.result.report.validation || {};
+    stepIn(2, [`Syntax ${v.syntax || "not_run"}`, `Schema ${v.schema || "not_run"}`]);
+    await wait(500);
+    if (id !== runId) return;
+    const per = still() ? 0 : Math.max(8, Math.min(90, REVEAL / Math.max(items.length, 1)));
+    for (let i = 0; i < items.length; i++) {
+      light(i);
+      if (i === Math.floor(items.length / 3)) stepSub(0);
+      if (i === Math.floor((2 * items.length) / 3)) stepSub(1);
+      if (per) await new Promise((r) => setTimeout(r, per));
+      if (id !== runId) return;
+    }
+    stepSub(1);
+    $("#pct").textContent = "100";
+    showNow("Done");
+    dialEl.classList.add("is-done");
+    $("#live").textContent = "Conversion finished.";
+    await wait(1200);
+    if (id !== runId) return;
+    stepOut();
+
+    // The stage folds away and the results sort into the table, as in the mock.
+    const result = window.MigrateBackend.result;
+    $("#run-note").textContent = `Offline conversion. Syntax: ${v.syntax || "not_run"}; schema: ${v.schema || "not_run"}; API: ${v.api || "not_run"}; semantics: ${v.semantics || "not_run"}. Skipped files: ${result.report.summary?.skippedFiles || 0}.`;
+    if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+    downloadUrl = URL.createObjectURL(new Blob([JSON.stringify(result, null, 2)], { type: "application/json" }));
+    const download = $("#download-results");
+    download.href = downloadUrl;
+    download.download = "conversion-results.json";
+    download.hidden = false;
+    progress.classList.add("is-gone");
+    $("#stage-wrap").classList.add("is-closed");
+    await wait(440);
+    $(".run-wrap").classList.remove("is-running");
     $("#stage-wrap").classList.add("is-hidden");
     if (id !== runId) return;
     await sortIntoBoard(id);
@@ -303,7 +482,7 @@
     });
     const vis = els.filter((e) => !e.classList.contains("is-extra"));
     board.classList.remove("is-hidden");
-    if (still()) { els.forEach((e) => e.classList.add("is-final")); placeAll(els); return; }
+    if (still() || vis.length > 60) { els.forEach((e) => e.classList.add("is-final")); placeAll(els); return; }
 
     board.classList.add("is-entering");
     vis.forEach((e, i) => e.animate(
@@ -334,12 +513,37 @@
     await wait(delay + 650);
   }
 
+  // The review column's groups: one per remark outcome. Partial appears only when it has rows.
+  const REVIEW_GROUPS = ["approximated", "assumed", "best_effort", "partial"];
+  function reviewGroups() {
+    const review = items.filter((it) => it.status === "review");
+    if (!review.length || !review.every((it) => it.outcome)) return null;
+    const col = $('.col[data-status="review"]');
+    const wrap = document.createElement("div");
+    wrap.className = "rgroups";
+    wrap.innerHTML = REVIEW_GROUPS.map((o) => {
+      const n = review.filter((it) => it.outcome === o).length;
+      if (o === "partial" && !n) return "";
+      return `<section class="rgroup${n ? "" : " is-empty"}" data-outcome="${o}">
+          <button class="rgroup-head" type="button" data-group="${o}" aria-expanded="${n ? "true" : "false"}" aria-controls="rg-${o}" ${n ? "" : "disabled"}>
+            <span class="rgroup-name">${OUTCOME[o]}</span><b>${n}</b><span class="plus" aria-hidden="true"></span>
+          </button>
+          <div class="rgroup-body" id="rg-${o}"><div><ul class="items"></ul></div></div>
+        </section>`;
+    }).join("");
+    col.appendChild(wrap);
+    return wrap;
+  }
+
   function placeAll(els) {
     board.classList.add("is-sorted");
     for (const status of ["converted", "review", "unsupported"]) {
       const ul = listFor(status);
       els.filter((e) => find(e.id.slice(5)).status === status).forEach((e) => ul.appendChild(e));
     }
+    const groups = reviewGroups();
+    if (groups) $$(":scope > .item", listFor("review")).forEach((e) =>
+      $(`.rgroup[data-outcome="${find(e.id.slice(5)).outcome}"] .items`, groups).appendChild(e));
   }
 
   function finish(id) {
@@ -348,7 +552,12 @@
     progress.classList.add("is-gone");
     const nu = items.filter((it) => it.status === "unsupported").length;
     $("#callout").classList.toggle("is-hidden", nu === 0);
-    $("#callout-txt").textContent = `${nu} item${nu === 1 ? " has" : "s have"} no Dash0 equivalent.`;
+    $("#callout-txt").textContent = `${nu} item${nu === 1 ? " is" : "s are"} blocked. See diagnostics for the reason.`;
+    $("#category-summary").innerHTML = Object.entries(OUTCOME).map(([outcome, label]) => {
+      const k = items.filter((it) => it.outcome === outcome).length;
+      return `<span class="outcome o-${outcome}${k ? "" : " is-zero"}"><i aria-hidden="true"></i><b>${k}</b> ${label}</span>`;
+    }).join("");
+    $("#category-summary").hidden = !items.some((it) => it.outcome);
     const extra = $$(".item.is-extra", board).length;
     if (extra) listFor("converted").insertAdjacentHTML("afterend",
       `<button class="link-btn more-btn" type="button" data-more="${extra}" aria-expanded="false">Show all ${extra + SHOW_FIRST} <span class="arrow" aria-hidden="true">↓</span></button>`);
@@ -357,13 +566,55 @@
     $(".foot").classList.add("is-in");
     title.focus({ preventScroll: true });
     const n = (s) => items.filter((it) => it.status === s).length;
-    $("#live").textContent = `Migration complete. ${n("converted")} converted, ${n("review")} need review, ${n("unsupported")} not supported.`;
+    $("#live").textContent = `Conversion complete. ${n("converted")} translated, ${n("review")} converted with remarks, ${n("unsupported")} blocked.`;
+    updateAiQuota();
+  }
+
+  function updateAiQuota() {
+    if (window.MigrateBackend.mode !== "api") return;
+    const ai = window.MigrateBackend.ai;
+    $("#ai-quota").hidden = false;
+    $("#ai-quota").textContent = ai.remaining === 0 ? salesMessage : ai.available
+      ? `${ai.remaining} of 3 AI calls remaining. AI help runs only when you request it for a blocked item.`
+      : "AI help is unavailable until Agent0 is configured on the backend.";
+    $$("[data-ai-help]").forEach((button) => { button.disabled = aiBusy || !ai.available || ai.remaining === 0; });
+  }
+
+  async function requestAi(it) {
+    if (aiBusy) return;
+    aiBusy = true;
+    it.aiError = "";
+    updateAiQuota();
+    const output = $(`#ai-result-${it.id}`);
+    output.textContent = "Asking Agent0…";
+    try {
+      it.aiRecommendation = await window.MigrateBackend.suggest(it);
+    } catch (err) {
+      it.aiError = String(err.message || err);
+    } finally {
+      aiBusy = false;
+      render(it);
+      updateAiQuota();
+    }
   }
 
   /* ---------- Item drawer ---------- */
   const STAR = '<svg class="star" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0c.5 4.2 1.8 6.6 8 8-6.2 1.4-7.5 3.8-8 8-.5-4.2-1.8-6.6-8-8 6.2-1.4 7.5-3.8 8-8z"/></svg>';
 
   function bodyHTML(it) {
+    if (real) {
+      if (it.outcome === "translated") return '<p class="why">Translated.</p>';
+      const diagnostics = it.diagnostics.filter((d) => d.severity === "error").map((d) => `<li><strong>${esc(d.code)}</strong><p>${esc(d.message)}</p><p>${esc(d.suggestedAction || "")}</p></li>`).join("");
+      return `<p class="why">${esc(it.parent)} · ${esc(it.source.kind)}</p>
+        <code>${esc(it.source.id)} ${esc(it.source.path)}</code>
+        ${it.warningNames.length ? `<div class="warn-tags" aria-label="Warnings">${it.warningNames.map((name) => `<span class="outcome">${esc(name)}</span>`).join("")}</div>` : ""}
+        ${diagnostics ? `<ul class="diagnostics">${diagnostics}</ul>` : ""}
+        ${it.outcome === "blocked" && window.MigrateBackend.mode === "api" ? `
+          <p class="why">Ask Agent0 to recommend a conversion for this item. Sends this source item and the checked-in mappings to Agent0.</p>
+          <button class="ai-btn" type="button" data-ai-help="${it.id}" ${aiBusy || !window.MigrateBackend.ai.available || window.MigrateBackend.ai.remaining === 0 ? "disabled" : ""}>${STAR}Ask AI</button>
+          <div id="ai-result-${it.id}" aria-live="polite">${it.aiError ? `<p class="why">${esc(it.aiError)}</p>` : ""}${it.aiRecommendation ? `<p class="why">AI recommendation · Not validated or applied</p><pre class="ai-recommendation">${esc(it.aiRecommendation)}</pre>` : ""}</div>` : ""}
+        ${it.status === "review" ? '<p class="manual-note">Numeric comparison unavailable: this offline run has no Datadog or Dash0 measurements.</p>' : ""}`;
+    }
     const out = [`<p class="why">${esc(it.why)}</p>`];
     if (it.action) out.push(`<p class="why">${esc(it.action)}</p>`);
     if (it.status === "converted") return out.join("");
@@ -536,6 +787,12 @@
     const t = e.target.closest("button");
     if (!t) return;
     if (t.dataset.open) toggle(find(t.dataset.open));
+    else if (t.dataset.aiHelp) requestAi(find(t.dataset.aiHelp));
+    else if (t.dataset.group) {
+      const open = t.getAttribute("aria-expanded") !== "true";
+      t.setAttribute("aria-expanded", String(open));
+      t.closest(".rgroup").classList.toggle("is-collapsed", !open);
+    }
     else if (t.dataset.diff) showDiff(find(t.dataset.diff), t);
     else if (t.dataset.options) openOptions();
     else if (t.dataset.more) {

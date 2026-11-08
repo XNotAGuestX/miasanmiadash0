@@ -12,6 +12,12 @@ Build a **deterministic converter from Datadog dashboards to Perses**, the open-
 
 ## 2. Rules (from `AGENTS.md`; these are not negotiable)
 
+Felix explicitly authorized one exception on 2026-11-08: local UI users may request
+an Agent0 draft recommendation for an individual blocked widget/monitor, with three
+calls per backend session and then a sales contact prompt (sandy@dash0.com). It is
+separate from automatic/CLI conversion; no automatic invocation, application,
+mapping approval or publication. See the canonical exception in `AGENTS.md`.
+
 1. **No LLM takes part in any conversion step.** That covers source → Perses, query → PromQL and monitor → rule, including optional, repair and fallback paths. Coding assistants write code, tests and mapping tables. They never translate migration inputs at runtime.
 2. The same input, mapping, options and compiler version must give byte-identical artifacts and diagnostics.
 3. Unsupported or ambiguous input gives a diagnostic and is blocked. It's never guessed. Parse the whole input; never translate a recognized prefix and ignore the rest.
