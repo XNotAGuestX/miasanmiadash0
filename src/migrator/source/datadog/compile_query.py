@@ -128,11 +128,36 @@ class _Diags:
         return CompiledError(diagnostics=list(self.items))
 
 
+# `.weighted()` stays blocked in every form (#116). Datadog: "The `weighted()` function accounts
+# for the short-lived lifespan of transient, churning tag values when summing gauge metrics in
+# space to prevent artificial spikes"
+# (https://docs.datadoghq.com/dashboards/functions/smoothing/#weighted). The guide weighs each
+# series' rollup by its submission rate: at a 10 s interval, a value of 12 present in 3 of the
+# 6 slots of a 60 s point counts as 6, not 12
+# (https://docs.datadoghq.com/dashboards/guide/how-weighted-works/). The weight needs the metric's
+# submission interval from the Datadog Metrics Catalog, which the query does not carry, and it
+# equals a plain sum only when no series churns, which depends on the data.
+WEIGHTED_DOC = "https://docs.datadoghq.com/dashboards/guide/how-weighted-works/"
+
+
+def _block_weighted(d: _Diags) -> CompiledError:
+    return d.block(
+        "UNSUPPORTED_QUERY_FUNCTION",
+        "Query function '.weighted()' is not supported: Datadog weights each series by the "
+        "metric's submission interval from its Metrics Catalog, which the query does not carry "
+        f"({WEIGHTED_DOC}).",
+        "Migrate this widget manually; removing '.weighted()' changes the sum whenever tag "
+        "values churn.",
+    )
+
+
 def compile_metric_query(
     q: MetricQuery, mapping: DatadogMapping, ctx: QueryContext
 ) -> CompiledQuery:
     d = _Diags(ctx)
 
+    if any(fn.name == "weighted" for fn in q.functions):
+        return _block_weighted(d)
     if q.functions:
         name = q.functions[0].name
         message, action = _FUNCTION_BLOCKS.get(
