@@ -12,6 +12,11 @@ Rule:
 - Any other `gauge` -> `kind: gauge`.
 - `expression` entries are skipped. A metric with no known type is reported as unknown.
 
+`type deviation: <reason>` in `ref` opts an entry out: the report lists it as `deviation`
+instead of `mismatch`. Use it where the Datadog value is derived from a counter the
+type columns don't show, e.g. `redis.cpu.sys` (`self.rate()` without a per-second unit)
+or `docker.cpu.user` (percent gauge mapped to cumulative `container.cpu.usage.usermode`).
+
 The test is strict only for entries with `reviewed` set. Print the report for all
 entries with `uv run python -m tests.datadog.test_metric_types`.
 """
@@ -118,7 +123,9 @@ def report(mapping_dir: Path = MAPPINGS, reviewed_only: bool = False) -> list[st
             continue
         t = types.get(name)
         v = verdict(e["kind"], t)
-        if v in ("mismatch", "unknown"):
+        if v == "mismatch" and "type deviation:" in e.get("ref", ""):
+            v = "deviation"
+        if v in ("mismatch", "unknown", "deviation"):
             dd = f"{t.metric_type}/{t.per_unit or '-'} ({t.source})" if t else "-"
             reviewed = "reviewed" if e.get("reviewed") is not None else "unreviewed"
             lines.append(f"{v} {file} {name}: kind={e['kind']} datadog={dd} {reviewed}")
@@ -165,6 +172,23 @@ def test_unreviewed_mismatch_is_reported_but_not_strict(tmp_path: Path) -> None:
         "mismatch synthetic.json redis.mem.used: kind=rate "
         "datadog=gauge/- (redisdb/metadata.csv) unreviewed"
     ]
+
+
+def test_type_deviation_in_ref_opts_out(tmp_path: Path) -> None:
+    raw = raw_mapping(
+        **{
+            "redis.cpu.sys": entry(
+                kind="rate", ref="type deviation: submitted with self.rate() (RATE_KEYS)"
+            )
+        }
+    )
+    (tmp_path / "synthetic.json").write_text(json.dumps(raw))
+    lines = report(tmp_path, reviewed_only=True)
+    assert lines == [
+        "deviation synthetic.json redis.cpu.sys: kind=rate "
+        "datadog=gauge/- (redisdb/metadata.csv) reviewed"
+    ]
+    assert [line for line in lines if line.startswith("mismatch")] == []
 
 
 def test_expression_is_skipped_and_unknown_metric_is_reported(tmp_path: Path) -> None:
