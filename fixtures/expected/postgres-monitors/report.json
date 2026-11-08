@@ -71,7 +71,7 @@
   ],
   "mapping": [
     {
-      "sha256": "df05db108b199f982914cfdb7b419c7253451182fddb35bfdce4799ff8bce75d",
+      "sha256": "f9d64243f95a7ded977d4c9341cd9709ebd41c5791cba1c54c54f5f661030338",
       "sourceId": "postgres.json"
     }
   ],

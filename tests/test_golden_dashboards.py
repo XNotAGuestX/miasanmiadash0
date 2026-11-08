@@ -130,7 +130,7 @@ def test_overview_is_partial_with_reviewed_counts(run: tuple[int, Path]) -> None
     (dashboard,) = [i for i in items if i["kind"] == "dashboard"]
     assert dashboard["outcome"] == "partial"
     counts = Counter(i["outcome"] for i in items if i["kind"] == "widget")
-    assert counts == {"translated": 8, "blocked": 22}
+    assert counts == {"translated": 10, "blocked": 20}
     assert (run[1] / "dashboards/postgres-overview.json").exists()
 
 

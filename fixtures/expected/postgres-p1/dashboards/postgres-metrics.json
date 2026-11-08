@@ -274,7 +274,7 @@
                 "plugin": {
                   "kind": "PrometheusTimeSeriesQuery",
                   "spec": {
-                    "query": "(max (avg by (host_name) ({otel_metric_name=\"system.cpu.utilization\", otel_metric_type=\"gauge\", cpu_mode=\"wait\"}))) * 100"
+                    "query": "(max (avg by (host_name) ({otel_metric_name=\"system.cpu.utilization\", otel_metric_type=\"gauge\", cpu_mode=\"wait\", otel_scope_name=\"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper\"}))) * 100"
                   }
                 }
               }
@@ -300,7 +300,7 @@
                 "plugin": {
                   "kind": "PrometheusTimeSeriesQuery",
                   "spec": {
-                    "query": "sum (rate({otel_metric_name=\"system.network.io\", otel_metric_type=\"sum\", system_network_direction=\"receive\"}[$__rate_interval]))"
+                    "query": "sum (rate({otel_metric_name=\"system.network.io\", otel_metric_type=\"sum\", otel_scope_name=\"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper\", system_network_direction=\"receive\"}[5m]))"
                   }
                 }
               }
@@ -311,7 +311,7 @@
                 "plugin": {
                   "kind": "PrometheusTimeSeriesQuery",
                   "spec": {
-                    "query": "sum (rate({otel_metric_name=\"system.network.io\", otel_metric_type=\"sum\", system_network_direction=\"transmit\"}[$__rate_interval]))"
+                    "query": "sum (rate({otel_metric_name=\"system.network.io\", otel_metric_type=\"sum\", otel_scope_name=\"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper\", system_network_direction=\"transmit\"}[5m]))"
                   }
                 }
               }

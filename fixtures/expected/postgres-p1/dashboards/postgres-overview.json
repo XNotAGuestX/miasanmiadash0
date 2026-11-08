@@ -71,6 +71,25 @@
         "kind": "Grid",
         "spec": {
           "display": {
+            "title": "Resource Utilization"
+          },
+          "items": [
+            {
+              "content": {
+                "$ref": "#/spec/panels/widget-2-0"
+              },
+              "height": 6,
+              "width": 10,
+              "x": 0,
+              "y": 0
+            }
+          ]
+        }
+      },
+      {
+        "kind": "Grid",
+        "spec": {
+          "display": {
             "title": "Rows"
           },
           "items": [
@@ -99,6 +118,15 @@
               "height": 6,
               "width": 8,
               "x": 0,
+              "y": 6
+            },
+            {
+              "content": {
+                "$ref": "#/spec/panels/widget-4-4"
+              },
+              "height": 6,
+              "width": 8,
+              "x": 8,
               "y": 6
             }
           ]
@@ -213,6 +241,32 @@
           ]
         }
       },
+      "widget-2-0": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "description": "",
+            "name": "Dead rows"
+          },
+          "plugin": {
+            "kind": "TimeSeriesChart",
+            "spec": {}
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "sum (max by (service_instance_id, postgresql_database_name, postgresql_table_name) ({otel_metric_name=\"postgresql.rows\", otel_metric_type=\"sum\", postgresql_database_name=~\"^($db)$\", host_name=~\"^($host)$\", state=\"dead\"}))"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
       "widget-4-0": {
         "kind": "Panel",
         "spec": {
@@ -286,6 +340,33 @@
                   "kind": "PrometheusTimeSeriesQuery",
                   "spec": {
                     "query": "avg by (postgresql_database_name) (max by (postgresql_database_name, service_instance_id) (rate({otel_metric_name=\"postgresql.tup_deleted\", otel_metric_type=\"sum\", postgresql_database_name=~\"^($db)$\", host_name=~\"^($host)$\"}[$__rate_interval])))",
+                    "seriesNameFormat": "{{postgresql_database_name}}"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "widget-4-4": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "description": "",
+            "name": "Heap-only updates "
+          },
+          "plugin": {
+            "kind": "TimeSeriesChart",
+            "spec": {}
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "avg by (postgresql_database_name) (max by (postgresql_database_name, service_instance_id, postgresql_table_name) (rate({otel_metric_name=\"postgresql.operations\", otel_metric_type=\"sum\", postgresql_database_name=~\"^($db)$\", host_name=~\"^($host)$\", operation=\"hot_upd\"}[$__rate_interval])))",
                     "seriesNameFormat": "{{postgresql_database_name}}"
                   }
                 }

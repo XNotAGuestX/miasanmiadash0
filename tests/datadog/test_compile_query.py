@@ -319,10 +319,13 @@ def test_host_network_keeps_every_interface_and_has_no_grain() -> None:
     """Datadog's network check excludes no interface by default (excluded_interfaces
     defaults to []), so loopback stays in, and no grain collapses interfaces. The
     fixed 5m range is the entry's rateWindow: system.network.io is reported every
-    60 s, too sparse for $__rate_interval (#90)."""
+    60 s, too sparse for $__rate_interval (#90). The otel_scope_name matcher keeps
+    only hostmetrics series: Python system_metrics also emits system.network.io (#111)."""
     r = ok("sum:system.net.bytes_rcvd{*}", _mapping_file("host"))
     assert r.promql == (
         'sum (rate({otel_metric_name="system.network.io", otel_metric_type="sum", '
+        'otel_scope_name="github.com/open-telemetry/opentelemetry-collector-contrib/receiver/'
+        'hostmetricsreceiver/internal/scraper/networkscraper", '
         'system_network_direction="receive"}[5m]))'
     )
     assert check_promql_syntax(r.promql) is None

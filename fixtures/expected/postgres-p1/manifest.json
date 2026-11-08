@@ -6,7 +6,7 @@
       "kind": "dashboard",
       "outcome": "partial",
       "path": "dashboards/postgres-metrics.json",
-      "sha256": "c6a3b66dc898d90265c2e2fb9d685d9a0930389767ca57a9046e467a91d49b47",
+      "sha256": "1679f7ffbf9c563ba0e684982dd2e8b24f1b3916947b8c0ec32901b7e51ab5e3",
       "sourceId": "dashboards/postgresql_dashboard.json"
     },
     {
@@ -14,7 +14,7 @@
       "kind": "dashboard",
       "outcome": "partial",
       "path": "dashboards/postgres-overview.json",
-      "sha256": "f9416061bb94e6c8894de16374ddb7f1226d791a53c9c2e3d6383b8b4991b32b",
+      "sha256": "9756c2593ffab68cd554a3883f3ab8d884bebe8c3ddb7a08018a711694f79103",
       "sourceId": "dashboards/postgresql_screenboard_dashboard.json"
     },
     {
